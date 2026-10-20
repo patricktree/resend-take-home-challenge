@@ -31,6 +31,7 @@
     "seed": "pnpm --filter '@draft-approval/seed' run start",
     "test": "turbo run turbo:test",
     "test:e2e": "pnpm --filter '@draft-approval/e2e' --if-present run test:e2e",
+    "test:resend-live": "pnpm --filter '@draft-approval/resend-stub' run test:resend-live",
     "validate": "pnpm run validate:fast && pnpm run validate:extended",
     "validate:extended": "pnpm run test:e2e",
     "validate:fast": "pnpm run format:check && pnpm run docs:check && pnpm run declutter && turbo run turbo:build turbo:lint turbo:test --output-logs=errors-only"

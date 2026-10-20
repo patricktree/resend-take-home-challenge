@@ -33,8 +33,52 @@
   "vars": {
     "PUBLIC_BASE_URL": "https://resend-challenge.patricktree.me",
     "RESEND_FROM": "drafts@resend-challenge.patricktree.me",
-    // Unreachable on purpose (discard port): tests never call Resend.
+    // Unreachable on purpose (discard port): tests never call Resend, and tests that send point it
+    // at their own Resend stub.
     "RESEND_BASE_URL": "http://127.0.0.1:9",
     "LOCAL_DEVELOPMENT": "true",
+  },
+  "env": {
+    // The one test that proves real Queue delivery selects this environment (`useWorker()` with
+    // `deliversSendQueue`). Every other test delivers batches through `POST /__test/queue`, so
+    // the default environment has no consumer that could race them. Wrangler does not inherit
+    // bindings and vars into an environment, so they are repeated here.
+    "send-queue-delivery": {
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "draft-approval",
+          "database_id": "00000000-0000-0000-0000-000000000000",
+          "migrations_dir": "../../../libs/drafts/migrations",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "REVISION_BODIES",
+          "bucket_name": "draft-approval-revision-bodies",
+        },
+      ],
+      "queues": {
+        "producers": [
+          {
+            "binding": "SEND_QUEUE",
+            "queue": "draft-approval-send",
+          },
+        ],
+        "consumers": [
+          {
+            "queue": "draft-approval-send",
+            "max_batch_size": 8,
+            "max_batch_timeout": 1,
+          },
+        ],
+      },
+      "vars": {
+        "PUBLIC_BASE_URL": "https://resend-challenge.patricktree.me",
+        "RESEND_FROM": "drafts@resend-challenge.patricktree.me",
+        "RESEND_BASE_URL": "http://127.0.0.1:9",
+        "LOCAL_DEVELOPMENT": "true",
+      },
+    },
   },
 }

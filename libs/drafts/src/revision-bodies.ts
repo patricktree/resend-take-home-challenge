@@ -22,14 +22,25 @@ export async function getRevisionBody(
   revisionBodies: R2Bucket,
   revisionId: RevisionId,
 ): Promise<RevisionBody> {
-  const object = await revisionBodies.get(revisionBodyKey(revisionId));
+  return getRevisionBodyAt(revisionBodies, revisionBodyKey(revisionId));
+}
+
+/**
+ * Reads the Revision body at an R2 key, such as the `bodyKey` of a frozen outgoing email; throws
+ * when it is missing.
+ */
+export async function getRevisionBodyAt(
+  revisionBodies: R2Bucket,
+  bodyKey: string,
+): Promise<RevisionBody> {
+  const object = await revisionBodies.get(bodyKey);
   if (object === null) {
-    throw new Error(`The body of Revision ${revisionId} is missing from R2.`);
+    throw new Error(`The Revision body ${bodyKey} is missing from R2.`);
   }
 
   const body: unknown = await object.json();
   if (!isRevisionBody(body)) {
-    throw new Error(`The body of Revision ${revisionId} in R2 is not a Revision body.`);
+    throw new Error(`The Revision body ${bodyKey} in R2 is not a Revision body.`);
   }
   return body;
 }

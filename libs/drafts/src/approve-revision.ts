@@ -6,7 +6,9 @@ import type { DraftSummary } from "#src/draft.ts";
 import { toDraftSummary } from "#src/draft.ts";
 import { isDraftId, isRevisionId, type DraftId } from "#src/ids.ts";
 import { revisionBodyKey } from "#src/revision-bodies.ts";
+import { findRootCauseMessage } from "#src/root-cause.ts";
 import { drafts, revisions } from "#src/schema.ts";
+import { computeSendDeadline } from "#src/send-deadline.ts";
 import { toSendQueueMessage, type SendQueue } from "#src/send-queue.ts";
 import { explainVerdictRefusal, isLatestAndPending, type VerdictRefusal } from "#src/verdicts.ts";
 
@@ -18,12 +20,6 @@ export type SendHandOff = {
 };
 
 export type ApproveRevisionResult = { outcome: "APPROVED"; draft: DraftSummary } | VerdictRefusal;
-
-/**
- * Resend keeps an idempotency key for 24 h; no Resend call happens after this much time past the
- * Approval, which leaves an hour of margin (spec section 9, "The 23 h deadline").
- */
-const SEND_DEADLINE_AFTER_APPROVAL = { hours: 23 } as const;
 
 /**
  * Approves one Revision, the Draft's latest and `PENDING`, and records the Draft's one Send intent:
@@ -80,7 +76,7 @@ export async function approveRevision(
         approvedAt: now,
         idempotencyKey: `draft-send/${draftId}`,
         outgoingEmail,
-        deadline: approvedAt.add(SEND_DEADLINE_AFTER_APPROVAL).epochMilliseconds,
+        deadline: computeSendDeadline(approvedAt),
         lastActionAt: now,
       })
       .where(and(eq(drafts.id, draftId), guard))
@@ -140,12 +136,4 @@ async function handOffSend(
       `Recording the Send Queue hand-off of Draft ${draftId} failed; the Send reconciler re-enqueues it, and the idempotency key absorbs the duplicate. ${findRootCauseMessage(error)}`,
     );
   }
-}
-
-function findRootCauseMessage(error: unknown): string {
-  let cause = error;
-  while (cause instanceof Error && cause.cause !== undefined) {
-    cause = cause.cause;
-  }
-  return cause instanceof Error ? cause.message : String(cause);
 }

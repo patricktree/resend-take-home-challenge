@@ -6,6 +6,7 @@ import { z } from "zod";
 import type { SendQueueMessage } from "@draft-approval/drafts";
 
 import type * as testWorkerModule from "#test/worker.ts";
+import type { SendQueueCall } from "#test/worker.ts";
 
 export type TestWorker = WorkerHandle<TestWorkerEnvironment, typeof testWorkerModule>;
 
@@ -22,9 +23,6 @@ type TestWorkerEnvironment = {
   REVISION_BODIES: R2Bucket;
   SEND_QUEUE: Queue;
 };
-
-/** One call of the Send Queue producer, as the recording double of test/worker.ts saw it. */
-type SendQueueCall = { method: "send" | "sendBatch"; messages: SendQueueMessage[] };
 
 /**
  * What the consumer did to one message of a batch from `deliverSendQueueBatch()` or

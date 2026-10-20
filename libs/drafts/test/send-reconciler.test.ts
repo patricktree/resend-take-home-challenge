@@ -136,6 +136,59 @@ test("a failed sendBatch stops re-enqueueing for this tick: no hand-off is recor
   );
 });
 
+test("re-enqueue ‖ the Approval recording its hand-off, or the Send ending: the reconciler's hand-off write changes neither row", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const bindings = await useBindings({ onTestFinished });
+  const [lateHandOffDraftId, endedDraftId] = await createApprovedDrafts(bindings, 2, {
+    isHandOffLost: true,
+  });
+  if (lateHandOffDraftId === undefined || endedDraftId === undefined) {
+    throw new Error("createApprovedDrafts() created fewer than two Drafts.");
+  }
+  const now = Temporal.Now.instant().epochMilliseconds;
+  await bindings.DB.prepare("UPDATE drafts SET approved_at = ?1")
+    .bind(now - HOUR_MILLISECONDS)
+    .run();
+  const gatedDatabase = createGatedD1Database(bindings.DB);
+  const sendQueue = createRecordingSendQueue();
+
+  const gate = gatedDatabase.holdNext((call) => call.kind === "batch");
+  const tick = reconcileSends({ database: databaseOn(gatedDatabase.database), sendQueue });
+  await gate.reached;
+  const lateHandOffAt = now - 30 * SECOND_MILLISECONDS;
+  await bindings.DB.batch([
+    // The Approval's request records its hand-off after all, late.
+    bindings.DB.prepare("UPDATE drafts SET enqueued_at = ?1 WHERE id = ?2").bind(
+      lateHandOffAt,
+      lateHandOffDraftId,
+    ),
+    // The original message's delivery records SENT.
+    bindings.DB.prepare(
+      "UPDATE drafts SET sending_status = 'SENT', email_id = 'email-id' WHERE id = ?1",
+    ).bind(endedDraftId),
+  ]);
+  gate.release();
+  await tick;
+
+  expect(sendQueue.sentBatches).toHaveLength(1);
+  const { results } = await bindings.DB.prepare(
+    "SELECT id, sending_status, enqueued_at FROM drafts",
+  ).all();
+  expect(
+    Object.fromEntries(
+      results.map((row) => [
+        row["id"],
+        { status: row["sending_status"], enqueuedAt: row["enqueued_at"] },
+      ]),
+    ),
+  ).toStrictEqual({
+    [lateHandOffDraftId]: { status: "QUEUED", enqueuedAt: lateHandOffAt },
+    [endedDraftId]: { status: "SENT", enqueuedAt: null },
+  });
+});
+
 test.for([
   {
     job: "lost hand-off",

@@ -12,6 +12,7 @@
 
 import { and, asc, eq, isNull, lt, sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
+import assert from "node:assert/strict";
 import { Temporal } from "temporal-polyfill";
 
 import { findRootCauseMessage } from "#src/root-cause.ts";
@@ -109,9 +110,8 @@ async function reenqueueLostHandOffs(
         ),
       ),
   );
-  if (firstUpdate !== undefined) {
-    await database.batch([firstUpdate, ...otherUpdates]);
-  }
+  assert(firstUpdate !== undefined, "A re-enqueued batch has at least one Send.");
+  await database.batch([firstUpdate, ...otherUpdates]);
 }
 
 /**

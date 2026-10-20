@@ -34,8 +34,8 @@ type MessageHandling = {
   delaySeconds?: number;
 };
 
-/** One call of the Send Queue producer; use-worker.ts declares the same shape. */
-type SendQueueCall = { method: "send" | "sendBatch"; messages: SendQueueMessage[] };
+/** One call of the Send Queue producer, as the recording double saw it. */
+export type SendQueueCall = { method: "send" | "sendBatch"; messages: SendQueueMessage[] };
 
 type TestWorkerEnvironment = Parameters<typeof productionWorker.fetch>[1];
 

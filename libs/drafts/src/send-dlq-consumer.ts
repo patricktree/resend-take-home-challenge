@@ -44,6 +44,7 @@ export async function consumeSendDlqBatch(
       message.retry();
       continue;
     }
+
     console.error(
       `The Send of Draft ${draftId} reached the Send DLQ and is recorded as FAILED / OUTCOME_UNKNOWN.`,
     );

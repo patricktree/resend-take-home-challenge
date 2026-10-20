@@ -491,11 +491,15 @@ test("after a Rejection, the Agent revises on the Rejected Revision and still se
 
   const revised = await expectRevised(worker, submitted.id, rejectedRevisionId);
   const resubmitted = await expectSubmitted(worker, submitted.id, revised.latestRevision.id);
-  const draft = await worker.fetch(`/api/v1/drafts/${submitted.id}`, { headers: AGENT_HEADERS });
-  const rejectedRevision = await worker.fetch(
+  const draftResponse = await worker.fetch(`/api/v1/drafts/${submitted.id}`, {
+    headers: AGENT_HEADERS,
+  });
+  const draft: unknown = await draftResponse.json();
+  const rejectedRevisionResponse = await worker.fetch(
     `/api/v1/drafts/${submitted.id}/revisions/${rejectedRevisionId}`,
     { headers: AGENT_HEADERS },
   );
+  const rejectedRevision: unknown = await rejectedRevisionResponse.json();
   const approved = await expectVerdict(worker, "approve", submitted.id, revised.latestRevision.id);
 
   const rejection = {
@@ -511,8 +515,8 @@ test("after a Rejection, the Agent revises on the Rejected Revision and still se
     lastVerdict: rejection,
   });
   expect(resubmitted).toMatchObject({ reviewStatus: "PENDING", lastVerdict: rejection });
-  expect(await draft.json()).toMatchObject({ reviewStatus: "PENDING", lastVerdict: rejection });
-  expect(await rejectedRevision.json()).toMatchObject({
+  expect(draft).toMatchObject({ reviewStatus: "PENDING", lastVerdict: rejection });
+  expect(rejectedRevision).toMatchObject({
     reviewStatus: "REJECTED",
     rejectionReason: "Wrong recipient",
   });

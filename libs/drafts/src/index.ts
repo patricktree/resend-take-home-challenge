@@ -19,6 +19,7 @@ export type {
 export { getDraft } from "#src/get-draft.ts";
 export { getRevision } from "#src/get-revision.ts";
 export type { DraftId, RevisionId } from "#src/ids.ts";
+export { listDrafts } from "#src/list-drafts.ts";
 export { rejectRevision, type RejectRevisionResult } from "#src/reject-revision.ts";
 export { reviseDraft } from "#src/revise-draft.ts";
 export {

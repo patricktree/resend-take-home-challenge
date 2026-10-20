@@ -1,7 +1,11 @@
 import { test } from "vitest";
 
 import { ApiError, DraftApprovalClient } from "@draft-approval/api.client";
-import { LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN } from "@draft-approval/api.routes";
+import {
+  LOCAL_AGENT_TOKEN,
+  LOCAL_REVIEWER_TOKEN,
+  type ListDraftsQuery,
+} from "@draft-approval/api.routes";
 
 import { useWorker, type TestWorker } from "#test/use-worker.ts";
 
@@ -206,6 +210,55 @@ test("getting another Draft's Revision throws an ApiError with REVISION_NOT_FOUN
   const error = await catchApiError(client.getRevision(created.id, other.latestRevision.id));
 
   expect(error).toMatchObject({ status: 404, code: "REVISION_NOT_FOUND" });
+});
+
+test("the client lists Drafts with repeated filters and pages through them with the cursor", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const worker = await useWorker({ onTestFinished });
+  const client = createClient(worker, LOCAL_AGENT_TOKEN);
+  const unsubmitted = await client.createDraft(DRAFT_DATA);
+  const pendingIds: string[] = [];
+  for (let index = 0; index < 3; index++) {
+    const created = await client.createDraft(DRAFT_DATA);
+    await client.submitRevision(created.id, created.latestRevision.id);
+    pendingIds.push(created.id);
+  }
+
+  const query: ListDraftsQuery = { reviewStatus: ["PENDING", "UNSUBMITTED"], order: "asc" };
+  const firstPage = await client.listDrafts({ ...query, limit: 3 });
+  const secondPage = await client.listDrafts({ ...query, limit: 3, cursor: firstPage.nextCursor });
+  const pendingPage = await client.listDrafts({ reviewStatus: ["PENDING"] });
+
+  expect([...firstPage.items, ...secondPage.items].map((item) => item.id)).toStrictEqual([
+    unsubmitted.id,
+    ...pendingIds,
+  ]);
+  expect(firstPage.items[0]).toStrictEqual(unsubmitted);
+  expect(secondPage).not.toHaveProperty("nextCursor");
+  expect(pendingPage.items.map((item) => item.id)).toStrictEqual(pendingIds.toReversed());
+});
+
+test("listing with a cursor of other filters throws an ApiError with INVALID_REQUEST", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const worker = await useWorker({ onTestFinished });
+  const client = createClient(worker, LOCAL_AGENT_TOKEN);
+  await client.createDraft(DRAFT_DATA);
+  await client.createDraft(DRAFT_DATA);
+  const firstPage = await client.listDrafts({ limit: 1 });
+
+  const error = await catchApiError(
+    client.listDrafts({ sendingStatus: ["NOT_SENT"], cursor: firstPage.nextCursor }),
+  );
+
+  expect(error).toMatchObject({
+    status: 400,
+    code: "INVALID_REQUEST",
+    extras: { issues: [{ path: ["cursor"] }] },
+  });
 });
 
 test("the client sends the latest read bookmark it received on every request", async ({

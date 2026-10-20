@@ -12,5 +12,5 @@ const apiServer = createApiServer();
 export default {
   fetch: (request, env, context) => apiServer.fetch(request, env, context),
   queue: (batch, env) => handleQueueBatch(batch, env),
-  scheduled: () => runScheduledTasks(),
+  scheduled: (_controller, env, _context) => runScheduledTasks(env),
 } satisfies ExportedHandler<WorkerEnvironment>;

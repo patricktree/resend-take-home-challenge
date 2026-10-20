@@ -1,12 +1,6 @@
 import { Temporal } from "temporal-polyfill";
 import { test, type TestContext } from "vitest";
 
-import {
-  draftSummarySchema,
-  LOCAL_AGENT_TOKEN,
-  LOCAL_REVIEWER_TOKEN,
-  type DraftSummaryResponse,
-} from "@draft-approval/api.routes";
 import type { SendQueueMessage } from "@draft-approval/drafts";
 import { resendError, type ResendStub } from "@draft-approval/resend-stub";
 
@@ -17,22 +11,14 @@ import {
   useResendStub,
 } from "#test/use-resend-stub.ts";
 import {
-  deliverSendQueueBatch,
-  readSentSendQueueMessages,
-  useWorker,
-  type TestWorker,
-} from "#test/use-worker.ts";
-
-const AGENT_HEADERS = {
-  Authorization: `Bearer ${LOCAL_AGENT_TOKEN}`,
-  "Content-Type": "application/json",
-};
-
-const DRAFT_DATA = {
-  to: ["ada@example.com", "grace@example.com"],
-  subject: "Quarterly report",
-  body: { plainText: "Hello Ada and Grace,\n\nthe report is attached.\n" },
-};
+  createApprovedDraft,
+  DRAFT_DATA,
+  getDraft,
+  getSending,
+  readFailureColumns,
+  useSendPipeline,
+} from "#test/use-send-pipeline.ts";
+import { deliverSendQueueBatch, useWorker, type TestWorker } from "#test/use-worker.ts";
 
 /** `RESEND_FROM` of test/wrangler.test.jsonc. */
 const RESEND_FROM = "drafts@resend-challenge.patricktree.me";
@@ -580,46 +566,6 @@ test("without RESEND_API_KEY the message is retried without calling Resend", asy
   await expectExactlyOneEmailPerSentDraft(worker, resendStub);
 });
 
-/** A Resend stub and a test Worker that sends through it. */
-async function useSendPipeline(
-  context: Pick<TestContext, "onTestFinished">,
-): Promise<{ resendStub: ResendStub; worker: TestWorker }> {
-  const resendStub = await useResendStub(context);
-  const worker = await useWorker(context, resendStubWorkerOptions(resendStub.url));
-  return { resendStub, worker };
-}
-
-/** Creates, submits and approves a Draft; returns its summary and its Send Queue message. */
-async function createApprovedDraft(
-  worker: TestWorker,
-): Promise<{ draft: DraftSummaryResponse; message: SendQueueMessage }> {
-  const created = await expectSummary(
-    await worker.fetch("/api/v1/drafts", {
-      method: "POST",
-      headers: AGENT_HEADERS,
-      body: JSON.stringify(DRAFT_DATA),
-    }),
-  );
-  const revisionPath = `/api/v1/drafts/${created.id}/revisions/${created.latestRevision.id}`;
-  await expectSummary(
-    await worker.fetch(`${revisionPath}/submission`, { method: "POST", headers: AGENT_HEADERS }),
-  );
-  const draft = await expectSummary(
-    await worker.fetch(`${revisionPath}/approval`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${LOCAL_REVIEWER_TOKEN}` },
-    }),
-  );
-
-  const message = (await readSentSendQueueMessages(worker)).find(
-    ({ draftId }) => draftId === draft.id,
-  );
-  if (message === undefined) {
-    throw new Error(`The Approval of Draft ${draft.id} sent no Send Queue message.`);
-  }
-  return { draft, message };
-}
-
 /**
  * Moves the Draft's Approval `byMilliseconds` into the past, on its row and in its Send Queue
  * message; returns the backdated message.
@@ -636,41 +582,6 @@ async function backdateApproval(
     .bind(byMilliseconds, message.draftId)
     .run();
   return { ...message, deadline: message.deadline - byMilliseconds };
-}
-
-/** Gets the Draft and returns the response body as is. */
-async function getDraft(worker: TestWorker, draftId: string): Promise<unknown> {
-  const response = await worker.fetch(`/api/v1/drafts/${draftId}`, { headers: AGENT_HEADERS });
-  if (response.status !== 200) {
-    throw new Error(`Getting the Draft answered with ${response.status}: ${await response.text()}`);
-  }
-  return response.json();
-}
-
-/** The `sending` of the Draft, as the API answers it. */
-async function getSending(worker: TestWorker, draftId: string): Promise<unknown> {
-  const draft = await getDraft(worker, draftId);
-  return typeof draft === "object" && draft !== null && "sending" in draft
-    ? draft.sending
-    : undefined;
-}
-
-async function readFailureColumns(worker: TestWorker, draftId: string) {
-  const env = await worker.getEnv();
-  return env.DB.prepare(
-    "SELECT failure_reason, resend_error_name, resend_error_message FROM drafts WHERE id = ?",
-  )
-    .bind(draftId)
-    .first();
-}
-
-async function expectSummary(
-  response: Awaited<ReturnType<TestWorker["fetch"]>>,
-): Promise<DraftSummaryResponse> {
-  if (response.status !== 200 && response.status !== 201) {
-    throw new Error(`The request answered with ${response.status}: ${await response.text()}`);
-  }
-  return draftSummarySchema.parse(await response.json());
 }
 
 function expectWithin(

@@ -1,5 +1,15 @@
+import { drizzleForSession } from "#src/database.ts";
 import { consumeSendBatch, type SendPipelineEnvironment } from "#src/send-consumer.ts";
-import { SEND_DLQ_NAME, SEND_QUEUE_NAME } from "#src/send-queue.ts";
+import { consumeSendDlqBatch } from "#src/send-dlq-consumer.ts";
+import { SEND_DLQ_NAME, SEND_QUEUE_NAME, type SendQueue } from "#src/send-queue.ts";
+import { reconcileSends } from "#src/send-reconciler.ts";
+
+/** The Worker bindings the Send reconciler reads. */
+export type SendReconcilerEnvironment = {
+  DB: D1Database;
+  /** The Send Queue's producer binding; the reconciler re-enqueues lost hand-offs to it. */
+  SEND_QUEUE: SendQueue;
+};
 
 /** Handles a batch from the Send Queue or the Send DLQ, dispatching on `batch.queue`. */
 export async function handleQueueBatch(
@@ -11,13 +21,14 @@ export async function handleQueueBatch(
     return;
   }
   if (batch.queue === SEND_DLQ_NAME) {
-    // A placeholder until the DLQ consumer, which records `FAILED` / `OUTCOME_UNKNOWN`, exists; the
-    // Send reconciler's backstop would resolve these Sends anyway.
-    batch.ackAll();
+    await consumeSendDlqBatch(batch, env);
     return;
   }
   throw new Error(`No consumer handles batches of the queue "${batch.queue}".`);
 }
 
-/** Runs the cron-driven Send reconciler; there is nothing to reconcile yet. */
-export async function runScheduledTasks(): Promise<void> {}
+/** Runs one tick of the cron-driven Send reconciler, on a database session for writes. */
+export async function runScheduledTasks(env: SendReconcilerEnvironment): Promise<void> {
+  const { database } = drizzleForSession(env.DB, "first-primary");
+  await reconcileSends({ database, sendQueue: env.SEND_QUEUE });
+}

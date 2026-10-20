@@ -23,10 +23,16 @@ type TestWorkerEnvironment = {
   SEND_QUEUE: Queue;
 };
 
-/** What the Send Queue consumer did to one message of a batch from `deliverSendQueueBatch()`. */
+/** One call of the Send Queue producer, as the recording double of test/worker.ts saw it. */
+type SendQueueCall = { method: "send" | "sendBatch"; messages: SendQueueMessage[] };
+
+/**
+ * What the consumer did to one message of a batch from `deliverSendQueueBatch()` or
+ * `deliverSendDlqBatch()`.
+ */
 type MessageHandling = z.infer<typeof messageHandlingsSchema>[number];
 
-/** One message of a Send Queue batch delivered through `deliverSendQueueBatch()`. */
+/** One message of a batch delivered through `deliverSendQueueBatch()` or `deliverSendDlqBatch()`. */
 type DeliveredMessage = {
   body: unknown;
   /** `message.attempts`: 1 for the first delivery, the default. */
@@ -48,7 +54,7 @@ type UseWorkerOptions = {
   shouldConsumeSendQueue?: boolean;
 };
 
-/** The answer of `POST /__test/queue` (test/worker.ts). */
+/** The answer of `POST /__test/queue` and `POST /__test/dlq` (test/worker.ts). */
 const messageHandlingsSchema = z.array(
   z.strictObject({
     id: z.string(),
@@ -89,12 +95,17 @@ export async function useWorker(
 }
 
 /**
- * Reads every message the Worker's requests sent to the Send Queue, in order, from the recording
- * double that test/worker.ts wraps around the `SEND_QUEUE` binding.
+ * Reads every message the Worker sent to the Send Queue, by `send()` or `sendBatch()`, in order,
+ * from the recording double that test/worker.ts wraps around the `SEND_QUEUE` binding.
  */
 export async function readSentSendQueueMessages(worker: TestWorker): Promise<SendQueueMessage[]> {
+  return (await readSendQueueCalls(worker)).flatMap(({ messages }) => messages);
+}
+
+/** Reads every call of the Send Queue producer, in order, from the same recording double. */
+export async function readSendQueueCalls(worker: TestWorker): Promise<SendQueueCall[]> {
   const testWorkerExport = await worker.getExport();
-  return testWorkerExport.sentSendQueueMessages();
+  return testWorkerExport.sendQueueCalls();
 }
 
 /**
@@ -102,11 +113,43 @@ export async function readSentSendQueueMessages(worker: TestWorker): Promise<Sen
  * test/worker.ts, which runs the real `queue()` handler with the real bindings, and returns what
  * the handler did to each message, in order.
  */
-export async function deliverSendQueueBatch(
+export function deliverSendQueueBatch(
   worker: TestWorker,
   messages: DeliveredMessage[],
 ): Promise<MessageHandling[]> {
-  const response = await worker.fetch("/__test/queue", {
+  return deliverBatch(worker, "/__test/queue", messages);
+}
+
+/**
+ * Delivers one batch to the DLQ consumer, as the Send Queue's dead-letter queue would, through the
+ * test-only route `POST /__test/dlq` of test/worker.ts; returns what the handler did to each
+ * message, in order.
+ */
+export function deliverSendDlqBatch(
+  worker: TestWorker,
+  messages: DeliveredMessage[],
+): Promise<MessageHandling[]> {
+  return deliverBatch(worker, "/__test/dlq", messages);
+}
+
+/**
+ * Runs one tick of the cron trigger through `worker.scheduled()`, as Cloudflare would every minute,
+ * on the `scheduled()` of test/worker.ts with its recording Send Queue double; throws unless the
+ * handler finished without an exception.
+ */
+export async function runCronTick(worker: TestWorker): Promise<void> {
+  const result = await worker.scheduled({ cron: "* * * * *" });
+  if (result.outcome !== "ok") {
+    throw new Error(`The scheduled() handler ended with the outcome "${result.outcome}".`);
+  }
+}
+
+async function deliverBatch(
+  worker: TestWorker,
+  pathname: "/__test/queue" | "/__test/dlq",
+  messages: DeliveredMessage[],
+): Promise<MessageHandling[]> {
+  const response = await worker.fetch(pathname, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -118,9 +161,7 @@ export async function deliverSendQueueBatch(
     }),
   });
   if (response.status !== 200) {
-    throw new Error(
-      `POST /__test/queue answered with ${response.status}: ${await response.text()}`,
-    );
+    throw new Error(`POST ${pathname} answered with ${response.status}: ${await response.text()}`);
   }
   return messageHandlingsSchema.parse(await response.json());
 }

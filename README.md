@@ -24,6 +24,31 @@ curl -sS https://resend-challenge.patricktree.me/api/v1/drafts/<draft-id> \
   -H 'Authorization: Bearer agent_placeholder-run-pnpm-secrets-generate'
 ```
 
+### Connect an MCP host
+
+The MCP server speaks Streamable HTTP at `https://resend-challenge.patricktree.me/mcp`. It needs no OAuth: configure the Agent token as a static `Authorization` header. The Reviewer token gets `403 AGENT_ONLY` there. For Claude Code:
+
+```sh
+claude mcp add --transport http draft-approval https://resend-challenge.patricktree.me/mcp \
+  --header 'Authorization: Bearer agent_placeholder-run-pnpm-secrets-generate'
+```
+
+Hosts configured through JSON take the same URL and header, for example:
+
+```json
+{
+  "mcpServers": {
+    "draft-approval": {
+      "type": "http",
+      "url": "https://resend-challenge.patricktree.me/mcp",
+      "headers": { "Authorization": "Bearer agent_placeholder-run-pnpm-secrets-generate" }
+    }
+  }
+}
+```
+
+The host then lists six tools: `create_draft`, `get_draft`, `list_drafts`, `revise_draft`, `submit_draft` and `get_revision`. The server instructions describe the lifecycle. No tool approves, rejects or sends: only the Reviewer does that, in the Review UI. Locally, use `http://localhost:5173/mcp` with the local Agent token `agent_local-development-only`.
+
 ## Local development
 
 Set up the repository as described in [AGENTS.md](AGENTS.md#environment-setup), including the copy of `apps/cloudflare-worker/.dev.vars.example` to `apps/cloudflare-worker/.dev.vars`. That file sets `LOCAL_DEVELOPMENT="true"` and takes your own `RESEND_API_KEY`; local Sends call the real Resend API, so send only to Resend's test recipients `delivered@resend.dev` and `bounced@resend.dev`.

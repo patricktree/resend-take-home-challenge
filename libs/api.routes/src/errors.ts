@@ -12,6 +12,8 @@ export type ErrorExtras = Omit<ErrorResponse["error"], "code" | "message" | "req
 export const ERROR_CODE = {
   INVALID_REQUEST: "INVALID_REQUEST",
   UNAUTHENTICATED: "UNAUTHENTICATED",
+  /** The Reviewer token on `/mcp`, which accepts only the Agent token. */
+  AGENT_ONLY: "AGENT_ONLY",
   NOT_FOUND: "NOT_FOUND",
   DRAFT_NOT_FOUND: "DRAFT_NOT_FOUND",
   REVISION_NOT_FOUND: "REVISION_NOT_FOUND",

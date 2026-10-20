@@ -32,9 +32,15 @@
     "turbo:test": "pnpm run test"
   },
   "dependencies": {
+    "@draft-approval/api.client": "workspace:*",
     "@draft-approval/api.routes": "workspace:*",
     "@draft-approval/drafts": "workspace:*",
-    "hono": "catalog:hono"
+    "@draft-approval/mcp-server": "workspace:*",
+    "@modelcontextprotocol/client": "catalog:mcp",
+    "@modelcontextprotocol/server": "catalog:mcp",
+    "agents": "catalog:mcp",
+    "hono": "catalog:hono",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@draft-approval/config-oxlint": "workspace:*",

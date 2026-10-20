@@ -12,6 +12,8 @@ packages:
   - .patricktree-stack/qa-utils/test-utils-node
 
 allowBuilds:
+  # its postinstall script only prints a funding notice (a dependency of "agents" through mimetext)
+  core-js-pure: false
   esbuild: true
   unrs-resolver: true
   workerd: true
@@ -33,6 +35,11 @@ catalogs:
   hono:
     "@hono/zod-openapi": ^1.6.3
     hono: ^4.13.13
+  mcp:
+    # agents names the MCP SDK packages as exact peer dependencies: keep them on the versions it names
+    "@modelcontextprotocol/client": 2.3.1
+    "@modelcontextprotocol/server": 2.3.1
+    agents: 0.28.1
   web-app:
     # keep in step with the wrangler version in the default catalog (both bundle workerd/miniflare)
     "@cloudflare/vite-plugin": 1.62.2
@@ -44,6 +51,15 @@ packageExtensions:
     peerDependenciesMeta:
       eslint:
         optional: true
+  agents@0.28.1:
+    # "agents" defines MCP SDK v1 as peer dependency, but only its deprecated McpAgent and v1 client code import it; "agents/mcp/server" runs on SDK v2 --> make it optional
+    peerDependenciesMeta:
+      "@modelcontextprotocol/sdk":
+        optional: true
+    # the Babel and Rolldown packages that "agents" depends on for its Vite plugin ("agents/vite") need these peer dependencies, which "agents" does not provide --> provide them
+    dependencies:
+      "@babel/core": ^8.0.7
+      rolldown: ^1.2.14
 
 # handle peer dependencies in a strict way
 autoInstallPeers: false

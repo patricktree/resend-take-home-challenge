@@ -23,7 +23,7 @@ type TokenConfiguration = {
   acceptsLocalTokens: boolean;
 };
 
-const ROLE = {
+export const ROLE = {
   AGENT: "AGENT",
   REVIEWER: "REVIEWER",
 } as const;
@@ -134,7 +134,7 @@ function readTokenConfiguration(
 }
 
 /** Extracts the token of an `Authorization: Bearer <token>` header; the scheme is case-insensitive. */
-function parseBearerToken(authorizationHeader: string | undefined): string | undefined {
+export function parseBearerToken(authorizationHeader: string | undefined): string | undefined {
   if (authorizationHeader === undefined) {
     return undefined;
   }

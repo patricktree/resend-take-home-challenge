@@ -5,6 +5,9 @@ import {
   draftParamsSchema,
   draftSchema,
   draftSummarySchema,
+  reviseRequestSchema,
+  revisionParamsSchema,
+  revisionSchema,
 } from "#src/drafts.ts";
 import { ERROR_CODE, errorResponseSchema, type ErrorResponse } from "#src/errors.ts";
 
@@ -15,6 +18,8 @@ export type ApiContractEnvironment = { Variables: { requestId: string } };
 export type ApiHandlers<E extends ApiContractEnvironment> = {
   createDraft: RouteHandler<typeof createDraftRoute, E>;
   getDraft: RouteHandler<typeof getDraftRoute, E>;
+  reviseDraft: RouteHandler<typeof reviseDraftRoute, E>;
+  getRevision: RouteHandler<typeof getRevisionRoute, E>;
 };
 
 /** The contract app's type, from which the typed client infers every route. */
@@ -111,6 +116,72 @@ const getDraftRoute = createRoute({
   },
 });
 
+const reviseDraftRoute = createRoute({
+  method: "post",
+  path: "/api/v1/drafts/{draftId}/revisions",
+  operationId: "reviseDraft",
+  tags: ["Drafts"],
+  summary: "Revise a Draft",
+  description:
+    "Creates the Draft's next Revision, `UNSUBMITTED`, from the given Draft data. `baseRevisionId` names the Revision the change builds on, the latest Revision as you last read it; if another revise came first, nothing is written and the result is 409 `REVISION_SUPERSEDED`, which guards against lost updates and against duplicate Revisions from retries. Revising supersedes an Unsubmitted or Pending base, which withdraws its Submission; a Rejected base stays Rejected. Revising never submits: submit the new Revision separately. An approved Draft accepts no further Revisions.",
+  security: AGENT_OR_REVIEWER_SECURITY,
+  request: {
+    params: draftParamsSchema,
+    headers: readBookmarkRequestHeadersSchema,
+    body: {
+      required: true,
+      content: { "application/json": { schema: reviseRequestSchema } },
+    },
+  },
+  responses: {
+    201: {
+      description: "The revised Draft with its new latest Revision, without the body.",
+      headers: readBookmarkResponseHeadersSchema,
+      content: { "application/json": { schema: draftSummarySchema } },
+    },
+    400: errorResponse(
+      "`INVALID_REQUEST`: the request violates the schema or a limit; see `issues`.",
+    ),
+    401: errorResponse("`UNAUTHENTICATED`: a valid bearer token is required."),
+    404: errorResponse(
+      "`DRAFT_NOT_FOUND`: no Draft has this id. `REVISION_NOT_FOUND`: `baseRevisionId` is not one of the Draft's Revisions.",
+    ),
+    409: errorResponse(
+      "`DRAFT_APPROVED`: the Draft is approved and accepts no further Revisions (checked first). `REVISION_SUPERSEDED`: `baseRevisionId` is no longer the Draft's latest Revision; read the Draft again and build on its latest Revision.",
+    ),
+    413: errorResponse("`PAYLOAD_TOO_LARGE`: the request body exceeds 128 KB."),
+    500: errorResponse("`INTERNAL_ERROR`: an unexpected error occurred."),
+  },
+});
+
+const getRevisionRoute = createRoute({
+  method: "get",
+  path: "/api/v1/drafts/{draftId}/revisions/{revisionId}",
+  operationId: "getRevision",
+  tags: ["Drafts"],
+  summary: "Get a Revision",
+  description:
+    "Returns any of the Draft's Revisions, including Superseded ones, with its body and review status.",
+  security: AGENT_OR_REVIEWER_SECURITY,
+  request: {
+    params: revisionParamsSchema,
+    headers: readBookmarkRequestHeadersSchema,
+  },
+  responses: {
+    200: {
+      description: "The Revision, with its body.",
+      headers: readBookmarkResponseHeadersSchema,
+      content: { "application/json": { schema: revisionSchema } },
+    },
+    400: errorResponse("`INVALID_REQUEST`: an id or a header is malformed; see `issues`."),
+    401: errorResponse("`UNAUTHENTICATED`: a valid bearer token is required."),
+    404: errorResponse(
+      "`DRAFT_NOT_FOUND`: no Draft has this id. `REVISION_NOT_FOUND`: the Draft has no Revision with this id, including when it is another Draft's Revision.",
+    ),
+    500: errorResponse("`INTERNAL_ERROR`: an unexpected error occurred."),
+  },
+});
+
 /**
  * Creates the OpenAPI app that carries the API contract with the given route handlers and serves
  * its OpenAPI 3.1 document at {@link OPENAPI_DOCUMENT_PATH}. Requests that violate a route's schema
@@ -164,7 +235,9 @@ export function createApiContractApp<E extends ApiContractEnvironment>(handlers:
 
   return app
     .openapi(createDraftRoute, handlers.createDraft)
-    .openapi(getDraftRoute, handlers.getDraft);
+    .openapi(getDraftRoute, handlers.getDraft)
+    .openapi(reviseDraftRoute, handlers.reviseDraft)
+    .openapi(getRevisionRoute, handlers.getRevision);
 }
 
 function errorResponse(description: string) {

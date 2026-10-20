@@ -1,10 +1,18 @@
-import type { ApiHandlers, DraftResponse, DraftSummaryResponse } from "@draft-approval/api.routes";
+import type {
+  ApiHandlers,
+  DraftResponse,
+  DraftSummaryResponse,
+  RevisionResponse,
+} from "@draft-approval/api.routes";
 import { ERROR_CODE } from "@draft-approval/api.routes";
 import {
   createDraft,
   getDraft,
+  getRevision,
+  reviseDraft,
   type Draft,
   type DraftSummary,
+  type Revision,
   type RevisionSummary,
 } from "@draft-approval/drafts";
 
@@ -26,6 +34,75 @@ export const DRAFT_HANDLERS: ApiHandlers<ApiServerHonoEnvironment> = {
 
     return context.json(toDraftResponse(draft, context.env.PUBLIC_BASE_URL), 200);
   },
+
+  reviseDraft: async (context) => {
+    const result = await reviseDraft(
+      context.get("draftsStorage"),
+      context.req.valid("param").draftId,
+      context.req.valid("json"),
+    );
+
+    switch (result.outcome) {
+      case "REVISED": {
+        return context.json(toDraftSummaryResponse(result.draft, context.env.PUBLIC_BASE_URL), 201);
+      }
+      case "DRAFT_NOT_FOUND": {
+        return jsonError(context, 404, ERROR_CODE.DRAFT_NOT_FOUND, "No Draft has this id.");
+      }
+      case "REVISION_NOT_FOUND": {
+        return jsonError(
+          context,
+          404,
+          ERROR_CODE.REVISION_NOT_FOUND,
+          "The Draft has no Revision with the id `baseRevisionId`.",
+        );
+      }
+      case "DRAFT_APPROVED": {
+        return jsonError(
+          context,
+          409,
+          ERROR_CODE.DRAFT_APPROVED,
+          "The Draft is approved and accepts no further Revisions.",
+        );
+      }
+      case "REVISION_SUPERSEDED": {
+        return jsonError(
+          context,
+          409,
+          ERROR_CODE.REVISION_SUPERSEDED,
+          "`baseRevisionId` is no longer the Draft's latest Revision; read the Draft again and build on its latest Revision.",
+        );
+      }
+      default: {
+        return assertUnreachable(result);
+      }
+    }
+  },
+
+  getRevision: async (context) => {
+    const { draftId, revisionId } = context.req.valid("param");
+    const result = await getRevision(context.get("draftsStorage"), draftId, revisionId);
+
+    switch (result.outcome) {
+      case "FOUND": {
+        return context.json(toRevisionResponse(result.revision), 200);
+      }
+      case "DRAFT_NOT_FOUND": {
+        return jsonError(context, 404, ERROR_CODE.DRAFT_NOT_FOUND, "No Draft has this id.");
+      }
+      case "REVISION_NOT_FOUND": {
+        return jsonError(
+          context,
+          404,
+          ERROR_CODE.REVISION_NOT_FOUND,
+          "The Draft has no Revision with this id.",
+        );
+      }
+      default: {
+        return assertUnreachable(result);
+      }
+    }
+  },
 };
 
 function toDraftSummaryResponse(draft: DraftSummary, publicBaseUrl: string): DraftSummaryResponse {
@@ -43,11 +120,12 @@ function toDraftSummaryResponse(draft: DraftSummary, publicBaseUrl: string): Dra
 function toDraftResponse(draft: Draft, publicBaseUrl: string): DraftResponse {
   return {
     ...toDraftSummaryResponse(draft, publicBaseUrl),
-    latestRevision: {
-      ...toRevisionSummaryResponse(draft.latestRevision),
-      body: draft.latestRevision.body,
-    },
+    latestRevision: toRevisionResponse(draft.latestRevision),
   };
+}
+
+function toRevisionResponse(revision: Revision): RevisionResponse {
+  return { ...toRevisionSummaryResponse(revision), body: revision.body };
 }
 
 function toRevisionSummaryResponse(
@@ -83,4 +161,9 @@ function toDraftReviewStatus(
     throw new Error(`The latest Revision ${latestRevision.id} is SUPERSEDED.`);
   }
   return latestRevision.reviewStatus;
+}
+
+/** Fails to compile when a switch misses a case, and throws if an unexpected value arrives anyway. */
+function assertUnreachable(value: never): never {
+  throw new Error(`Unexpected value: ${JSON.stringify(value)}`);
 }

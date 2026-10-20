@@ -10,5 +10,7 @@ export type {
   Sending,
 } from "#src/draft.ts";
 export { getDraft } from "#src/get-draft.ts";
+export { getRevision } from "#src/get-revision.ts";
 export type { DraftId, RevisionId } from "#src/ids.ts";
+export { reviseDraft } from "#src/revise-draft.ts";
 export { handleQueueBatch, runScheduledTasks } from "#src/worker-handlers.ts";

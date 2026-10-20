@@ -12,11 +12,9 @@ import {
   sendingStatusLabel,
   shortRecipientsLabel,
 } from "#src/draft-labels.ts";
-import { decidedDraftsQuery, pendingDraftsQuery } from "#src/draft-queries.ts";
+import { decidedDraftsQuery, type DraftListQuery, pendingDraftsQuery } from "#src/draft-queries.ts";
 import { ErrorMessage } from "#src/error-message.tsx";
 import { rootRoute } from "#src/root-route.tsx";
-
-type DraftListQuery = typeof pendingDraftsQuery;
 
 type DraftListProps = {
   heading: string;

@@ -9,7 +9,10 @@ type TokenScreenProps = {
   wasTokenRejected: boolean;
 };
 
-/** The prefix of the Agent token, which the Review UI refuses before any request. */
+/**
+ * The prefix of the Agent token (tooling/secrets-generate/src/secrets-generate.ts generates it),
+ * which the Review UI refuses before any request.
+ */
 const AGENT_TOKEN_PREFIX = "agent_";
 
 /**

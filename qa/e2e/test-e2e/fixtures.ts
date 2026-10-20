@@ -71,6 +71,29 @@ type RunningWorker = {
  */
 async function startWorker(): Promise<RunningWorker> {
   const persistenceDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "draft-approval-e2e-"));
+  const removePersistenceDirectory = () =>
+    fs.rm(persistenceDirectory, { recursive: true, force: true });
+
+  try {
+    const { port, output, wranglerProcess } = await startWranglerDev(persistenceDirectory);
+    return {
+      port,
+      stop: async (testInfo) => {
+        await stopProcessGroup(wranglerProcess);
+        await removePersistenceDirectory();
+        await testInfo.attach("wrangler-output", {
+          body: output.join(""),
+          contentType: "text/plain",
+        });
+      },
+    };
+  } catch (error) {
+    await removePersistenceDirectory();
+    throw error;
+  }
+}
+
+async function startWranglerDev(persistenceDirectory: string) {
   const environment = createWranglerEnvironment();
   const output: string[] = [];
 
@@ -100,18 +123,11 @@ async function startWorker(): Promise<RunningWorker> {
   wranglerProcess.stdout.setEncoding("utf8").on("data", (chunk: string) => output.push(chunk));
   wranglerProcess.stderr.setEncoding("utf8").on("data", (chunk: string) => output.push(chunk));
 
-  const stop = async (testInfo: TestInfo): Promise<void> => {
-    await stopProcessGroup(wranglerProcess);
-    await fs.rm(persistenceDirectory, { recursive: true, force: true });
-    await testInfo.attach("wrangler-output", { body: output.join(""), contentType: "text/plain" });
-  };
-
   try {
     const port = await waitForReadyPort(wranglerProcess, output);
-    return { port, stop };
+    return { port, output, wranglerProcess };
   } catch (error) {
     await stopProcessGroup(wranglerProcess);
-    await fs.rm(persistenceDirectory, { recursive: true, force: true });
     throw error;
   }
 }

@@ -12,7 +12,18 @@ import { draftQuery } from "#src/draft-queries.ts";
 import { ErrorMessage } from "#src/error-message.tsx";
 import { rootRoute } from "#src/root-route.tsx";
 
-type Revision = DraftResponse["latestRevision"];
+type DraftProps = {
+  draft: DraftResponse;
+};
+
+type RejectionLineProps = {
+  lead: string;
+  reason: string | undefined;
+};
+
+type DecidedTimeProps = {
+  revision: DraftResponse["latestRevision"];
+};
 
 /** The target of every `reviewUrl`. */
 export const draftRoute = createRoute({
@@ -55,7 +66,7 @@ function DraftPageError({ error }: ErrorComponentProps): React.ReactNode {
 }
 
 /** One line above the body when an earlier Revision of the Draft was rejected. */
-function EarlierRejection({ draft }: { draft: DraftResponse }): React.ReactNode {
+function EarlierRejection({ draft }: DraftProps): React.ReactNode {
   const { lastVerdict } = draft;
   const isEarlierRejection =
     lastVerdict?.verdict === "REJECTED" && lastVerdict.revisionId !== draft.latestRevision.id;
@@ -63,16 +74,15 @@ function EarlierRejection({ draft }: { draft: DraftResponse }): React.ReactNode 
     return null;
   }
 
-  return lastVerdict.reason === undefined ? (
-    <p>Revision {lastVerdict.revisionNumber} was rejected.</p>
-  ) : (
-    <p>
-      Revision {lastVerdict.revisionNumber} was rejected: <em>{lastVerdict.reason}</em>
-    </p>
+  return (
+    <RejectionLine
+      lead={`Revision ${lastVerdict.revisionNumber} was rejected`}
+      reason={lastVerdict.reason}
+    />
   );
 }
 
-function ReviewOutcome({ draft }: { draft: DraftResponse }): React.ReactNode {
+function ReviewOutcome({ draft }: DraftProps): React.ReactNode {
   const revision = draft.latestRevision;
 
   switch (draft.reviewStatus) {
@@ -86,7 +96,7 @@ function ReviewOutcome({ draft }: { draft: DraftResponse }): React.ReactNode {
     case "APPROVED": {
       return (
         <div>
-          <p>Approved</p>
+          <p>{reviewStatusLabel("APPROVED")}</p>
           <DecidedTime revision={revision} />
           <p>{sendingStatusLabel(draft.sending)}</p>
         </div>
@@ -95,13 +105,7 @@ function ReviewOutcome({ draft }: { draft: DraftResponse }): React.ReactNode {
     case "REJECTED": {
       return (
         <div>
-          {revision.rejectionReason === undefined ? (
-            <p>Rejected</p>
-          ) : (
-            <p>
-              Rejected: <em>{revision.rejectionReason}</em>
-            </p>
-          )}
+          <RejectionLine lead={reviewStatusLabel("REJECTED")} reason={revision.rejectionReason} />
           <DecidedTime revision={revision} />
         </div>
       );
@@ -112,7 +116,21 @@ function ReviewOutcome({ draft }: { draft: DraftResponse }): React.ReactNode {
   }
 }
 
-function DecidedTime({ revision }: { revision: Revision }): React.ReactNode {
+/** A Rejection, followed by its reason when it has one. */
+function RejectionLine({ lead, reason }: RejectionLineProps): React.ReactNode {
+  return (
+    <p>
+      {lead}
+      {reason !== undefined && (
+        <>
+          : <em>{reason}</em>
+        </>
+      )}
+    </p>
+  );
+}
+
+function DecidedTime({ revision }: DecidedTimeProps): React.ReactNode {
   if (revision.decidedAt === undefined) {
     throw new Error("A decided Revision always has a decision time.");
   }

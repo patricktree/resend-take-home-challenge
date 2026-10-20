@@ -4,6 +4,9 @@ import type { ListDraftsQuery } from "@draft-approval/api.routes";
 
 import { getApiClient } from "#src/api-client.ts";
 
+/** The query of one of the two lists, Pending or Decided. */
+export type DraftListQuery = ReturnType<typeof createDraftListQuery>;
+
 /** Every query key starts with this, so a verdict can invalidate the Draft and both lists at once. */
 const DRAFTS_QUERY_KEY = ["drafts"] as const;
 

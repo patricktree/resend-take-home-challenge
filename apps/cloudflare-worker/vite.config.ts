@@ -31,7 +31,12 @@ export default defineConfig(({ command }) => {
     case "build": {
       // The Review UI builds first (Turbo); never ship the Worker without it. Its build output
       // becomes the Worker's static assets.
-      fs.accessSync(path.join(REVIEW_UI_BUILD_DIRECTORY, "app/index.html"));
+      const reviewUiIndexHtml = path.join(REVIEW_UI_BUILD_DIRECTORY, "app/index.html");
+      if (!fs.existsSync(reviewUiIndexHtml)) {
+        throw new Error(
+          `${reviewUiIndexHtml} is missing: build @draft-approval/review-ui first (\`pnpm build\` does).`,
+        );
+      }
       return mergeConfig(workerConfig, {
         root: WORKER_DIRECTORY,
         publicDir: REVIEW_UI_BUILD_DIRECTORY,
@@ -81,6 +86,7 @@ function reviewUiDevServer(): Plugin {
   };
 }
 
+/** Each key is a directive of `SECURITY_HEADERS` in libs/api.server/src/review-ui.ts, verbatim. */
 const DEV_SERVER_CSP_ADDITIONS = {
   "script-src 'self'": "script-src 'self' 'unsafe-inline'",
   "default-src 'self'": "default-src 'self'; style-src 'self' 'unsafe-inline'",
@@ -131,6 +137,11 @@ function relaxContentSecurityPolicy(headers: Record<string, unknown>): void {
 
   let relaxedPolicy = policy;
   for (const [directive, relaxedDirective] of Object.entries(DEV_SERVER_CSP_ADDITIONS)) {
+    if (!relaxedPolicy.includes(directive)) {
+      throw new Error(
+        `The Review UI's Content-Security-Policy no longer contains "${directive}"; update DEV_SERVER_CSP_ADDITIONS in apps/cloudflare-worker/vite.config.ts.`,
+      );
+    }
     relaxedPolicy = relaxedPolicy.replace(directive, relaxedDirective);
   }
   headers["content-security-policy"] = relaxedPolicy;

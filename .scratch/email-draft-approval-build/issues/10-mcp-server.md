@@ -4,7 +4,7 @@
 
 **Blocked by:** 05 (List Drafts)
 
-**Status:** done (https://github.com/patricktree/resend-take-home-challenge/pull/7)
+**Status:** done (<https://github.com/patricktree/resend-take-home-challenge/pull/7>)
 
 - [x] Stateless `createMcpHandler` (MCP TypeScript SDK v2, Streamable HTTP, no Durable Object, no OAuth) mounted at `/mcp`
 - [x] Six hand-written tools on the typed client (`create_draft`, `get_draft`, `list_drafts`, `revise_draft`, `submit_draft`, `get_revision`) with Zod input schemas from the contract, `outputSchema`, `structuredContent`, `readOnlyHint` on reads

@@ -1,0 +1,6 @@
+{
+  "name": "@draft-approval/review-ui",
+  "private": true,
+  "description": "The Review UI: a React 19 SPA (TanStack Router and Query) served under /app",
+  "type": "module"
+}

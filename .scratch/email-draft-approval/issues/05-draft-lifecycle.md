@@ -2,7 +2,7 @@
 
 Type: grilling
 Status: resolved
-Blocked by: 
+Blocked by:
 
 ## Question
 

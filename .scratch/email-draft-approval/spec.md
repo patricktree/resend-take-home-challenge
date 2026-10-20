@@ -21,31 +21,31 @@ Prerequisites for building (not part of the system): a Cloudflare account with t
 
 ## 2. Requirements coverage
 
-| Requirement (from the input spec) | How it is met | Section |
-| --- | --- | --- |
-| The user can list pending email drafts | The Review UI's Pending list (`reviewStatus=PENDING`, longest-waiting first) | [11](#11-review-ui) |
-| The user can open a pending email draft for review | Row link to the Draft page `/app/drafts/{draftId}`; Agents hand out the same link as `reviewUrl` | [11](#11-review-ui) |
-| The user can see the email draft's data | The Draft page shows recipients, subject and the full plain-text body of the latest Revision | [11](#11-review-ui) |
-| The user can approve an email draft | "Approve" on the Draft page → `POST …/revisions/{revisionId}/approval` | [6](#6-http-api), [11](#11-review-ui) |
-| The approval fails with an error if the data changed since it was loaded | The verdict names the loaded Revision id and succeeds only while that Revision is the latest and Pending; otherwise 409 `REVISION_SUPERSEDED`, shown inline with "Reload Draft" | [8](#8-approval-binding-and-concurrency), [11](#11-review-ui) |
-| The user can reject an email draft | "Reject" with an optional reason → `POST …/revisions/{revisionId}/rejection` | [6](#6-http-api), [11](#11-review-ui) |
-| The human interface is accessible | Deployed at a public URL, usable with nothing but a browser and the Reviewer token; no WCAG level is targeted | [11](#11-review-ui) |
-| The agent can create an email draft | `POST /api/v1/drafts`, MCP `create_draft`, `draft-approval drafts create` | [6](#6-http-api), [10](#10-agent-interfaces) |
-| The agent can retrieve an email draft's data | `GET /api/v1/drafts/{draftId}` and `GET …/revisions/{revisionId}`, MCP `get_draft` / `get_revision`, CLI `drafts get` / `drafts revision` | [6](#6-http-api), [10](#10-agent-interfaces) |
-| The agent can revise an email draft's data | `POST /api/v1/drafts/{draftId}/revisions` with `baseRevisionId`, MCP `revise_draft`, CLI `drafts revise` | [6](#6-http-api), [10](#10-agent-interfaces) |
-| The agent can submit an email draft for approval | `POST …/revisions/{revisionId}/submission`, MCP `submit_draft`, CLI `drafts submit` | [6](#6-http-api), [10](#10-agent-interfaces) |
-| The agent can retrieve the review status | `reviewStatus`, the latest Revision's status and `lastVerdict` (with reason) on every Draft response | [6](#6-http-api) |
-| The agent can retrieve the sending status | `sending` (`status`, `emailId`, `failure`) on every Draft response | [6](#6-http-api) |
-| The agent can discover the interface's tools | OpenAPI document at `GET /api/openapi.json`; MCP `tools/list` and server instructions; CLI `--help` | [6](#6-http-api), [10](#10-agent-interfaces) |
-| An approval is only accepted for the data the human reviewed | Revisions are immutable, the verdict names a Revision id, and one conditional write accepts it only for the latest Pending Revision; the Send reads only `approvedRevisionId` | [8](#8-approval-binding-and-concurrency), [9](#9-send-pipeline) |
-| An approved draft is sent through the Resend API | The Queue consumer calls `POST /emails` | [9](#9-send-pipeline) |
-| An agent cannot approve | Verdict routes accept only the Reviewer token (403 `REVIEWER_ONLY`); no MCP tool or CLI command for verdicts; the Reviewer token is never committed or bundled | [7](#7-authentication-and-authorization) |
-| An agent cannot send without approval | No send operation exists for anyone; only an Approval records a Send intent | [6](#6-http-api), [9](#9-send-pipeline) |
-| A repeated approval sends no additional email | The second verdict finds the Revision no longer Pending and gets 409 `REVISION_ALREADY_DECIDED`; no second Send intent is recorded | [8](#8-approval-binding-and-concurrency) |
-| A concurrent approval sends no additional email | D1 serializes the guarded verdict batches; exactly one commits, the others get 409 | [8](#8-approval-binding-and-concurrency) |
-| A repeated send retry sends no additional email | Every attempt sends the identical frozen body with the idempotency key `draft-send/<draftId>`, and no attempt happens after `approvedAt + 23 h`, inside Resend's 24 h key lifetime | [9](#9-send-pipeline) |
-| A concurrent send retry sends no additional email | Same key and body; Resend answers a concurrent duplicate with `409 concurrent_idempotent_requests` (retried later) or the original email id | [9](#9-send-pipeline) |
-| TypeScript must be used | Every package is TypeScript | [4](#4-architecture) |
+| Requirement (from the input spec)                                        | How it is met                                                                                                                                                                      | Section                                                         |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| The user can list pending email drafts                                   | The Review UI's Pending list (`reviewStatus=PENDING`, longest-waiting first)                                                                                                       | [11](#11-review-ui)                                             |
+| The user can open a pending email draft for review                       | Row link to the Draft page `/app/drafts/{draftId}`; Agents hand out the same link as `reviewUrl`                                                                                   | [11](#11-review-ui)                                             |
+| The user can see the email draft's data                                  | The Draft page shows recipients, subject and the full plain-text body of the latest Revision                                                                                       | [11](#11-review-ui)                                             |
+| The user can approve an email draft                                      | "Approve" on the Draft page → `POST …/revisions/{revisionId}/approval`                                                                                                             | [6](#6-http-api), [11](#11-review-ui)                           |
+| The approval fails with an error if the data changed since it was loaded | The verdict names the loaded Revision id and succeeds only while that Revision is the latest and Pending; otherwise 409 `REVISION_SUPERSEDED`, shown inline with "Reload Draft"    | [8](#8-approval-binding-and-concurrency), [11](#11-review-ui)   |
+| The user can reject an email draft                                       | "Reject" with an optional reason → `POST …/revisions/{revisionId}/rejection`                                                                                                       | [6](#6-http-api), [11](#11-review-ui)                           |
+| The human interface is accessible                                        | Deployed at a public URL, usable with nothing but a browser and the Reviewer token; no WCAG level is targeted                                                                      | [11](#11-review-ui)                                             |
+| The agent can create an email draft                                      | `POST /api/v1/drafts`, MCP `create_draft`, `draft-approval drafts create`                                                                                                          | [6](#6-http-api), [10](#10-agent-interfaces)                    |
+| The agent can retrieve an email draft's data                             | `GET /api/v1/drafts/{draftId}` and `GET …/revisions/{revisionId}`, MCP `get_draft` / `get_revision`, CLI `drafts get` / `drafts revision`                                          | [6](#6-http-api), [10](#10-agent-interfaces)                    |
+| The agent can revise an email draft's data                               | `POST /api/v1/drafts/{draftId}/revisions` with `baseRevisionId`, MCP `revise_draft`, CLI `drafts revise`                                                                           | [6](#6-http-api), [10](#10-agent-interfaces)                    |
+| The agent can submit an email draft for approval                         | `POST …/revisions/{revisionId}/submission`, MCP `submit_draft`, CLI `drafts submit`                                                                                                | [6](#6-http-api), [10](#10-agent-interfaces)                    |
+| The agent can retrieve the review status                                 | `reviewStatus`, the latest Revision's status and `lastVerdict` (with reason) on every Draft response                                                                               | [6](#6-http-api)                                                |
+| The agent can retrieve the sending status                                | `sending` (`status`, `emailId`, `failure`) on every Draft response                                                                                                                 | [6](#6-http-api)                                                |
+| The agent can discover the interface's tools                             | OpenAPI document at `GET /api/openapi.json`; MCP `tools/list` and server instructions; CLI `--help`                                                                                | [6](#6-http-api), [10](#10-agent-interfaces)                    |
+| An approval is only accepted for the data the human reviewed             | Revisions are immutable, the verdict names a Revision id, and one conditional write accepts it only for the latest Pending Revision; the Send reads only `approvedRevisionId`      | [8](#8-approval-binding-and-concurrency), [9](#9-send-pipeline) |
+| An approved draft is sent through the Resend API                         | The Queue consumer calls `POST /emails`                                                                                                                                            | [9](#9-send-pipeline)                                           |
+| An agent cannot approve                                                  | Verdict routes accept only the Reviewer token (403 `REVIEWER_ONLY`); no MCP tool or CLI command for verdicts; the Reviewer token is never committed or bundled                     | [7](#7-authentication-and-authorization)                        |
+| An agent cannot send without approval                                    | No send operation exists for anyone; only an Approval records a Send intent                                                                                                        | [6](#6-http-api), [9](#9-send-pipeline)                         |
+| A repeated approval sends no additional email                            | The second verdict finds the Revision no longer Pending and gets 409 `REVISION_ALREADY_DECIDED`; no second Send intent is recorded                                                 | [8](#8-approval-binding-and-concurrency)                        |
+| A concurrent approval sends no additional email                          | D1 serializes the guarded verdict batches; exactly one commits, the others get 409                                                                                                 | [8](#8-approval-binding-and-concurrency)                        |
+| A repeated send retry sends no additional email                          | Every attempt sends the identical frozen body with the idempotency key `draft-send/<draftId>`, and no attempt happens after `approvedAt + 23 h`, inside Resend's 24 h key lifetime | [9](#9-send-pipeline)                                           |
+| A concurrent send retry sends no additional email                        | Same key and body; Resend answers a concurrent duplicate with `409 concurrent_idempotent_requests` (retried later) or the original email id                                        | [9](#9-send-pipeline)                                           |
+| TypeScript must be used                                                  | Every package is TypeScript                                                                                                                                                        | [4](#4-architecture)                                            |
 
 ## 3. Domain model
 
@@ -53,20 +53,20 @@ Prerequisites for building (not part of the system): a Cloudflare account with t
 
 A Revision's Draft data (`to`, subject, body) never changes. Its review status does:
 
-| Status | Meaning |
-| --- | --- |
-| `UNSUBMITTED` | Created, not submitted |
-| `PENDING` | Submitted, awaiting a verdict |
-| `APPROVED` | Approved by the Reviewer |
-| `REJECTED` | Rejected by the Reviewer, optionally with a reason |
-| `SUPERSEDED` | Replaced by a newer Revision before it got a verdict |
+| Status        | Meaning                                              |
+| ------------- | ---------------------------------------------------- |
+| `UNSUBMITTED` | Created, not submitted                               |
+| `PENDING`     | Submitted, awaiting a verdict                        |
+| `APPROVED`    | Approved by the Reviewer                             |
+| `REJECTED`    | Rejected by the Reviewer, optionally with a reason   |
+| `SUPERSEDED`  | Replaced by a newer Revision before it got a verdict |
 
-| Transition | By | When |
-| --- | --- | --- |
-| (new) → `UNSUBMITTED` | Agent | Create or revise |
-| `UNSUBMITTED` → `PENDING` | Agent | Submission of that Revision while it is the latest |
-| `PENDING` → `APPROVED` / `REJECTED` | Reviewer | Verdict on that Revision while it is the latest |
-| `UNSUBMITTED` / `PENDING` → `SUPERSEDED` | Agent | Revising the Draft (in the same write that creates the new Revision) |
+| Transition                               | By       | When                                                                 |
+| ---------------------------------------- | -------- | -------------------------------------------------------------------- |
+| (new) → `UNSUBMITTED`                    | Agent    | Create or revise                                                     |
+| `UNSUBMITTED` → `PENDING`                | Agent    | Submission of that Revision while it is the latest                   |
+| `PENDING` → `APPROVED` / `REJECTED`      | Reviewer | Verdict on that Revision while it is the latest                      |
+| `UNSUBMITTED` / `PENDING` → `SUPERSEDED` | Agent    | Revising the Draft (in the same write that creates the new Revision) |
 
 - Creating or revising never submits. Submission is a separate act naming one Revision id; each Revision is submitted at most once and gets at most one verdict.
 - Revising a Pending Draft supersedes the pending Revision, which withdraws its Submission: the Draft leaves the Pending list until the Agent submits the new Revision.
@@ -82,12 +82,12 @@ A Revision's Draft data (`to`, subject, body) never changes. Its review status d
 
 ### Sending status
 
-| Status | Meaning |
-| --- | --- |
-| `NOT_SENT` | No Approval yet |
-| `QUEUED` | The Approval is committed and the Send intent recorded; Resend has not accepted the email yet |
-| `SENT` | Resend accepted the email; carries the Resend email id |
-| `FAILED` | The Send ended without acceptance; carries a `failureReason` |
+| Status     | Meaning                                                                                       |
+| ---------- | --------------------------------------------------------------------------------------------- |
+| `NOT_SENT` | No Approval yet                                                                               |
+| `QUEUED`   | The Approval is committed and the Send intent recorded; Resend has not accepted the email yet |
+| `SENT`     | Resend accepted the email; carries the Resend email id                                        |
+| `FAILED`   | The Send ended without acceptance; carries a `failureReason`                                  |
 
 - `NOT_SENT` → `QUEUED` happens only in the Approval's write. Nobody has a send operation and there is no undo window.
 - `QUEUED` → `SENT` or `FAILED` is written by the system only (Queue consumer, DLQ consumer, Send reconciler).
@@ -140,13 +140,13 @@ There is no separate sender Worker: `RESEND_API_KEY` is a secret on this Worker,
 
 Static assets are configured with `run_worker_first: true`, `html_handling: "none"` and `not_found_handling: "none"`, so every request goes through the Hono app first.
 
-| Path | Handling |
-| --- | --- |
-| `/api/*` | API routes; an unknown `/api/…` path → JSON 404 `NOT_FOUND` |
-| `/mcp` | MCP server (Agent token only) |
+| Path             | Handling                                                                                              |
+| ---------------- | ----------------------------------------------------------------------------------------------------- |
+| `/api/*`         | API routes; an unknown `/api/…` path → JSON 404 `NOT_FOUND`                                           |
+| `/mcp`           | MCP server (Agent token only)                                                                         |
 | `/app`, `/app/*` | `env.ASSETS`; a path without a matching file → `/app/index.html` with 200, so client routes deep-link |
-| `/` | 302 to `/app/` |
-| anything else | JSON 404 `NOT_FOUND` |
+| `/`              | 302 to `/app/`                                                                                        |
+| anything else    | JSON 404 `NOT_FOUND`                                                                                  |
 
 - The Review UI is built by Vite with `base: "/app/"` into an `app/` subfolder of the Worker's assets, so request paths map to asset paths without rewriting. TanStack Router uses `basepath: "/app"`.
 - One Hono middleware sets the security headers ([section 7](#browser-hardening)) on every `/app` response. No caching is configured anywhere: neither the Worker nor the API sets `Cache-Control` of its own, and there is no CDN cache rule.
@@ -160,18 +160,18 @@ Static assets are configured with `run_worker_first: true`, `html_handling: "non
 
 The repository follows cup's layout (`~/workspace/cup`), with package names under `@draft-approval/*`:
 
-| Folder | Role |
-| --- | --- |
-| `apps/cloudflare-worker` | Thin entry: `wrangler.jsonc`, Vite build with `@cloudflare/vite-plugin`; exports `fetch` (from `api.server`), `queue` and `scheduled` (both delegate to `drafts`); integration tests in `test/` |
-| `apps/review-ui` | React 19 SPA (TanStack Router and Query), served under `/app` |
-| `apps/cli` | The `draft-approval` CLI |
-| `libs/api.routes` | `@hono/zod-openapi` contract: routes, Zod schemas, error schema, `LOCAL_AGENT_TOKEN` and `LOCAL_REVIEWER_TOKEN` |
-| `libs/api.client` | Typed client (Hono RPC `hc` wrapped in a hand-written class), read-bookmark handling, OpenAPI export |
-| `libs/api.server` | Hono app: routing, authentication, error envelope, `/app` serving, `/mcp` mounting; calls into `drafts` |
-| `libs/drafts` | The Draft domain: Drizzle schema and migrations, R2 body storage, use cases (create, revise, submit, approve, reject, list, get), Queue consumer, DLQ consumer, Send reconciler, internal Resend adapter |
-| `libs/mcp-server` | The six MCP tools on the typed client |
-| `qa/e2e` | Playwright e2e tests |
-| `terraform/` | Infrastructure |
+| Folder                   | Role                                                                                                                                                                                                     |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/cloudflare-worker` | Thin entry: `wrangler.jsonc`, Vite build with `@cloudflare/vite-plugin`; exports `fetch` (from `api.server`), `queue` and `scheduled` (both delegate to `drafts`); integration tests in `test/`          |
+| `apps/review-ui`         | React 19 SPA (TanStack Router and Query), served under `/app`                                                                                                                                            |
+| `apps/cli`               | The `draft-approval` CLI                                                                                                                                                                                 |
+| `libs/api.routes`        | `@hono/zod-openapi` contract: routes, Zod schemas, error schema, `LOCAL_AGENT_TOKEN` and `LOCAL_REVIEWER_TOKEN`                                                                                          |
+| `libs/api.client`        | Typed client (Hono RPC `hc` wrapped in a hand-written class), read-bookmark handling, OpenAPI export                                                                                                     |
+| `libs/api.server`        | Hono app: routing, authentication, error envelope, `/app` serving, `/mcp` mounting; calls into `drafts`                                                                                                  |
+| `libs/drafts`            | The Draft domain: Drizzle schema and migrations, R2 body storage, use cases (create, revise, submit, approve, reject, list, get), Queue consumer, DLQ consumer, Send reconciler, internal Resend adapter |
+| `libs/mcp-server`        | The six MCP tools on the typed client                                                                                                                                                                    |
+| `qa/e2e`                 | Playwright e2e tests                                                                                                                                                                                     |
+| `terraform/`             | Infrastructure                                                                                                                                                                                           |
 
 Storage and the Send pipeline are one package because the outbox columns live on the Draft row: the Draft's invariants and the Send's conditional writes belong to one module.
 
@@ -181,14 +181,14 @@ As in cup: a pnpm monorepo with Turborepo and pnpm catalogs (workspaces `apps/*`
 
 Scripts at the root:
 
-| Script | Does |
-| --- | --- |
-| `pnpm dev` | Applies local D1 migrations, then runs Vite (Worker and Review UI with hot reload) |
-| `pnpm seed` | Creates a handful of Drafts locally through the typed client |
-| `pnpm secrets:generate` | Generates both tokens ([section 12](#tokens)) |
-| `pnpm validate:fast` | Format, lint, build, unit tests, integration tests, CLI process tests |
-| `pnpm validate:extended` | e2e tests (needs Docker) |
-| `pnpm test:resend-live` | Opt-in live Resend contract test |
+| Script                   | Does                                                                               |
+| ------------------------ | ---------------------------------------------------------------------------------- |
+| `pnpm dev`               | Applies local D1 migrations, then runs Vite (Worker and Review UI with hot reload) |
+| `pnpm seed`              | Creates a handful of Drafts locally through the typed client                       |
+| `pnpm secrets:generate`  | Generates both tokens ([section 12](#tokens))                                      |
+| `pnpm validate:fast`     | Format, lint, build, unit tests, integration tests, CLI process tests              |
+| `pnpm validate:extended` | e2e tests (needs Docker)                                                           |
+| `pnpm test:resend-live`  | Opt-in live Resend contract test                                                   |
 
 ## 5. Data model
 
@@ -205,23 +205,23 @@ Prefixed UUIDv7: `drf_<uuidv7>` for Drafts and `rev_<uuidv7>` for Revisions. The
 
 ### Table `drafts`
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `id` | text, primary key | `drf_…` |
-| `created_at` | integer | |
-| `last_action_at` | integer | Set by create, revise, submit and verdict; never by a Send outcome |
-| `latest_revision_id` | text, not null | The latest Revision (no foreign key, to avoid a circular reference on insert) |
-| `sending_status` | text, not null, default `NOT_SENT` | `NOT_SENT` \| `QUEUED` \| `SENT` \| `FAILED` |
-| `approved_revision_id` | text | Outbox; set by the Approval |
-| `approved_at` | integer | Outbox |
-| `idempotency_key` | text | Outbox; `draft-send/<draftId>` |
-| `outgoing_email` | text (JSON) | Outbox; the frozen email, see [section 9](#approval-and-hand-off) |
-| `deadline` | integer | Outbox; `approved_at + 23 h` |
-| `enqueued_at` | integer | Set once the Send's Queue message has been sent |
-| `email_id` | text | Resend email id, when `SENT` |
-| `failure_reason` | text | `REJECTED_BY_RESEND` \| `OUTCOME_UNKNOWN`, when `FAILED` |
-| `resend_error_name` | text | When `REJECTED_BY_RESEND` |
-| `resend_error_message` | text | When `REJECTED_BY_RESEND` |
+| Column                 | Type                               | Notes                                                                         |
+| ---------------------- | ---------------------------------- | ----------------------------------------------------------------------------- |
+| `id`                   | text, primary key                  | `drf_…`                                                                       |
+| `created_at`           | integer                            |                                                                               |
+| `last_action_at`       | integer                            | Set by create, revise, submit and verdict; never by a Send outcome            |
+| `latest_revision_id`   | text, not null                     | The latest Revision (no foreign key, to avoid a circular reference on insert) |
+| `sending_status`       | text, not null, default `NOT_SENT` | `NOT_SENT` \| `QUEUED` \| `SENT` \| `FAILED`                                  |
+| `approved_revision_id` | text                               | Outbox; set by the Approval                                                   |
+| `approved_at`          | integer                            | Outbox                                                                        |
+| `idempotency_key`      | text                               | Outbox; `draft-send/<draftId>`                                                |
+| `outgoing_email`       | text (JSON)                        | Outbox; the frozen email, see [section 9](#approval-and-hand-off)             |
+| `deadline`             | integer                            | Outbox; `approved_at + 23 h`                                                  |
+| `enqueued_at`          | integer                            | Set once the Send's Queue message has been sent                               |
+| `email_id`             | text                               | Resend email id, when `SENT`                                                  |
+| `failure_reason`       | text                               | `REJECTED_BY_RESEND` \| `OUTCOME_UNKNOWN`, when `FAILED`                      |
+| `resend_error_name`    | text                               | When `REJECTED_BY_RESEND`                                                     |
+| `resend_error_message` | text                               | When `REJECTED_BY_RESEND`                                                     |
 
 `CHECK` constraints:
 
@@ -241,18 +241,18 @@ Indexes:
 
 ### Table `revisions`
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `id` | text, primary key | `rev_…` |
-| `draft_id` | text, not null | Foreign key to `drafts.id` |
-| `revision_number` | integer, not null | 1-based; unique together with `draft_id` |
-| `created_at` | integer | |
-| `to_addresses` | text (JSON array) | Recipients |
-| `subject` | text | |
-| `review_status` | text, not null | `UNSUBMITTED` \| `PENDING` \| `APPROVED` \| `REJECTED` \| `SUPERSEDED` |
-| `submitted_at` | integer | Set by the Submission |
-| `decided_at` | integer | Set by the verdict |
-| `rejection_reason` | text | Only on `REJECTED`, optional |
+| Column             | Type              | Notes                                                                  |
+| ------------------ | ----------------- | ---------------------------------------------------------------------- |
+| `id`               | text, primary key | `rev_…`                                                                |
+| `draft_id`         | text, not null    | Foreign key to `drafts.id`                                             |
+| `revision_number`  | integer, not null | 1-based; unique together with `draft_id`                               |
+| `created_at`       | integer           |                                                                        |
+| `to_addresses`     | text (JSON array) | Recipients                                                             |
+| `subject`          | text              |                                                                        |
+| `review_status`    | text, not null    | `UNSUBMITTED` \| `PENDING` \| `APPROVED` \| `REJECTED` \| `SUPERSEDED` |
+| `submitted_at`     | integer           | Set by the Submission                                                  |
+| `decided_at`       | integer           | Set by the verdict                                                     |
+| `rejection_reason` | text              | Only on `REJECTED`, optional                                           |
 
 `CHECK` constraints:
 
@@ -283,16 +283,16 @@ Indexes: unique `(draft_id, revision_number)`; `review_status` (list filters joi
 
 ### Operations
 
-| Operation | Route | Who | Success |
-| --- | --- | --- | --- |
-| Create | `POST /api/v1/drafts` | Agent or Reviewer | 201, Draft summary |
-| List | `GET /api/v1/drafts` | Agent or Reviewer | 200, `{ items, nextCursor? }` of Draft summaries |
-| Get | `GET /api/v1/drafts/{draftId}` | Agent or Reviewer | 200, Draft with body |
-| Revise | `POST /api/v1/drafts/{draftId}/revisions` | Agent or Reviewer | 201, Draft summary |
-| Submit | `POST /api/v1/drafts/{draftId}/revisions/{revisionId}/submission` | Agent or Reviewer | 200, Draft summary |
-| Get Revision | `GET /api/v1/drafts/{draftId}/revisions/{revisionId}` | Agent or Reviewer | 200, Revision with body |
-| Approve | `POST /api/v1/drafts/{draftId}/revisions/{revisionId}/approval` (empty body) | Reviewer only | 200, Draft summary with sending `QUEUED` |
-| Reject | `POST /api/v1/drafts/{draftId}/revisions/{revisionId}/rejection` (`{ "reason"?: string }`) | Reviewer only | 200, Draft summary |
+| Operation    | Route                                                                                      | Who               | Success                                          |
+| ------------ | ------------------------------------------------------------------------------------------ | ----------------- | ------------------------------------------------ |
+| Create       | `POST /api/v1/drafts`                                                                      | Agent or Reviewer | 201, Draft summary                               |
+| List         | `GET /api/v1/drafts`                                                                       | Agent or Reviewer | 200, `{ items, nextCursor? }` of Draft summaries |
+| Get          | `GET /api/v1/drafts/{draftId}`                                                             | Agent or Reviewer | 200, Draft with body                             |
+| Revise       | `POST /api/v1/drafts/{draftId}/revisions`                                                  | Agent or Reviewer | 201, Draft summary                               |
+| Submit       | `POST /api/v1/drafts/{draftId}/revisions/{revisionId}/submission`                          | Agent or Reviewer | 200, Draft summary                               |
+| Get Revision | `GET /api/v1/drafts/{draftId}/revisions/{revisionId}`                                      | Agent or Reviewer | 200, Revision with body                          |
+| Approve      | `POST /api/v1/drafts/{draftId}/revisions/{revisionId}/approval` (empty body)               | Reviewer only     | 200, Draft summary with sending `QUEUED`         |
+| Reject       | `POST /api/v1/drafts/{draftId}/revisions/{revisionId}/rejection` (`{ "reason"?: string }`) | Reviewer only     | 200, Draft summary                               |
 
 - There is no send, discard, revise-and-submit or Revision-history operation.
 - Create has no idempotency: a retried create may create a second Draft ([Known limitations](#15-known-limitations)).
@@ -340,6 +340,7 @@ Indexes: unique `(draft_id, revision_number)`; `review_status` (list filters joi
   - `lastVerdict` is the newest verdict on any of the Draft's Revisions, so after a Rejection and a revise the Agent still sees the reason.
   - `sending` is `{ status, emailId? (when SENT), failure? (when FAILED) }` with `failure = { reason: "REJECTED_BY_RESEND" | "OUTCOME_UNKNOWN", resendErrorName?, resendErrorMessage? }`. Attempt count, last error and next attempt time are not recorded.
   - `reviewUrl` is `${PUBLIC_BASE_URL}/app/drafts/{draftId}`. It grants nothing without the Reviewer token.
+
 - **Draft summary**: the Draft without `latestRevision.body`. Lists and every mutation return it, so none of them reads R2; only the two `GET`s by id return a body.
 
 ### Lists
@@ -357,13 +358,13 @@ Indexes: unique `(draft_id, revision_number)`; `review_status` (list filters joi
 
 ### Limits and request format
 
-| Field | Limit |
-| --- | --- |
-| `to` | 1–50 addresses (Resend's maximum per email), each a valid address, no duplicates |
-| `subject` | 1–998 characters, no line breaks (RFC 5322's line limit; longer subjects need folding, which clients handle badly) |
-| `body.plainText` | 1 character to 100 KB in UTF-8 bytes (the Reviewer must read the whole body; Gmail clips messages over about 102 KB) |
-| Rejection `reason` | Optional, 1–2000 characters after trimming; an empty string counts as absent |
-| Request body | 128 KB → 413 `PAYLOAD_TOO_LARGE` |
+| Field              | Limit                                                                                                                |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `to`               | 1–50 addresses (Resend's maximum per email), each a valid address, no duplicates                                     |
+| `subject`          | 1–998 characters, no line breaks (RFC 5322's line limit; longer subjects need folding, which clients handle badly)   |
+| `body.plainText`   | 1 character to 100 KB in UTF-8 bytes (the Reviewer must read the whole body; Gmail clips messages over about 102 KB) |
+| Rejection `reason` | Optional, 1–2000 characters after trimming; an empty string counts as absent                                         |
+| Request body       | 128 KB → 413 `PAYLOAD_TOO_LARGE`                                                                                     |
 
 Requests are JSON, buffered and validated with the contract's Zod schemas; other violations get 400 `INVALID_REQUEST`.
 
@@ -371,15 +372,15 @@ Requests are JSON, buffered and validated with the contract's Zod schemas; other
 
 Envelope: `{ "error": { "code": "…", "message": "…", "requestId": "…", …extras } }`. Codes are upper snake case, extras sit inside `error`. Every route lists each status code in OpenAPI with the shared schema, and each 409 names its possible codes in the description.
 
-| HTTP | Codes |
-| --- | --- |
-| 400 | `INVALID_REQUEST` (with `issues: [{ path, message }]` from Zod) |
-| 401 | `UNAUTHENTICATED` |
-| 403 | `REVIEWER_ONLY` (verdict routes); `AGENT_ONLY` (`/mcp` only) |
-| 404 | `DRAFT_NOT_FOUND`; `REVISION_NOT_FOUND` (also a Revision of another Draft); `NOT_FOUND` (unknown path) |
-| 409 | `REVISION_SUPERSEDED`; `REVISION_ALREADY_DECIDED` (with `existingVerdict`: `APPROVED` \| `REJECTED`); `REVISION_NOT_SUBMITTED`; `REVISION_ALREADY_SUBMITTED`; `DRAFT_APPROVED` |
-| 413 | `PAYLOAD_TOO_LARGE` |
-| 500 | `INTERNAL_ERROR` (generic message, never the internal error text) |
+| HTTP | Codes                                                                                                                                                                          |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 400  | `INVALID_REQUEST` (with `issues: [{ path, message }]` from Zod)                                                                                                                |
+| 401  | `UNAUTHENTICATED`                                                                                                                                                              |
+| 403  | `REVIEWER_ONLY` (verdict routes); `AGENT_ONLY` (`/mcp` only)                                                                                                                   |
+| 404  | `DRAFT_NOT_FOUND`; `REVISION_NOT_FOUND` (also a Revision of another Draft); `NOT_FOUND` (unknown path)                                                                         |
+| 409  | `REVISION_SUPERSEDED`; `REVISION_ALREADY_DECIDED` (with `existingVerdict`: `APPROVED` \| `REJECTED`); `REVISION_NOT_SUBMITTED`; `REVISION_ALREADY_SUBMITTED`; `DRAFT_APPROVED` |
+| 413  | `PAYLOAD_TOO_LARGE`                                                                                                                                                            |
+| 500  | `INTERNAL_ERROR` (generic message, never the internal error text)                                                                                                              |
 
 `REVISION_SUPERSEDED` carries only code and message, not the latest Revision.
 
@@ -444,13 +445,13 @@ Header `X-Read-Bookmark` on requests and responses, documented on every operatio
 
 Each mutation is one D1 `batch()`, which runs atomically. A D1 `batch()` does not abort when an `UPDATE` matches no rows, so every statement in a batch carries the same guard predicate, and the statement that makes the predicate false runs last. When the batch changes nothing, the use case reads the rows on the primary (same session) to pick the error code. A losing request leaves no partial write.
 
-| Mutation | Guard predicate | Statements, in order |
-| --- | --- | --- |
-| Create | none | Insert the Draft (`latest_revision_id` = new Revision), insert Revision 1 (`UNSUBMITTED`) |
-| Revise | the Draft's latest Revision is `baseRevisionId` and `sending_status = 'NOT_SENT'` | Set the base Revision to `SUPERSEDED` if it is `UNSUBMITTED` or `PENDING`; insert the new Revision (`revision_number` = base + 1, `UNSUBMITTED`); update the Draft's `latest_revision_id` and `last_action_at` |
-| Submit | the Revision is the Draft's latest and `UNSUBMITTED` | Update the Draft's `last_action_at`; set the Revision to `PENDING` with `submitted_at` |
-| Approve | the Revision is the Draft's latest and `PENDING` | Update the Draft: `sending_status = 'QUEUED'`, `approved_revision_id`, `approved_at`, `idempotency_key`, `outgoing_email`, `deadline`, `last_action_at`; set the Revision to `APPROVED` with `decided_at` |
-| Reject | the Revision is the Draft's latest and `PENDING` | Update the Draft's `last_action_at`; set the Revision to `REJECTED` with `decided_at` and `rejection_reason` |
+| Mutation | Guard predicate                                                                   | Statements, in order                                                                                                                                                                                           |
+| -------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Create   | none                                                                              | Insert the Draft (`latest_revision_id` = new Revision), insert Revision 1 (`UNSUBMITTED`)                                                                                                                      |
+| Revise   | the Draft's latest Revision is `baseRevisionId` and `sending_status = 'NOT_SENT'` | Set the base Revision to `SUPERSEDED` if it is `UNSUBMITTED` or `PENDING`; insert the new Revision (`revision_number` = base + 1, `UNSUBMITTED`); update the Draft's `latest_revision_id` and `last_action_at` |
+| Submit   | the Revision is the Draft's latest and `UNSUBMITTED`                              | Update the Draft's `last_action_at`; set the Revision to `PENDING` with `submitted_at`                                                                                                                         |
+| Approve  | the Revision is the Draft's latest and `PENDING`                                  | Update the Draft: `sending_status = 'QUEUED'`, `approved_revision_id`, `approved_at`, `idempotency_key`, `outgoing_email`, `deadline`, `last_action_at`; set the Revision to `APPROVED` with `decided_at`      |
+| Reject   | the Revision is the Draft's latest and `PENDING`                                  | Update the Draft's `last_action_at`; set the Revision to `REJECTED` with `decided_at` and `rejection_reason`                                                                                                   |
 
 The R2 body is written before the Create or Revise batch.
 
@@ -458,13 +459,13 @@ The R2 body is written before the Create or Revise batch.
 
 D1 serializes batches, so the first commit wins:
 
-| Race | Outcome |
-| --- | --- |
-| approve ‖ approve, approve ‖ reject | One verdict; the loser gets `REVISION_ALREADY_DECIDED` with `existingVerdict` |
-| approve ‖ revise, reject ‖ revise | Verdict first: the revise gets `DRAFT_APPROVED` (after an Approval) or succeeds (after a Rejection, the new Revision builds on the rejected one). Revise first: the verdict gets `REVISION_SUPERSEDED` |
-| revise ‖ revise on the same `baseRevisionId` | One new Revision; the other gets `REVISION_SUPERSEDED` |
-| submit ‖ revise | Revise first: the Submission gets `REVISION_SUPERSEDED`. Submit first: the revise supersedes the now-Pending Revision |
-| submit ‖ submit | One Submission; the other gets `REVISION_ALREADY_SUBMITTED` |
+| Race                                         | Outcome                                                                                                                                                                                                |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| approve ‖ approve, approve ‖ reject          | One verdict; the loser gets `REVISION_ALREADY_DECIDED` with `existingVerdict`                                                                                                                          |
+| approve ‖ revise, reject ‖ revise            | Verdict first: the revise gets `DRAFT_APPROVED` (after an Approval) or succeeds (after a Rejection, the new Revision builds on the rejected one). Revise first: the verdict gets `REVISION_SUPERSEDED` |
+| revise ‖ revise on the same `baseRevisionId` | One new Revision; the other gets `REVISION_SUPERSEDED`                                                                                                                                                 |
+| submit ‖ revise                              | Revise first: the Submission gets `REVISION_SUPERSEDED`. Submit first: the revise supersedes the now-Pending Revision                                                                                  |
+| submit ‖ submit                              | One Submission; the other gets `REVISION_ALREADY_SUBMITTED`                                                                                                                                            |
 
 Because only one Approval can commit per Draft, only one Send intent is ever recorded.
 
@@ -518,14 +519,14 @@ The `draft_id` tag is part of the frozen body from the start, because adding it 
 
 ### Classification and backoff
 
-| Result | Classification | Outcome |
-| --- | --- | --- |
-| 200 with `{ id }` (also a replay of the same key and body, which returns the original id) | Final | `SENT` with `email_id` |
-| 400, 401, 403, 404, 405, 422 | Final | `FAILED` / `REJECTED_BY_RESEND` with Resend's error name and message |
-| 409 `invalid_idempotent_request` | Final (also `console.error`, since it means our own bug) | `FAILED` / `REJECTED_BY_RESEND` |
-| 409 `concurrent_idempotent_requests`, 408, 429 (rate limit and quota), 5xx, network error, the 10 s timeout | Retryable | `message.retry` |
-| Any other 4xx, including a 409 with an unknown name (Resend refused the request) | Final | `FAILED` / `REJECTED_BY_RESEND` |
-| Any other status, or a 2xx without an `id` | Retryable (ends as `OUTCOME_UNKNOWN` at the deadline at the latest) | `message.retry` |
+| Result                                                                                                      | Classification                                                      | Outcome                                                              |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| 200 with `{ id }` (also a replay of the same key and body, which returns the original id)                   | Final                                                               | `SENT` with `email_id`                                               |
+| 400, 401, 403, 404, 405, 422                                                                                | Final                                                               | `FAILED` / `REJECTED_BY_RESEND` with Resend's error name and message |
+| 409 `invalid_idempotent_request`                                                                            | Final (also `console.error`, since it means our own bug)            | `FAILED` / `REJECTED_BY_RESEND`                                      |
+| 409 `concurrent_idempotent_requests`, 408, 429 (rate limit and quota), 5xx, network error, the 10 s timeout | Retryable                                                           | `message.retry`                                                      |
+| Any other 4xx, including a 409 with an unknown name (Resend refused the request)                            | Final                                                               | `FAILED` / `REJECTED_BY_RESEND`                                      |
+| Any other status, or a 2xx without an `id`                                                                  | Retryable (ends as `OUTCOME_UNKNOWN` at the deadline at the latest) | `message.retry`                                                      |
 
 - Delay for every retryable result: `max(backoff, Retry-After if present)`, where backoff is 1 s × 2^(`message.attempts` − 1), capped at 1 h, plus up to 1 s of random jitter; the result is clamped so the next delivery is no later than `deadline`. That allows about 35 attempts within 23 h.
 - The 1 s start (Resend's own guidance) makes a one-off 5xx or timeout cost seconds; the 1 h cap and the deadline ride out a long outage; honoring `Retry-After` keeps a retry out of Resend's rate-limit window.
@@ -577,14 +578,14 @@ v1 has no event logging. Paths that already handle an error call a bare `console
 - Mounted at `/mcp` in the same Worker: stateless `createMcpHandler` from `agents/mcp/server` with the MCP TypeScript SDK v2 over Streamable HTTP, no Durable Object, no OAuth.
 - Six tools, hand-written on the typed client (no verdict tool):
 
-  | Tool | API operation | Annotations |
-  | --- | --- | --- |
-  | `create_draft` | Create | |
-  | `get_draft` | Get | `readOnlyHint` |
-  | `list_drafts` | List | `readOnlyHint` |
-  | `revise_draft` (requires `draftId`, `baseRevisionId`) | Revise | |
-  | `submit_draft` (requires `draftId`, `revisionId`) | Submit | |
-  | `get_revision` | Get Revision | `readOnlyHint` |
+  | Tool                                                  | API operation | Annotations    |
+  | ----------------------------------------------------- | ------------- | -------------- |
+  | `create_draft`                                        | Create        |                |
+  | `get_draft`                                           | Get           | `readOnlyHint` |
+  | `list_drafts`                                         | List          | `readOnlyHint` |
+  | `revise_draft` (requires `draftId`, `baseRevisionId`) | Revise        |                |
+  | `submit_draft` (requires `draftId`, `revisionId`)     | Submit        |                |
+  | `get_revision`                                        | Get Revision  | `readOnlyHint` |
 
 - Input schemas reuse the contract's Zod schemas. Every tool declares an `outputSchema` and returns `structuredContent`. An API error becomes an `isError` result carrying its code and message (and extras such as `existingVerdict`).
 - The server `instructions` describe the lifecycle (create → submit → a human reviews at `reviewUrl` → poll `get_draft` for review and sending status), state that Agents cannot approve or send, and link the OpenAPI document. There is no revise-and-submit tool.
@@ -636,11 +637,11 @@ The only human interface and the only place a verdict can be rendered. A React 1
 
 - Loads `GET /api/v1/drafts/{draftId}`. Loading shows "Loading…"; 404 `DRAFT_NOT_FOUND` shows "Draft not found."; other errors show the error `message` and `requestId`.
 - Top to bottom: the subject as heading; "To:" with all recipients comma-separated; "Revision N"; review status; submitted time; the body as React-escaped text in a block with `white-space: pre-wrap`. `from` is not shown.
-- If `lastVerdict` is a Rejection of an earlier Revision, one line above the body: "Revision N was rejected: *reason*" (or without the reason).
+- If `lastVerdict` is a Rejection of an earlier Revision, one line above the body: "Revision N was rejected: _reason_" (or without the reason).
 - By review status:
   - `UNSUBMITTED`: "Not submitted for review yet." and no controls;
   - `PENDING`: the verdict controls;
-  - `APPROVED` / `REJECTED`: the verdict line ("Approved" or "Rejected: *reason*", with decided time) and, for an Approval, the sending status.
+  - `APPROVED` / `REJECTED`: the verdict line ("Approved" or "Rejected: _reason_", with decided time) and, for an Approval, the sending status.
 
 ### Verdict controls
 
@@ -652,24 +653,24 @@ The only human interface and the only place a verdict can be rendered. A React 1
 
 The Draft page polls `GET /api/v1/drafts/{draftId}` every 3 s while the status is `QUEUED` and stops otherwise. The Decided list uses the same labels without polling.
 
-| Status | Label |
-| --- | --- |
-| `NOT_SENT` | "Not sent" |
-| `QUEUED` | "Sending…" |
-| `SENT` | "Sent (Resend email ID `re_…`)" |
-| `FAILED` / `REJECTED_BY_RESEND` | "Failed: Resend rejected the email, so it was not sent (*resendErrorName*: *resendErrorMessage*)" |
-| `FAILED` / `OUTCOME_UNKNOWN` | "Failed: may have been sent; check the Resend dashboard before creating a new Draft." |
+| Status                          | Label                                                                                             |
+| ------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `NOT_SENT`                      | "Not sent"                                                                                        |
+| `QUEUED`                        | "Sending…"                                                                                        |
+| `SENT`                          | "Sent (Resend email ID `re_…`)"                                                                   |
+| `FAILED` / `REJECTED_BY_RESEND` | "Failed: Resend rejected the email, so it was not sent (_resendErrorName_: _resendErrorMessage_)" |
+| `FAILED` / `OUTCOME_UNKNOWN`    | "Failed: may have been sent; check the Resend dashboard before creating a new Draft."             |
 
 ### Verdict errors
 
 Shown inline in a bordered box directly above the verdict controls. Never a toast, never swallowed (not even when `existingVerdict` matches the intended verdict, since several humans may review at once), never retried or re-applied.
 
-| Error | Message | Action |
-| --- | --- | --- |
-| 409 `REVISION_SUPERSEDED` | "The Agent changed this Draft after you opened it; your verdict was not recorded." | "Reload Draft" |
-| 409 `REVISION_ALREADY_DECIDED` | "This Revision was already approved." / "This Revision was already rejected." (from `existingVerdict`) | "Reload Draft" |
-| 403 `REVIEWER_ONLY` | "The stored token is not the Reviewer token. Sign out and enter the Reviewer token." | |
-| Anything else (including `REVISION_NOT_SUBMITTED` and network failures) | The error `message` and `requestId` | |
+| Error                                                                   | Message                                                                                                | Action         |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | -------------- |
+| 409 `REVISION_SUPERSEDED`                                               | "The Agent changed this Draft after you opened it; your verdict was not recorded."                     | "Reload Draft" |
+| 409 `REVISION_ALREADY_DECIDED`                                          | "This Revision was already approved." / "This Revision was already rejected." (from `existingVerdict`) | "Reload Draft" |
+| 403 `REVIEWER_ONLY`                                                     | "The stored token is not the Reviewer token. Sign out and enter the Reviewer token."                   |                |
+| Anything else (including `REVISION_NOT_SUBMITTED` and network failures) | The error `message` and `requestId`                                                                    |                |
 
 "Reload Draft" refetches the Draft and clears the error; the Reviewer then decides again on whatever is current.
 
@@ -698,13 +699,13 @@ Production only, on the custom domain `resend-challenge.patricktree.me`. There i
 - `compatibility_flags: ["nodejs_compat"]`, `workers_dev: false`, `preview_urls: false`.
 - Vars:
 
-  | Var | Value |
-  | --- | --- |
-  | `PUBLIC_BASE_URL` | `https://resend-challenge.patricktree.me` (the CLI's built-in URL must equal it) |
-  | `RESEND_FROM` | An address on the sending domain, for example `drafts@resend-challenge.patricktree.me` |
-  | `RESEND_BASE_URL` | `https://api.resend.com` |
-  | `LOCAL_DEVELOPMENT` | `"false"` |
-  | `AGENT_TOKEN` | The public Agent token |
+  | Var                 | Value                                                                                  |
+  | ------------------- | -------------------------------------------------------------------------------------- |
+  | `PUBLIC_BASE_URL`   | `https://resend-challenge.patricktree.me` (the CLI's built-in URL must equal it)       |
+  | `RESEND_FROM`       | An address on the sending domain, for example `drafts@resend-challenge.patricktree.me` |
+  | `RESEND_BASE_URL`   | `https://api.resend.com`                                                               |
+  | `LOCAL_DEVELOPMENT` | `"false"`                                                                              |
+  | `AGENT_TOKEN`       | The public Agent token                                                                 |
 
 - Secrets, listed in `secrets.required` so a deploy without them fails, set with `wrangler secret put`: `REVIEWER_TOKEN`, `RESEND_API_KEY` (a sending-only key).
 
@@ -730,13 +731,13 @@ Manually, in this order: `terraform apply`, then `wrangler d1 migrations apply -
 
 Priorities: integration tests first, e2e second, unit tests third. Vitest and Playwright.
 
-| Level | Tool | Covers |
-| --- | --- | --- |
-| Integration | Vitest in Wrangler's local test runtime, in `apps/cloudflare-worker/test/` and `libs/drafts/test/` | Every API, auth, MCP and Send-pipeline guarantee, including all races |
-| e2e | Playwright in cup's Docker image against `wrangler dev` | The review flow, end to end through the real Queue |
-| CLI process | Vitest, spawning the real `draft-approval` process against a `node:http` API stub | Argument parsing, output, exit codes, token handling |
-| Unit | Vitest | Pure functions only |
-| Live contract (opt-in) | Vitest, `pnpm test:resend-live` | Resend's idempotency behavior against the real API |
+| Level                  | Tool                                                                                               | Covers                                                                |
+| ---------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Integration            | Vitest in Wrangler's local test runtime, in `apps/cloudflare-worker/test/` and `libs/drafts/test/` | Every API, auth, MCP and Send-pipeline guarantee, including all races |
+| e2e                    | Playwright in cup's Docker image against `wrangler dev`                                            | The review flow, end to end through the real Queue                    |
+| CLI process            | Vitest, spawning the real `draft-approval` process against a `node:http` API stub                  | Argument parsing, output, exit codes, token handling                  |
+| Unit                   | Vitest                                                                                             | Pure functions only                                                   |
+| Live contract (opt-in) | Vitest, `pnpm test:resend-live`                                                                    | Resend's idempotency behavior against the real API                    |
 
 ### Integration test setup
 
@@ -812,17 +813,17 @@ Each entry is a shortcut taken for the demo and what a real deployment does inst
 
 ### Identity and access
 
-- **Single shared Reviewer token.** *Demo:* one preconfigured Reviewer token, pasted into the Review UI and kept in `localStorage`. Several humans share it, so verdicts are not attributed to a person and "already decided" cannot say by whom. *Real deployment:* Reviewers sign in through the organisation's IdP via OpenID Connect, each person with their own identity and a Reviewer role; the server keeps its own session in an `HttpOnly` cookie with CSRF and origin checks, and the audit trail names who decided.
-- **Single shared Agent token.** *Demo:* every Agent uses the same token, and Drafts are not scoped per Agent: every Agent sees and can revise every Draft. *Real deployment:* one credential per Agent, recorded as the Draft's creator, with reads and writes scoped to it.
-- **Public Agent token.** *Demo:* the Agent token is committed to the repository and shown in the README, so anyone can create, revise and submit Drafts (and fill the Pending list). Nothing is sent without the Reviewer token, which is never committed. *Real deployment:* per-Agent credentials issued and rotated through an authorization server, never in source control.
-- **Static, non-expiring tokens.** *Demo:* rotating a token means generating a new one and redeploying; the old one stops working immediately, with no overlap. *Real deployment:* an OAuth 2.1 authorization server issues each Agent short-lived access tokens (authorization code with PKCE for interactive hosts, client credentials for headless Agents), with overlap during rotation and revocation.
-- **Static bearer for MCP.** *Demo:* `/mcp` takes the Agent token as a static header, so hosts that only accept OAuth connectors cannot connect. *Real deployment:* the same OAuth 2.1 authorization server in front of `/mcp` (`workers-oauth-provider`).
-- **Agents on the Reviewer's OS account are not defended against.** *Demo:* an Agent running as the Reviewer's OS user, able to drive their browser or read their files, can use the stored Reviewer token. *Real deployment:* per-verdict passkey confirmation (WebAuthn user verification over a challenge bound to Draft, Revision and verdict), and Agents run isolated from the Reviewer's OS account.
-- **`from` comes from configuration.** *Demo:* the sender address is `RESEND_FROM`, resolved when the Approval is recorded, and is not part of what the Reviewer approves. *Real deployment:* the sender is snapshotted on the Revision and shown for review.
+- **Single shared Reviewer token.** _Demo:_ one preconfigured Reviewer token, pasted into the Review UI and kept in `localStorage`. Several humans share it, so verdicts are not attributed to a person and "already decided" cannot say by whom. _Real deployment:_ Reviewers sign in through the organisation's IdP via OpenID Connect, each person with their own identity and a Reviewer role; the server keeps its own session in an `HttpOnly` cookie with CSRF and origin checks, and the audit trail names who decided.
+- **Single shared Agent token.** _Demo:_ every Agent uses the same token, and Drafts are not scoped per Agent: every Agent sees and can revise every Draft. _Real deployment:_ one credential per Agent, recorded as the Draft's creator, with reads and writes scoped to it.
+- **Public Agent token.** _Demo:_ the Agent token is committed to the repository and shown in the README, so anyone can create, revise and submit Drafts (and fill the Pending list). Nothing is sent without the Reviewer token, which is never committed. _Real deployment:_ per-Agent credentials issued and rotated through an authorization server, never in source control.
+- **Static, non-expiring tokens.** _Demo:_ rotating a token means generating a new one and redeploying; the old one stops working immediately, with no overlap. _Real deployment:_ an OAuth 2.1 authorization server issues each Agent short-lived access tokens (authorization code with PKCE for interactive hosts, client credentials for headless Agents), with overlap during rotation and revocation.
+- **Static bearer for MCP.** _Demo:_ `/mcp` takes the Agent token as a static header, so hosts that only accept OAuth connectors cannot connect. _Real deployment:_ the same OAuth 2.1 authorization server in front of `/mcp` (`workers-oauth-provider`).
+- **Agents on the Reviewer's OS account are not defended against.** _Demo:_ an Agent running as the Reviewer's OS user, able to drive their browser or read their files, can use the stored Reviewer token. _Real deployment:_ per-verdict passkey confirmation (WebAuthn user verification over a challenge bound to Draft, Revision and verdict), and Agents run isolated from the Reviewer's OS account.
+- **`from` comes from configuration.** _Demo:_ the sender address is `RESEND_FROM`, resolved when the Approval is recorded, and is not part of what the Reviewer approves. _Real deployment:_ the sender is snapshotted on the Revision and shown for review.
 
 ### Operations and deployment
 
-- **No observability or alerting.** *Demo:* no `observability` block in `wrangler.jsonc`, no event logging beyond a bare `console.error` on error paths, no metrics, traces or alerts. *Real deployment:*
+- **No observability or alerting.** _Demo:_ no `observability` block in `wrangler.jsonc`, no event logging beyond a bare `console.error` on error paths, no metrics, traces or alerts. _Real deployment:_
   - structured JSON log events: Submission, verdicts recorded and refused, every Send attempt with its classification, Resend status and error name and next delay, Send resolutions by source (consumer, reconciler backstop, DLQ, deadline), reconciler ticks that did something, DLQ messages;
   - correlation by `requestId` per request and by `draftId` across the Send pipeline;
   - a never-log list: tokens, recipient addresses, subject, body, Rejection reason, Resend error messages, SQL parameters;
@@ -830,11 +831,11 @@ Each entry is a shortcut taken for the demo and what a real deployment does inst
   - metrics such as Sends by outcome and attempts per Send;
   - client-side error reporting for the Review UI;
   - alerts on DLQ depth (always 0), queue backlog and oldest-message age, Sends `QUEUED` for more than 10 minutes, `FAILED` by `failureReason` (`OUTCOME_UNKNOWN` pages someone), Resend 429 rate and remaining quota (`x-resend-monthly-quota`).
-- **Single production environment, manual deploys, local-only tests.** *Demo:* no staging; `terraform apply`, migrations and `wrangler deploy` run by hand; tests run only locally through `pnpm validate:fast` and `pnpm validate:extended`, with no CI and no Git hooks. *Real deployment:* a staging environment and CI-driven deploys with migrations gated on review; CI runs unit, integration and e2e tests on every change and gates deploys on them, plus a scheduled run of the live Resend contract test.
+- **Single production environment, manual deploys, local-only tests.** _Demo:_ no staging; `terraform apply`, migrations and `wrangler deploy` run by hand; tests run only locally through `pnpm validate:fast` and `pnpm validate:extended`, with no CI and no Git hooks. _Real deployment:_ a staging environment and CI-driven deploys with migrations gated on review; CI runs unit, integration and e2e tests on every change and gates deploys on them, plus a scheduled run of the live Resend contract test.
 
 ### Data
 
-- **No retention policy.** *Demo:* Drafts, Revisions, verdicts and Revision bodies are kept forever; unsent Drafts stay open indefinitely (there is no Discard); an R2 body orphaned by a failed Revision write is never removed. *Real deployment:* a retention policy, for example purging the bodies of Drafts that are `SENT`, `FAILED` or long inactive after a fixed period while keeping the verdict record, plus a periodic sweep of R2 bodies without a Revision row.
+- **No retention policy.** _Demo:_ Drafts, Revisions, verdicts and Revision bodies are kept forever; unsent Drafts stay open indefinitely (there is no Discard); an R2 body orphaned by a failed Revision write is never removed. _Real deployment:_ a retention policy, for example purging the bodies of Drafts that are `SENT`, `FAILED` or long inactive after a fixed period while keeping the verdict record, plus a periodic sweep of R2 bodies without a Revision row.
 
 ## 15. Known limitations
 

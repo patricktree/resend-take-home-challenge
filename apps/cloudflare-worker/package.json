@@ -1,0 +1,56 @@
+{
+  "name": "@draft-approval/cloudflare-worker",
+  "private": true,
+  "description": "The Worker entry: fetch (API), queue and scheduled handlers, Wrangler and Vite configuration, integration tests",
+  "files": [
+    "src/**"
+  ],
+  "type": "module",
+  "imports": {
+    "#src/*": "./src/*",
+    "#test/*.ts": "./test/*.ts"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "turbo run turbo:build",
+    "cf-typegen": "wrangler types --include-env=false worker-configuration.d.ts",
+    "clean": "del-cli --dot=true \"dist\" \"*.tsbuildinfo\" \".wrangler\"",
+    "dev": "pnpm run migrations:apply:local && vite",
+    "lint": "turbo run turbo:lint",
+    "lint:fix": "turbo run turbo:lint:fix",
+    "migrations:apply:local": "wrangler d1 migrations apply DB --local",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "turbo:build": "prepare-declaration-build --declaration-output-dir ./dist/types --build-info-file ./dist/tsconfig.build.tsbuildinfo --source-package-json ./src/package.json && tsc --build ./tsconfig.json && vite build",
+    "turbo:cf-typegen": "pnpm run cf-typegen",
+    "turbo:lint": "oxlint --type-aware --max-warnings 0 .",
+    "turbo:lint:fix": "pnpm run turbo:lint --fix",
+    "turbo:test": "pnpm run test"
+  },
+  "dependencies": {
+    "@draft-approval/api.server": "workspace:*",
+    "@draft-approval/drafts": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "catalog:web-app",
+    "@draft-approval/api.routes": "workspace:*",
+    "@draft-approval/config-oxlint": "workspace:*",
+    "@draft-approval/prepare-declaration-build": "workspace:*",
+    "@patricktree-stack/config-typescript": "workspace:*",
+    "@patricktree-stack/config-vitest": "workspace:*",
+    "@types/node": "catalog:",
+    "@typescript/native": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:web-app",
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
+  }
+}

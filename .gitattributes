@@ -1,0 +1,3 @@
+# Generated files: GitHub collapses them in diffs, and agent reviews exclude them with
+# the pathspec ':(exclude,attr:linguist-generated=true)'.
+apps/cloudflare-worker/test/__snapshots__/openapi.json linguist-generated=true

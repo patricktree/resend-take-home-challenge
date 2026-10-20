@@ -27,6 +27,7 @@ A spec ready to build from for the email-draft approval system described in [spe
 ## Decisions so far
 
 <!-- one line per resolved ticket: [title](issues/NN-slug.md): gist -->
+
 - [Resend send semantics](issues/01-resend-send-semantics.md): `Idempotency-Key` dedupes the same method+endpoint+body for only 24 h (`409` on a different body, or while the first request is in flight). The response carries only the email ID, there is no lookup by key, and the SDK neither throws nor retries. Status comes from `GET /emails/{id}` `last_event` or from Svix-signed, at-least-once webhooks.
 - [MCP on Cloudflare and MCP Apps](issues/04-mcp-on-cloudflare-and-mcp-apps.md): stateless `createMcpHandler` (SDK v2, Streamable HTTP, no DO) behind `workers-oauth-provider`; MCP Apps is stable with app-only tools, but the server cannot tell a UI click from an agent call, so verdicts need a separately authenticated Reviewer channel
 - [How cup is built](issues/02-cup-architecture.md): pnpm+Turbo monorepo; code-first `@hono/zod-openapi` contract packages (`*-api.routes`) with exported OpenAPI JSON, Hono RPC `hc` clients wrapped in hand-written classes (`*-api.client`), a commander CLI on the client, one Wrangler-deployed Worker; cup has no MCP server
@@ -51,4 +52,4 @@ A spec ready to build from for the email-draft approval system described in [spe
 
 - HTML body: planned as the first future increment (Draft data, safe rendering in the review UI, Resend `html` field). Nothing about it is decided in this map.
 - Account management (from the input spec): preconfigured credentials instead.
-- Building an agent (from the input spec): the Agent interface is only *used* by agents.
+- Building an agent (from the input spec): the Agent interface is only _used_ by agents.

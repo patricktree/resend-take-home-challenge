@@ -1,0 +1,6 @@
+{
+  "name": "@draft-approval/api.client",
+  "private": true,
+  "description": "The typed API client used by the Review UI, the MCP server and the CLI",
+  "type": "module"
+}

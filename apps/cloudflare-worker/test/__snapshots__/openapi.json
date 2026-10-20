@@ -1,0 +1,62 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Email Draft Approval API",
+    "version": "1.0.0",
+    "description": "Agents create, revise and submit email Drafts; a human Reviewer approves or rejects the submitted Revision in the Review UI, and an Approval sends the email through Resend. Every route except this document requires a bearer token. Errors use the `ErrorResponse` envelope."
+  },
+  "components": {
+    "securitySchemes": {
+      "agentAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "The Agent token (`agent_…`), shared by every Agent."
+      },
+      "reviewerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "The Reviewer token (`reviewer_…`), held by the human Reviewer only."
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "UNAUTHENTICATED",
+                  "NOT_FOUND",
+                  "INTERNAL_ERROR"
+                ],
+                "description": "Machine-readable error code"
+              },
+              "message": {
+                "type": "string",
+                "description": "Human-readable description of the error"
+              },
+              "requestId": {
+                "type": "string",
+                "description": "The request's id, also sent as the `X-Request-Id` header"
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "requestId"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {},
+  "webhooks": {}
+}

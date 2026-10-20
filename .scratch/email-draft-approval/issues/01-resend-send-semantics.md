@@ -2,7 +2,7 @@
 
 Type: research
 Status: resolved
-Blocked by: 
+Blocked by:
 
 ## Question
 

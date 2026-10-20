@@ -30,13 +30,13 @@ Resolved by grilling with Patrick on 2026-10-20. The test mechanics from [11](11
 
 ### Levels
 
-| Level | Tool | Covers |
-| --- | --- | --- |
-| Integration (priority 1) | Vitest + `createTestHarness`, `apps/cloudflare-worker/test/` and `libs/drafts/test/` | Every API, auth, MCP and Send-pipeline guarantee, including all races |
-| e2e (priority 2) | Playwright in cup's Docker image against `wrangler dev` | The review flow from [12](12-review-ui.md)'s comment, end to end through the real Queue |
-| CLI process | Vitest, spawning the real `draft-approval` process against a `node:http` API stub | Argument parsing, output, exit codes, token handling |
-| Unit (priority 3) | Vitest | Pure functions only (see below) |
-| Live contract (opt-in) | Vitest, `pnpm test:resend-live` | Resend's idempotency behavior, against the real API |
+| Level                    | Tool                                                                                 | Covers                                                                                  |
+| ------------------------ | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| Integration (priority 1) | Vitest + `createTestHarness`, `apps/cloudflare-worker/test/` and `libs/drafts/test/` | Every API, auth, MCP and Send-pipeline guarantee, including all races                   |
+| e2e (priority 2)         | Playwright in cup's Docker image against `wrangler dev`                              | The review flow from [12](12-review-ui.md)'s comment, end to end through the real Queue |
+| CLI process              | Vitest, spawning the real `draft-approval` process against a `node:http` API stub    | Argument parsing, output, exit codes, token handling                                    |
+| Unit (priority 3)        | Vitest                                                                               | Pure functions only (see below)                                                         |
+| Live contract (opt-in)   | Vitest, `pnpm test:resend-live`                                                      | Resend's idempotency behavior, against the real API                                     |
 
 ### Isolation: a fresh harness per test
 
@@ -56,15 +56,15 @@ Resolved by grilling with Patrick on 2026-10-20. The test mechanics from [11](11
 
 Each race names its winner and the loser's outcome; both the gated and the concurrent variant run where applicable.
 
-| Race | Outcome |
-| --- | --- |
-| approve ‖ approve, approve ‖ reject | One verdict; the loser gets `REVISION_ALREADY_DECIDED` with `existingVerdict` |
-| approve ‖ revise, reject ‖ revise | First commit wins; the loser gets `DRAFT_APPROVED` (revise lost to an Approval) or `REVISION_SUPERSEDED` (verdict lost) |
-| revise ‖ revise on the same `baseRevisionId` | One new Revision; the other gets `REVISION_SUPERSEDED` |
-| submit ‖ revise, submit ‖ submit | `REVISION_SUPERSEDED` / `REVISION_ALREADY_SUBMITTED` |
-| Same Queue message delivered twice at once | One `SENT`, one email in the ledger; the other attempt gets `409 concurrent_idempotent_requests` and is retried |
-| Send reconciler re-enqueue ‖ consumer | One email in the ledger |
-| Late `SENT` ‖ `FAILED` (deadline or DLQ) | `SENT` wins |
+| Race                                         | Outcome                                                                                                                 |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| approve ‖ approve, approve ‖ reject          | One verdict; the loser gets `REVISION_ALREADY_DECIDED` with `existingVerdict`                                           |
+| approve ‖ revise, reject ‖ revise            | First commit wins; the loser gets `DRAFT_APPROVED` (revise lost to an Approval) or `REVISION_SUPERSEDED` (verdict lost) |
+| revise ‖ revise on the same `baseRevisionId` | One new Revision; the other gets `REVISION_SUPERSEDED`                                                                  |
+| submit ‖ revise, submit ‖ submit             | `REVISION_SUPERSEDED` / `REVISION_ALREADY_SUBMITTED`                                                                    |
+| Same Queue message delivered twice at once   | One `SENT`, one email in the ledger; the other attempt gets `409 concurrent_idempotent_requests` and is retried         |
+| Send reconciler re-enqueue ‖ consumer        | One email in the ledger                                                                                                 |
+| Late `SENT` ‖ `FAILED` (deadline or DLQ)     | `SENT` wins                                                                                                             |
 
 - **No partial writes:** every losing verdict or revise leaves the Draft and Revision rows unchanged, and the test asserts it. A D1 `batch()` does not abort when an `UPDATE` matches 0 rows, so each later statement of the Approval batch (`approvedRevisionId`, `QUEUED`, the outbox columns) and of the revise batch (Revision insert, latest-pointer update) must carry its own guard. This makes explicit what [07](07-exactly-once-sending.md)'s "conditional `batch()`" requires.
 
@@ -124,6 +124,6 @@ Zod limits are tested through HTTP at integration level, not as unit tests.
 
 ### For the spec
 
-- Demo simplifications: extends 11's "single production environment, manual deploys" entry: tests run only locally through `pnpm validate`, with no CI and no Git hooks. *Real deployment:* CI runs unit, integration and e2e tests on every change and gates deploys on them, plus a scheduled run of the live Resend contract test.
+- Demo simplifications: extends 11's "single production environment, manual deploys" entry: tests run only locally through `pnpm validate`, with no CI and no Git hooks. _Real deployment:_ CI runs unit, integration and e2e tests on every change and gates deploys on them, plus a scheduled run of the live Resend contract test.
 - Refines [07](07-exactly-once-sending.md) and [06](06-approval-binding.md): every statement in the Approval and revise batches carries its own guard, since a 0-row `UPDATE` does not abort a D1 `batch()`.
 - Refines [11](11-cloudflare-app-structure.md): a fresh harness per test (not per file) with migrations applied per test; no `/__test/d1` route; the e2e Wrangler config sets `max_batch_timeout: 1`.

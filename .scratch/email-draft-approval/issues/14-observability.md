@@ -32,7 +32,7 @@ Resolved by grilling with Patrick on 2026-10-20. Observability was not asked for
 
 ### For the spec
 
-- Demo simplifications: **"No observability or alerting"** replaces 07's "no alerting" entry. *Demo:* no event logging beyond bare `console.error` on error paths, no metrics, no traces, no alerts. *Real deployment:*
+- Demo simplifications: **"No observability or alerting"** replaces 07's "no alerting" entry. _Demo:_ no event logging beyond bare `console.error` on error paths, no metrics, no traces, no alerts. _Real deployment:_
   - structured JSON log events: Submission, verdicts recorded and refused, every Send attempt with its classification, Resend status and error name and next delay, Send resolutions by source (consumer, reconciler backstop, DLQ, deadline), reconciler ticks that did something, DLQ messages;
   - correlation by `requestId` per request and by `draftId` across the Send pipeline;
   - a never-log list: tokens, recipient addresses, subject, body, Rejection reason, Resend error messages, SQL parameters;

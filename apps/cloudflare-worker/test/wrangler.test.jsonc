@@ -1,0 +1,40 @@
+// The test runtime's Wrangler config. It lives in `test/` rather than next to `wrangler.jsonc` because
+// Wrangler loads `.dev.vars` and `.env` files from the config's directory: a developer's local
+// `.dev.vars` must never change what the integration tests see.
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "draft-approval-test",
+  "main": "worker.ts",
+  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_date": "2026-08-18",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "draft-approval",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "../../../libs/drafts/migrations",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "REVISION_BODIES",
+      "bucket_name": "draft-approval-revision-bodies",
+    },
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "SEND_QUEUE",
+        "queue": "draft-approval-send",
+      },
+    ],
+  },
+  // AGENT_TOKEN and REVIEWER_TOKEN come from the `useWorker()` fixture (test/use-worker.ts).
+  "vars": {
+    "PUBLIC_BASE_URL": "https://resend-challenge.patricktree.me",
+    "RESEND_FROM": "drafts@resend-challenge.patricktree.me",
+    // Unreachable on purpose (discard port): tests never call Resend.
+    "RESEND_BASE_URL": "http://127.0.0.1:9",
+    "LOCAL_DEVELOPMENT": "true",
+  },
+}

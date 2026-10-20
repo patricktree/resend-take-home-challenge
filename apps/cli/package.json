@@ -1,0 +1,6 @@
+{
+  "name": "@draft-approval/cli",
+  "private": true,
+  "description": "The draft-approval CLI for Agents",
+  "type": "module"
+}

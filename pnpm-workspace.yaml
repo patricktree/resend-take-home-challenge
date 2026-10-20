@@ -1,0 +1,66 @@
+packages:
+  - apps/*
+  - libs/*
+  - qa/*
+  - tooling/*
+  # Opt in to additional .patricktree-stack projects only when the consuming repo uses them.
+  - .patricktree-stack/tooling/config-oxfmt
+  - .patricktree-stack/tooling/config-oxlint
+  - .patricktree-stack/tooling/config-turbo-typescript
+  - .patricktree-stack/tooling/config-typescript
+  - .patricktree-stack/tooling/config-vitest
+  - .patricktree-stack/qa-utils/test-utils-node
+
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true
+  workerd: true
+
+catalog:
+  "@types/node": ^26.6.5
+  "@typescript/native": "npm:typescript@^7.0.2"
+  # keep the runner and its coverage provider on the same exact version (coverage-v8 has an exact peer dependency on vitest)
+  "@vitest/coverage-v8": 4.1.11
+  oxfmt: ^0.72.0
+  oxlint: ^1.87.0
+  oxlint-tsgolint: ^7.0.2004
+  typescript: "npm:@typescript/typescript6@^6.0.2"
+  vite: ^8.3.4
+  vitest: 4.1.11
+  wrangler: ~4.144.0
+
+catalogs:
+  hono:
+    "@hono/zod-openapi": ^1.6.3
+    hono: ^4.13.13
+  web-app:
+    # keep in step with the wrangler version in the default catalog (both bundle workerd/miniflare)
+    "@cloudflare/vite-plugin": 1.62.2
+    vite: ^8.3.4
+
+packageExtensions:
+  eslint-plugin-react-you-might-not-need-an-effect@1.0.2:
+    # "eslint-plugin-react-you-might-not-need-an-effect" defines eslint as peer dependency, but that is not required when used by oxlint --> make it optional
+    peerDependenciesMeta:
+      eslint:
+        optional: true
+
+# handle peer dependencies in a strict way
+autoInstallPeers: false
+resolvePeersFromWorkspaceRoot: false
+strictPeerDependencies: true
+dedupePeerDependents: false
+
+# enforce specific Node.js and pnpm version (https://pnpm.io/npmrc#engine-strict)
+engineStrict: true
+
+# disable update notifier (https://pnpm.io/npmrc#update-notifier)
+updateNotifier: false
+
+# workspace-concurrency=0 will use amount of cores of the host to run tasks concurrently (https://pnpm.io/cli/recursive#--workspace-concurrency)
+workspaceConcurrency: 0
+
+minimumReleaseAgeExclude:
+  - miniflare@5.20260815.0-alpha || 5.20260921.0-alpha
+  - wrangler@4.124.0 || 4.136.1
+  - '@cloudflare/unenv-preset@2.16.2'

@@ -1,0 +1,6 @@
+{
+  "name": "@draft-approval/mcp-server",
+  "private": true,
+  "description": "The MCP server: the six Agent tools on the typed client",
+  "type": "module"
+}

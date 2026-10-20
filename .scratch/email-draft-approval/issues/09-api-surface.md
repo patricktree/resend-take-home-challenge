@@ -36,16 +36,16 @@ Resolved by grilling with Patrick on 2026-10-20.
 
 ### Operations
 
-| Operation | Route | Who | Success |
-| --- | --- | --- | --- |
-| Create | `POST /api/v1/drafts` | any | 201, Draft summary |
-| List | `GET /api/v1/drafts` | any | 200, `{ items, nextCursor }` |
-| Get | `GET /api/v1/drafts/{draftId}` | any | 200, Draft with body |
-| Revise | `POST /api/v1/drafts/{draftId}/revisions` | any | 201, Draft summary |
-| Submit | `POST /api/v1/drafts/{draftId}/revisions/{revisionId}/submission` | any | 200, Draft summary |
-| Get Revision | `GET /api/v1/drafts/{draftId}/revisions/{revisionId}` | any | 200, Revision with body |
-| Approve | `POST /api/v1/drafts/{draftId}/revisions/{revisionId}/approval` (empty body) | Reviewer | 200, Draft summary (sending `QUEUED`) |
-| Reject | `POST /api/v1/drafts/{draftId}/revisions/{revisionId}/rejection` (`{ reason? }`) | Reviewer | 200, Draft summary |
+| Operation    | Route                                                                            | Who      | Success                               |
+| ------------ | -------------------------------------------------------------------------------- | -------- | ------------------------------------- |
+| Create       | `POST /api/v1/drafts`                                                            | any      | 201, Draft summary                    |
+| List         | `GET /api/v1/drafts`                                                             | any      | 200, `{ items, nextCursor }`          |
+| Get          | `GET /api/v1/drafts/{draftId}`                                                   | any      | 200, Draft with body                  |
+| Revise       | `POST /api/v1/drafts/{draftId}/revisions`                                        | any      | 201, Draft summary                    |
+| Submit       | `POST /api/v1/drafts/{draftId}/revisions/{revisionId}/submission`                | any      | 200, Draft summary                    |
+| Get Revision | `GET /api/v1/drafts/{draftId}/revisions/{revisionId}`                            | any      | 200, Revision with body               |
+| Approve      | `POST /api/v1/drafts/{draftId}/revisions/{revisionId}/approval` (empty body)     | Reviewer | 200, Draft summary (sending `QUEUED`) |
+| Reject       | `POST /api/v1/drafts/{draftId}/revisions/{revisionId}/rejection` (`{ reason? }`) | Reviewer | 200, Draft summary                    |
 
 - No send, discard, revise-and-submit shortcut or Revision history list. No idempotency for create (a retried create may make a second Draft; accepted, not listed as a simplification).
 - Revise requires `baseRevisionId`, the Revision the change builds on; if it is not the latest Revision, 409 `REVISION_SUPERSEDED`. This guards against lost updates and duplicate Revisions from retries.
@@ -62,12 +62,27 @@ Resolved by grilling with Patrick on 2026-10-20.
 
   ```json
   {
-    "id": "drf_…", "createdAt": "…", "updatedAt": "…",
+    "id": "drf_…",
+    "createdAt": "…",
+    "updatedAt": "…",
     "reviewStatus": "PENDING",
-    "latestRevision": { "id": "rev_…", "revisionNumber": 3, "createdAt": "…",
-      "to": ["…"], "subject": "…", "body": { "plainText": "…" },
-      "reviewStatus": "PENDING", "submittedAt": "…" },
-    "lastVerdict": { "revisionId": "rev_…", "revisionNumber": 2, "verdict": "REJECTED", "reason": "…", "decidedAt": "…" },
+    "latestRevision": {
+      "id": "rev_…",
+      "revisionNumber": 3,
+      "createdAt": "…",
+      "to": ["…"],
+      "subject": "…",
+      "body": { "plainText": "…" },
+      "reviewStatus": "PENDING",
+      "submittedAt": "…"
+    },
+    "lastVerdict": {
+      "revisionId": "rev_…",
+      "revisionNumber": 2,
+      "verdict": "REJECTED",
+      "reason": "…",
+      "decidedAt": "…"
+    },
     "sending": { "status": "NOT_SENT" },
     "reviewUrl": "https://…/drafts/drf_…"
   }
@@ -77,6 +92,7 @@ Resolved by grilling with Patrick on 2026-10-20.
   - `lastVerdict` is the newest verdict on any of the Draft's Revisions, so after a Rejection and a revise the Agent still sees the reason.
   - `sending` is `{ status, emailId? (when SENT), failure? (when FAILED) }`, with `failure = { reason: REJECTED_BY_RESEND | OUTCOME_UNKNOWN, resendErrorName?, resendErrorMessage? }`. Attempt details stay in logs ([07](07-exactly-once-sending.md)).
   - `reviewUrl` points to the Draft's page in the Review UI, built from one configured public base URL.
+
 - **Draft summary** = the Draft without `latestRevision.body`. Lists and every mutation return it, so neither reads R2; only the two `GET`s by id return a body.
 
 ### Lists
@@ -98,14 +114,14 @@ Resolved by grilling with Patrick on 2026-10-20.
 
 - Envelope (cup's): `{ "error": { "code", "message", "requestId", …extras } }`, codes in upper snake case, extras inside `error` (e.g. `existingVerdict`). Every route lists each status code in OpenAPI with the shared schema; each 409 names its possible codes in the description.
 
-| HTTP | Codes |
-| --- | --- |
-| 400 | `INVALID_REQUEST` (with `issues: [{ path, message }]` from Zod) |
-| 401 | `UNAUTHENTICATED` |
-| 403 | `REVIEWER_ONLY` |
-| 404 | `DRAFT_NOT_FOUND`, `REVISION_NOT_FOUND` (also a Revision of another Draft) |
-| 409 | `REVISION_SUPERSEDED`, `REVISION_ALREADY_DECIDED` (+ `existingVerdict`), `REVISION_NOT_SUBMITTED`, `REVISION_ALREADY_SUBMITTED`, `DRAFT_APPROVED` |
-| 413 | `PAYLOAD_TOO_LARGE` |
+| HTTP | Codes                                                                                                                                             |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400  | `INVALID_REQUEST` (with `issues: [{ path, message }]` from Zod)                                                                                   |
+| 401  | `UNAUTHENTICATED`                                                                                                                                 |
+| 403  | `REVIEWER_ONLY`                                                                                                                                   |
+| 404  | `DRAFT_NOT_FOUND`, `REVISION_NOT_FOUND` (also a Revision of another Draft)                                                                        |
+| 409  | `REVISION_SUPERSEDED`, `REVISION_ALREADY_DECIDED` (+ `existingVerdict`), `REVISION_NOT_SUBMITTED`, `REVISION_ALREADY_SUBMITTED`, `DRAFT_APPROVED` |
+| 413  | `PAYLOAD_TOO_LARGE`                                                                                                                               |
 
 ### Read bookmark
 

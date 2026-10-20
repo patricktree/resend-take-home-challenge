@@ -5,7 +5,7 @@ Source: local checkout `~/workspace/cup` (remote `https://github.com/patricktree
 ## Summary
 
 - pnpm monorepo with Turborepo; workspaces `apps/*`, `libs/*`, `qa/*`, `tooling/*`, plus selected packages from the `.patricktree-stack` Git submodule (`pnpm-workspace.yaml`, `.gitmodules`).
-- HTTP API is **code-first**: routes and schemas are written in TypeScript with `@hono/zod-openapi` (`createRoute` + `OpenAPIHono` + Zod 4). The OpenAPI JSON is *exported* from the code at build time, not authored by hand.
+- HTTP API is **code-first**: routes and schemas are written in TypeScript with `@hono/zod-openapi` (`createRoute` + `OpenAPIHono` + Zod 4). The OpenAPI JSON is _exported_ from the code at build time, not authored by hand.
 - The typed client is **not generated from OpenAPI**. It is Hono RPC (`hc` from `hono/client`), with types inferred from the route definitions, wrapped in a small hand-written class per API.
 - There is **no MCP server** in cup. There is one CLI, `apps/operator`, built with `commander` + `@commander-js/extra-typings` on top of the operator API client.
 - Deployment target is a single Cloudflare Worker (`apps/cloudflare-worker`) that serves the API and the SPA assets, with Durable Objects (SQLite, Drizzle), Workflows, R2, Workers AI, Browser Rendering. Deployed manually with `wrangler deploy`; there are no CI workflow files in the repo.
@@ -18,23 +18,23 @@ Root manifest `package.json`: `packageManager: pnpm@12.11.2`, `engines.pnpm: 12.
 
 Packages (all `@cup/*`, all `private: true`):
 
-| Folder | Package | Role |
-| --- | --- | --- |
-| `apps/cloudflare-worker` | `@cup/cloudflare-worker` | Deployable Worker: `src/index.ts` is `export default createApiServer()` plus re-exports of Durable Object and Workflow classes |
-| `apps/web-app` | `@cup/web-app` | React SPA (TanStack Router/Query, XState), uses `@cup/listener-api.client` (`src/api-client.ts`) |
-| `apps/mobile-app` | — | Capacitor wrapper (Android/iOS native code) |
-| `apps/operator` | `@cup/operator` | Operator CLI (`src/cli.ts`) |
-| `libs/listener-api.routes` | `@cup/listener-api.routes` | Listener (public) API contract: Zod schemas (`src/contracts.ts`) and route definitions (`src/hono-app.ts`) |
-| `libs/listener-api.client` | `@cup/listener-api.client` | Typed client for the listener API; also exports the OpenAPI JSON |
-| `libs/operator-api.routes` | `@cup/operator-api.routes` | Operator API contract (same pattern) |
-| `libs/operator-api.client` | `@cup/operator-api.client` | Typed client for the operator API |
-| `libs/api-rpc.client` | `@cup/api-rpc.client` | Shared client helpers: `parseOkResponse`, `RpcError`, `trimTrailingSlash` |
-| `libs/api-server` | `@cup/api-server` | Server composition: a `Hono` app with middleware that mounts both route apps with real handlers (`src/api-server.ts`), plus use cases under `src/use-cases/` |
-| `libs/accounts`, `libs/conversion-grants`, `libs/registry` | | Domain owners implemented as SQLite-backed Durable Objects with Drizzle migrations (`drizzle/` folders) |
-| `libs/conversion-contracts` | | Runtime-independent shared schemas and types |
-| other `libs/*` | | Domain logic (workflow, narration, encoding, rate limits) |
-| `qa/e2e` | `@cup/e2e` | Playwright E2E and Vitest system tests |
-| `tooling/*` | | Repo tooling: `prepare-declaration-build`, `env-setup`, `docs-search`, `drizzle-migrations`, `brand-assets`, `config-oxlint` |
+| Folder                                                     | Package                    | Role                                                                                                                                                         |
+| ---------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `apps/cloudflare-worker`                                   | `@cup/cloudflare-worker`   | Deployable Worker: `src/index.ts` is `export default createApiServer()` plus re-exports of Durable Object and Workflow classes                               |
+| `apps/web-app`                                             | `@cup/web-app`             | React SPA (TanStack Router/Query, XState), uses `@cup/listener-api.client` (`src/api-client.ts`)                                                             |
+| `apps/mobile-app`                                          | —                          | Capacitor wrapper (Android/iOS native code)                                                                                                                  |
+| `apps/operator`                                            | `@cup/operator`            | Operator CLI (`src/cli.ts`)                                                                                                                                  |
+| `libs/listener-api.routes`                                 | `@cup/listener-api.routes` | Listener (public) API contract: Zod schemas (`src/contracts.ts`) and route definitions (`src/hono-app.ts`)                                                   |
+| `libs/listener-api.client`                                 | `@cup/listener-api.client` | Typed client for the listener API; also exports the OpenAPI JSON                                                                                             |
+| `libs/operator-api.routes`                                 | `@cup/operator-api.routes` | Operator API contract (same pattern)                                                                                                                         |
+| `libs/operator-api.client`                                 | `@cup/operator-api.client` | Typed client for the operator API                                                                                                                            |
+| `libs/api-rpc.client`                                      | `@cup/api-rpc.client`      | Shared client helpers: `parseOkResponse`, `RpcError`, `trimTrailingSlash`                                                                                    |
+| `libs/api-server`                                          | `@cup/api-server`          | Server composition: a `Hono` app with middleware that mounts both route apps with real handlers (`src/api-server.ts`), plus use cases under `src/use-cases/` |
+| `libs/accounts`, `libs/conversion-grants`, `libs/registry` |                            | Domain owners implemented as SQLite-backed Durable Objects with Drizzle migrations (`drizzle/` folders)                                                      |
+| `libs/conversion-contracts`                                |                            | Runtime-independent shared schemas and types                                                                                                                 |
+| other `libs/*`                                             |                            | Domain logic (workflow, narration, encoding, rate limits)                                                                                                    |
+| `qa/e2e`                                                   | `@cup/e2e`                 | Playwright E2E and Vitest system tests                                                                                                                       |
+| `tooling/*`                                                |                            | Repo tooling: `prepare-declaration-build`, `env-setup`, `docs-search`, `drizzle-migrations`, `brand-assets`, `config-oxlint`                                 |
 
 `docs/architecture/README.md` states the libraries are "code boundaries inside the deployed system, not separate network services"; Durable Object RPC and Workflow invocation are internal interfaces, and only the listener and operator APIs are HTTP.
 

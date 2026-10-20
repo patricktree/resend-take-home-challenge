@@ -1,0 +1,63 @@
+{
+  "$schema": "./node_modules/turbo/schema.json",
+  "noUpdateNotifier": true,
+  "concurrency": "100%",
+  "agentGuidance": false,
+  "globalDependencies": [
+    /* Library Worker types are generated from this config, so its runtime changes must invalidate cached tasks. */
+    "apps/cloudflare-worker/wrangler.jsonc",
+  ],
+  "futureFlags": {
+    "watchUsingTaskInputs": true,
+  },
+  "tasks": {
+    "turbo:cf-typegen": {
+      "cache": true,
+      "outputs": ["worker-configuration.d.ts"],
+    },
+    "turbo:build": {
+      "cache": false,
+      "inputs": [
+        /* default inputs = all git tracked files */
+        "$TURBO_DEFAULT$",
+        /* exclude markdown files */
+        "!*.md",
+        /* exclude license files */
+        "!LICENSE",
+      ],
+    },
+    "turbo:lint": {
+      "cache": false,
+      "inputs": [
+        /* default inputs = all git tracked files */
+        "$TURBO_DEFAULT$",
+        /* exclude markdown files */
+        "!*.md",
+        /* exclude license files */
+        "!LICENSE",
+      ],
+    },
+    "turbo:lint:fix": {
+      "cache": false,
+      "inputs": [
+        /* default inputs = all git tracked files */
+        "$TURBO_DEFAULT$",
+        /* exclude markdown files */
+        "!*.md",
+        /* exclude license files */
+        "!LICENSE",
+      ],
+    },
+    "turbo:test": {
+      "cache": false,
+      "inputs": [
+        /* default inputs = all git tracked files */
+        "$TURBO_DEFAULT$",
+        /* exclude markdown files */
+        "!*.md",
+        /* exclude license files */
+        "!LICENSE",
+      ],
+    },
+  },
+}

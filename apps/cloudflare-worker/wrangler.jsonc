@@ -1,0 +1,46 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "draft-approval",
+  "main": "src/index.ts",
+  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_date": "2026-08-18",
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "binding": "ASSETS",
+    "not_found_handling": "none",
+    "html_handling": "none",
+    "run_worker_first": true,
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "draft-approval",
+      // Local placeholder; the real id from `terraform output` replaces it before the first deploy.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "../../libs/drafts/migrations",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "REVISION_BODIES",
+      "bucket_name": "draft-approval-revision-bodies",
+    },
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "SEND_QUEUE",
+        "queue": "draft-approval-send",
+      },
+    ],
+  },
+  "vars": {
+    "PUBLIC_BASE_URL": "https://resend-challenge.patricktree.me",
+    "RESEND_FROM": "drafts@resend-challenge.patricktree.me",
+    "RESEND_BASE_URL": "https://api.resend.com",
+    "LOCAL_DEVELOPMENT": "false",
+    // Placeholder until the real, public Agent token is generated (`pnpm secrets:generate`, spec section 12, not built yet).
+    "AGENT_TOKEN": "agent_placeholder-run-pnpm-secrets-generate",
+  },
+}

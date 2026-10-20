@@ -2,7 +2,7 @@
 
 Type: research
 Status: resolved
-Blocked by: 
+Blocked by:
 
 ## Question
 
@@ -11,7 +11,7 @@ What guarantees do Cloudflare's storage and messaging primitives give under conc
 ## Answer
 
 - No Cloudflare primitive makes an outbound HTTP call exactly once. Queues, DO alarms and Workflow steps are documented as at-least-once; the Worker `fetch` handler is not retried at all and can be cut off (client disconnect, 30 s `waitUntil` cap, runtime-update drain).
-- The platform does provide an atomic, durable **claim** per key. That guarantees at most one actor *attempts* the Send under concurrency and retries.
+- The platform does provide an atomic, durable **claim** per key. That guarantees at most one actor _attempts_ the Send under concurrency and retries.
 - D1: one single-threaded database, so queries are effectively serialized. `batch()` is an atomic transaction, but there are no interactive transactions. Use a conditional `UPDATE ... WHERE state='approved'` checked via `meta.changes`, or a `UNIQUE` insert. Read replicas lag arbitrarily, so decision-bearing reads must hit the primary. Writes are not auto-retried, and a transient error leaves the outcome unknown.
 - Durable Objects: globally unique per ID, single-threaded, synchronous SQLite (check + claim cannot interleave). Output gates hold outbound `fetch` until prior writes are durable, so the claim is persisted before Resend sees the request. `await fetch` reopens the input gate, so the persisted state (not memory) must be the guard.
 - DO shutdown can let an old instance finish a storage-free `fetch` it cannot record. After a reset, a `sending` Draft has an unknown outcome.

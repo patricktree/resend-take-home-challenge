@@ -10,6 +10,7 @@ import {
   getDraft,
   getRevision,
   reviseDraft,
+  submitRevision,
   type Draft,
   type DraftSummary,
   type Revision,
@@ -96,6 +97,64 @@ export const DRAFT_HANDLERS: ApiHandlers<ApiServerHonoEnvironment> = {
           404,
           ERROR_CODE.REVISION_NOT_FOUND,
           "The Draft has no Revision with this id.",
+        );
+      }
+      default: {
+        return assertUnreachable(result);
+      }
+    }
+  },
+
+  submitRevision: async (context) => {
+    const { draftId, revisionId } = context.req.valid("param");
+    const result = await submitRevision(context.get("draftsStorage"), draftId, revisionId);
+
+    switch (result.outcome) {
+      case "SUBMITTED": {
+        return context.json(toDraftSummaryResponse(result.draft, context.env.PUBLIC_BASE_URL), 200);
+      }
+      case "DRAFT_NOT_FOUND": {
+        return jsonError(context, 404, ERROR_CODE.DRAFT_NOT_FOUND, "No Draft has this id.");
+      }
+      case "REVISION_NOT_FOUND": {
+        return jsonError(
+          context,
+          404,
+          ERROR_CODE.REVISION_NOT_FOUND,
+          "The Draft has no Revision with this id.",
+        );
+      }
+      case "DRAFT_APPROVED": {
+        return jsonError(
+          context,
+          409,
+          ERROR_CODE.DRAFT_APPROVED,
+          "The Draft is approved and accepts no Submission.",
+        );
+      }
+      case "REVISION_SUPERSEDED": {
+        return jsonError(
+          context,
+          409,
+          ERROR_CODE.REVISION_SUPERSEDED,
+          "The Revision is no longer the Draft's latest; read the Draft again and submit its latest Revision.",
+        );
+      }
+      case "REVISION_ALREADY_DECIDED": {
+        return jsonError(
+          context,
+          409,
+          ERROR_CODE.REVISION_ALREADY_DECIDED,
+          "The Revision already has a verdict, named in `existingVerdict`; revise the Draft to submit a new Revision.",
+          { extras: { existingVerdict: result.existingVerdict } },
+        );
+      }
+      case "REVISION_ALREADY_SUBMITTED": {
+        return jsonError(
+          context,
+          409,
+          ERROR_CODE.REVISION_ALREADY_SUBMITTED,
+          "The Revision is already submitted and awaits the Reviewer's verdict.",
         );
       }
       default: {

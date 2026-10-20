@@ -20,6 +20,7 @@ export type ApiHandlers<E extends ApiContractEnvironment> = {
   getDraft: RouteHandler<typeof getDraftRoute, E>;
   reviseDraft: RouteHandler<typeof reviseDraftRoute, E>;
   getRevision: RouteHandler<typeof getRevisionRoute, E>;
+  submitRevision: RouteHandler<typeof submitRevisionRoute, E>;
 };
 
 /** The contract app's type, from which the typed client infers every route. */
@@ -182,6 +183,37 @@ const getRevisionRoute = createRoute({
   },
 });
 
+const submitRevisionRoute = createRoute({
+  method: "post",
+  path: "/api/v1/drafts/{draftId}/revisions/{revisionId}/submission",
+  operationId: "submitRevision",
+  tags: ["Drafts"],
+  summary: "Submit a Revision for review",
+  description:
+    "Submits one specific Revision, the Draft's latest and `UNSUBMITTED`, for the Reviewer's verdict; the Revision and the Draft become `PENDING`. Takes no request body. Each Revision is submitted at most once. Revising the Draft afterwards supersedes the Pending Revision, which withdraws its Submission until you submit the new Revision.",
+  security: AGENT_OR_REVIEWER_SECURITY,
+  request: {
+    params: revisionParamsSchema,
+    headers: readBookmarkRequestHeadersSchema,
+  },
+  responses: {
+    200: {
+      description: "The Pending Draft, without the body.",
+      headers: readBookmarkResponseHeadersSchema,
+      content: { "application/json": { schema: draftSummarySchema } },
+    },
+    400: errorResponse("`INVALID_REQUEST`: an id or a header is malformed; see `issues`."),
+    401: errorResponse("`UNAUTHENTICATED`: a valid bearer token is required."),
+    404: errorResponse(
+      "`DRAFT_NOT_FOUND`: no Draft has this id. `REVISION_NOT_FOUND`: the Draft has no Revision with this id, including when it is another Draft's Revision.",
+    ),
+    409: errorResponse(
+      "In order of precedence: `DRAFT_APPROVED`: the Draft is approved and accepts no Submission, also of its approved Revision. `REVISION_SUPERSEDED`: the Revision is no longer the Draft's latest; read the Draft again and submit its latest Revision. `REVISION_ALREADY_DECIDED`: the Revision already has a verdict, named in `existingVerdict`; revise the Draft to submit a new Revision. `REVISION_ALREADY_SUBMITTED`: the Revision is already Pending, for example because an earlier attempt of this request went through.",
+    ),
+    500: errorResponse("`INTERNAL_ERROR`: an unexpected error occurred."),
+  },
+});
+
 /**
  * Creates the OpenAPI app that carries the API contract with the given route handlers and serves
  * its OpenAPI 3.1 document at {@link OPENAPI_DOCUMENT_PATH}. Requests that violate a route's schema
@@ -237,7 +269,8 @@ export function createApiContractApp<E extends ApiContractEnvironment>(handlers:
     .openapi(createDraftRoute, handlers.createDraft)
     .openapi(getDraftRoute, handlers.getDraft)
     .openapi(reviseDraftRoute, handlers.reviseDraft)
-    .openapi(getRevisionRoute, handlers.getRevision);
+    .openapi(getRevisionRoute, handlers.getRevision)
+    .openapi(submitRevisionRoute, handlers.submitRevision);
 }
 
 function errorResponse(description: string) {

@@ -1,3 +1,4 @@
+import { Temporal } from "temporal-polyfill";
 import { test } from "vitest";
 
 import { ApiError, DraftApprovalClient } from "@draft-approval/api.client";
@@ -76,6 +77,51 @@ test("a revise on a superseded base throws an ApiError with REVISION_SUPERSEDED"
   const error = await catchApiError(client.reviseDraft(created.id, revise));
 
   expect(error).toMatchObject({ status: 409, code: "REVISION_SUPERSEDED", extras: {} });
+});
+
+test("the client submits a Revision, and a repeated Submission throws an ApiError with REVISION_ALREADY_SUBMITTED", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const worker = await useWorker({ onTestFinished });
+  const client = createClient(worker, LOCAL_AGENT_TOKEN);
+  const created = await client.createDraft(DRAFT_DATA);
+
+  const submitted = await client.submitRevision(created.id, created.latestRevision.id);
+  const error = await catchApiError(client.submitRevision(created.id, created.latestRevision.id));
+
+  expect(submitted).toMatchObject({
+    id: created.id,
+    reviewStatus: "PENDING",
+    latestRevision: { id: created.latestRevision.id, reviewStatus: "PENDING" },
+  });
+  expect(submitted.latestRevision).not.toHaveProperty("body");
+  expect(error).toMatchObject({ status: 409, code: "REVISION_ALREADY_SUBMITTED", extras: {} });
+});
+
+test("submitting a Rejected Revision throws an ApiError with REVISION_ALREADY_DECIDED and the existing verdict", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const worker = await useWorker({ onTestFinished });
+  const client = createClient(worker, LOCAL_AGENT_TOKEN);
+  const created = await client.createDraft(DRAFT_DATA);
+  await client.submitRevision(created.id, created.latestRevision.id);
+  const env = await worker.getEnv();
+  // Verdicts do not exist yet: the Rejection is written directly.
+  await env.DB.prepare(
+    "UPDATE revisions SET review_status = 'REJECTED', decided_at = ?1 WHERE id = ?2",
+  )
+    .bind(Temporal.Now.instant().epochMilliseconds, created.latestRevision.id)
+    .run();
+
+  const error = await catchApiError(client.submitRevision(created.id, created.latestRevision.id));
+
+  expect(error).toMatchObject({
+    status: 409,
+    code: "REVISION_ALREADY_DECIDED",
+    extras: { existingVerdict: "REJECTED" },
+  });
 });
 
 test("getting another Draft's Revision throws an ApiError with REVISION_NOT_FOUND", async ({

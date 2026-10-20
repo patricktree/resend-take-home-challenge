@@ -1,7 +1,8 @@
-import { css, cx } from "@linaria/core";
+import { css } from "@linaria/core";
 import React from "react";
 
-import { controlBoxStyles, DSButton } from "#src/design-system/button.tsx";
+import { DSButton } from "#src/design-system/button.tsx";
+import { textFieldStyles } from "#src/design-system/text-field.ts";
 import { storeReviewerToken } from "#src/reviewer-session.ts";
 
 type TokenScreenProps = {
@@ -52,7 +53,7 @@ export function TokenScreen({ wasTokenRejected }: TokenScreenProps): React.React
         <label htmlFor={tokenInputId}>Reviewer token</label>
         <input
           id={tokenInputId}
-          className={cx(controlBoxStyles, inputStyles)}
+          className={textFieldStyles}
           name="token"
           type="password"
           autoComplete="current-password"
@@ -79,12 +80,6 @@ const screenStyles = css`
 const formStyles = css`
   display: grid;
   gap: var(--spacing-base);
-`;
-
-const inputStyles = css`
-  font-size: var(--font-size-md);
-  background-color: var(--color-input-bg);
-  border: 1px solid currentcolor;
 `;
 
 const continueButtonStyles = css`

@@ -10,6 +10,7 @@
     "clean": "del-cli --dot=true \"*.tsbuildinfo\" \"playwright-output\"",
     "test:e2e": "turbo run turbo:build --filter=@draft-approval/e2e... --output-logs=errors-only && playwright test",
     "test:e2e:ui": "PWDEBUG=1 playwright test --ui",
+    "test:e2e:update": "pnpm run test:e2e --update-snapshots=changed",
     "turbo:build": "tsc --build ./tsconfig.json",
     "turbo:lint": "oxlint --type-aware --max-warnings 0 .",
     "turbo:lint:fix": "pnpm run turbo:lint --fix"
@@ -19,6 +20,7 @@
     "@draft-approval/api.routes": "workspace:*",
     "@draft-approval/cloudflare-worker": "workspace:*",
     "@draft-approval/config-oxlint": "workspace:*",
+    "@draft-approval/resend-stub": "workspace:*",
     "@patricktree-stack/config-playwright": "workspace:*",
     "@patricktree-stack/config-typescript": "workspace:*",
     "@playwright/test": "catalog:",

@@ -6,9 +6,9 @@
 
 **Status:** ready-for-agent
 
-- [ ] Approve (contained), optional reason textarea, Reject (outlined); no confirmation; disabled in flight; state keyed by the loaded Revision id; after success the page stays and refetches, lists invalidated
-- [ ] Sending-status labels per the spec (also in the Decided list); the Draft page polls every 3 s while `QUEUED`
-- [ ] Inline verdict errors above the controls with the spec's messages; "Reload Draft" for `REVISION_SUPERSEDED` and `REVISION_ALREADY_DECIDED`; nothing retried or re-applied
-- [ ] Sending-status labels unit-tested
-- [ ] e2e: Approve → "Sent" through real Miniflare Queue delivery; Reject with and without reason; both stale-verdict errors; both `FAILED` wordings
-- [ ] Five screenshot baselines in Docker: token screen, Pending list, Draft page (Pending), Draft page after Approval ("Sent"), inline `REVISION_SUPERSEDED`
+- [x] Approve (contained), optional reason textarea, Reject (outlined); no confirmation; disabled in flight; state keyed by the loaded Revision id; after success the page stays and refetches, lists invalidated
+- [x] Sending-status labels per the spec (also in the Decided list); the Draft page polls every 3 s while `QUEUED`
+- [x] Inline verdict errors above the controls with the spec's messages; "Reload Draft" for `REVISION_SUPERSEDED` and `REVISION_ALREADY_DECIDED`; nothing retried or re-applied
+- [x] Sending-status labels unit-tested
+- [x] e2e: Approve → "Sent" through real Miniflare Queue delivery; Reject with and without reason; both stale-verdict errors; both `FAILED` wordings
+- [x] Five screenshot baselines in Docker: token screen, Pending list, Draft page (Pending), Draft page after Approval ("Sent"), inline `REVISION_SUPERSEDED`

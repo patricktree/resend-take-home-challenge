@@ -11,9 +11,14 @@ import { localTimeLabel, reviewStatusLabel, sendingStatusLabel } from "#src/draf
 import { draftQuery } from "#src/draft-queries.ts";
 import { ErrorMessage } from "#src/error-message.tsx";
 import { rootRoute } from "#src/root-route.tsx";
+import { VerdictControls } from "#src/verdict-controls.tsx";
 
 type DraftProps = {
   draft: DraftResponse;
+};
+
+type ReviewOutcomeProps = DraftProps & {
+  reloadDraft: () => Promise<unknown>;
 };
 
 type RejectionLineProps = {
@@ -33,10 +38,10 @@ export const draftRoute = createRoute({
   errorComponent: DraftPageError,
 });
 
-/** The Draft's latest Revision, read-only, with what its review status allows. */
+/** The Draft's latest Revision, with what its review status allows. */
 function DraftPage(): React.ReactNode {
   const { draftId } = draftRoute.useParams();
-  const { data: draft } = useSuspenseQuery(draftQuery(draftId));
+  const { data: draft, refetch } = useSuspenseQuery(draftQuery(draftId));
   const revision = draft.latestRevision;
 
   return (
@@ -52,7 +57,7 @@ function DraftPage(): React.ReactNode {
       </div>
       <EarlierRejection draft={draft} />
       <div className={bodyStyles}>{revision.body.plainText}</div>
-      <ReviewOutcome draft={draft} />
+      <ReviewOutcome draft={draft} reloadDraft={() => refetch({ throwOnError: true })} />
     </article>
   );
 }
@@ -82,7 +87,7 @@ function EarlierRejection({ draft }: DraftProps): React.ReactNode {
   );
 }
 
-function ReviewOutcome({ draft }: DraftProps): React.ReactNode {
+function ReviewOutcome({ draft, reloadDraft }: ReviewOutcomeProps): React.ReactNode {
   const revision = draft.latestRevision;
 
   switch (draft.reviewStatus) {
@@ -90,8 +95,8 @@ function ReviewOutcome({ draft }: DraftProps): React.ReactNode {
       return <p>Not submitted for review yet.</p>;
     }
     case "PENDING": {
-      // Ticket 13 adds the verdict controls (Approve, Reason for rejection, Reject) here.
-      return null;
+      // Keyed, so a newer Revision gets fresh controls: no reason or error carries over to it.
+      return <VerdictControls key={revision.id} draft={draft} reloadDraft={reloadDraft} />;
     }
     case "APPROVED": {
       return (

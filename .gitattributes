@@ -2,4 +2,5 @@
 # the pathspec ':(exclude,attr:linguist-generated=true)'.
 apps/cloudflare-worker/test/__snapshots__/openapi.json linguist-generated=true
 libs/drafts/migrations/** linguist-generated=true
+qa/e2e/snapshots/** linguist-generated=true
 terraform/.terraform.lock.hcl linguist-generated=true

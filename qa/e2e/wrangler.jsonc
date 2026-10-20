@@ -57,8 +57,8 @@
     // production origin and the tests open their path on the test's origin.
     "PUBLIC_BASE_URL": "https://resend-challenge.patricktree.me",
     "RESEND_FROM": "drafts@resend-challenge.patricktree.me",
-    // Unreachable on purpose (discard port): the tests never call Resend.
-    "RESEND_BASE_URL": "http://127.0.0.1:9",
+    // RESEND_BASE_URL and a dummy RESEND_API_KEY come from each test's `wrangler dev --var`, which
+    // points them at the test's own Resend stub: the tests never call Resend.
     // Accepts LOCAL_AGENT_TOKEN and LOCAL_REVIEWER_TOKEN on local hosts, host.docker.internal included.
     "LOCAL_DEVELOPMENT": "true",
     "AGENT_TOKEN": "agent_e2e-configured-agent-token",

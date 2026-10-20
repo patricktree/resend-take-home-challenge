@@ -1,4 +1,4 @@
-import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, type QueryClient, queryOptions } from "@tanstack/react-query";
 
 import type { ListDraftsQuery } from "@draft-approval/api.routes";
 
@@ -20,11 +20,22 @@ export const pendingDraftsQuery = createDraftListQuery("pending", PENDING_LIST_Q
 
 export const decidedDraftsQuery = createDraftListQuery("decided", DECIDED_LIST_QUERY);
 
+/** How often the Draft page reads the Draft again while its Send is `QUEUED`. */
+const SENDING_POLL_INTERVAL_MS = 3000;
+
 export function draftQuery(draftId: string) {
   return queryOptions({
     queryKey: [...DRAFTS_QUERY_KEY, "draft", draftId],
     queryFn: () => getApiClient().getDraft(draftId),
+    // Polls until the Send leaves `QUEUED` ("Sending…"), then stops.
+    refetchInterval: (query) =>
+      query.state.data?.sending.status === "QUEUED" ? SENDING_POLL_INTERVAL_MS : false,
   });
+}
+
+/** After a verdict: the Draft and both lists read again (the lists once they are shown). */
+export function invalidateDraftQueries(queryClient: QueryClient): Promise<void> {
+  return queryClient.invalidateQueries({ queryKey: DRAFTS_QUERY_KEY });
 }
 
 function createDraftListQuery(listName: string, listQuery: ListDraftsQuery) {

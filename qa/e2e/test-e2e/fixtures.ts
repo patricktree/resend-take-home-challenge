@@ -8,6 +8,7 @@ import util from "node:util";
 
 import { DraftApprovalClient } from "@draft-approval/api.client";
 import { LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN } from "@draft-approval/api.routes";
+import { startResendStub, type ResendStub } from "@draft-approval/resend-stub";
 
 type ReviewEnvironment = {
   /**
@@ -19,6 +20,13 @@ type ReviewEnvironment = {
   agentClient: DraftApprovalClient;
   /** Renders verdicts for test setup, with the local Reviewer token. */
   reviewerClient: DraftApprovalClient;
+  /** The test's own Resend stub, which the Worker's Queue consumer sends every email to. */
+  resendStub: ResendStub;
+  /**
+   * Runs SQL on the Worker's local D1 database with `wrangler d1 execute`, for a state no API
+   * request reaches within a test, such as a Send that ended as `OUTCOME_UNKNOWN`.
+   */
+  executeSql: (sql: string) => Promise<void>;
 };
 
 type Fixtures = {
@@ -35,24 +43,35 @@ const READY_LINE_PATTERN = /Ready on http:\/\/127\.0\.0\.1:(?<port>\d+)/;
 const WRANGLER_START_TIMEOUT_MS = 30_000;
 const WRANGLER_STOP_TIMEOUT_MS = 10_000;
 
+/** The dummy `RESEND_API_KEY` of every test Worker; only the test's Resend stub receives it. */
+const TEST_RESEND_API_KEY = "re_e2e-dummy-resend-api-key";
+
 const execFile = util.promisify(childProcess.execFile);
 
 export const test = base.extend<Fixtures>({
   // Playwright reads a fixture's dependencies from the destructuring pattern, which may not be empty.
   reviewEnvironment: async ({ browserName: _browserName }, use, testInfo) => {
-    const worker = await startWorker();
+    // On the host, like `wrangler dev`, which reaches it on 127.0.0.1.
+    const resendStub = await startResendStub();
     try {
-      const hostOrigin = `http://127.0.0.1:${worker.port}`;
-      await use({
-        browserOrigin: `http://host.docker.internal:${worker.port}`,
-        agentClient: new DraftApprovalClient({ baseUrl: hostOrigin, token: LOCAL_AGENT_TOKEN }),
-        reviewerClient: new DraftApprovalClient({
-          baseUrl: hostOrigin,
-          token: LOCAL_REVIEWER_TOKEN,
-        }),
-      });
+      const worker = await startWorker(resendStub.url);
+      try {
+        const hostOrigin = `http://127.0.0.1:${worker.port}`;
+        await use({
+          browserOrigin: `http://host.docker.internal:${worker.port}`,
+          agentClient: new DraftApprovalClient({ baseUrl: hostOrigin, token: LOCAL_AGENT_TOKEN }),
+          reviewerClient: new DraftApprovalClient({
+            baseUrl: hostOrigin,
+            token: LOCAL_REVIEWER_TOKEN,
+          }),
+          resendStub,
+          executeSql: worker.executeSql,
+        });
+      } finally {
+        await worker.stop(testInfo);
+      }
     } finally {
-      await worker.stop(testInfo);
+      await resendStub.close();
     }
   },
   baseURL: async ({ reviewEnvironment }, use) => {
@@ -62,22 +81,42 @@ export const test = base.extend<Fixtures>({
 
 type RunningWorker = {
   port: number;
+  executeSql: (sql: string) => Promise<void>;
   stop: (testInfo: TestInfo) => Promise<void>;
 };
 
 /**
  * Starts the Worker with `wrangler dev` on a port the OS assigns, with its own empty persistence
- * directory and the D1 migrations applied.
+ * directory and the D1 migrations applied. It sends emails to the Resend stub at `resendBaseUrl`.
  */
-async function startWorker(): Promise<RunningWorker> {
+async function startWorker(resendBaseUrl: string): Promise<RunningWorker> {
   const persistenceDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "draft-approval-e2e-"));
   const removePersistenceDirectory = () =>
     fs.rm(persistenceDirectory, { recursive: true, force: true });
 
   try {
-    const { port, output, wranglerProcess } = await startWranglerDev(persistenceDirectory);
+    const { port, output, wranglerProcess } = await startWranglerDev(
+      persistenceDirectory,
+      resendBaseUrl,
+    );
     return {
       port,
+      executeSql: async (sql) => {
+        await execFile(
+          WRANGLER_BIN,
+          [
+            "d1",
+            "execute",
+            "DB",
+            "--local",
+            "--persist-to",
+            persistenceDirectory,
+            "--command",
+            sql,
+          ],
+          { cwd: E2E_DIRECTORY, env: createWranglerEnvironment() },
+        );
+      },
       stop: async (testInfo) => {
         await stopProcessGroup(wranglerProcess);
         await removePersistenceDirectory();
@@ -93,7 +132,7 @@ async function startWorker(): Promise<RunningWorker> {
   }
 }
 
-async function startWranglerDev(persistenceDirectory: string) {
+async function startWranglerDev(persistenceDirectory: string, resendBaseUrl: string) {
   const environment = createWranglerEnvironment();
   const output: string[] = [];
 
@@ -116,6 +155,10 @@ async function startWranglerDev(persistenceDirectory: string) {
       "--persist-to",
       persistenceDirectory,
       "--show-interactive-dev-session=false",
+      "--var",
+      `RESEND_BASE_URL:${resendBaseUrl}`,
+      "--var",
+      `RESEND_API_KEY:${TEST_RESEND_API_KEY}`,
     ],
     // Its own process group, so stopping it also stops the workerd processes it starts.
     { cwd: E2E_DIRECTORY, env: environment, detached: true, stdio: ["ignore", "pipe", "pipe"] },

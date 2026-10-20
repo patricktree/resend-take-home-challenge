@@ -516,6 +516,9 @@ importers:
       '@patricktree-stack/config-typescript':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-typescript
+      '@patricktree-stack/config-vitest':
+        specifier: workspace:*
+        version: link:../../.patricktree-stack/tooling/config-vitest
       '@patricktree-stack/config-wyw-in-js':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-wyw-in-js
@@ -549,6 +552,9 @@ importers:
       vite:
         specifier: catalog:web-app
         version: 8.3.4(@types/node@26.6.5)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(@types/node@26.6.5)(vite@8.3.4(@types/node@26.6.5))
 
   libs/api.client:
     dependencies:
@@ -803,6 +809,9 @@ importers:
       '@draft-approval/config-oxlint':
         specifier: workspace:*
         version: link:../../tooling/config-oxlint
+      '@draft-approval/resend-stub':
+        specifier: workspace:*
+        version: link:../resend-stub
       '@patricktree-stack/config-playwright':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-playwright

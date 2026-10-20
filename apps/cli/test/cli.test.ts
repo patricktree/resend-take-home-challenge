@@ -1,5 +1,3 @@
-import * as jsonc from "jsonc-parser";
-import assert from "node:assert/strict";
 import childProcess from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -8,11 +6,15 @@ import url from "node:url";
 import { test } from "vitest";
 
 import { getUnreachableUrl, useApiStub, type StubResponse } from "#test/api-stub.ts";
+import { readProductionVar } from "#test/production-config.ts";
 
 const CLI_PATH = url.fileURLToPath(new URL("../src/cli.ts", import.meta.url));
-const WRANGLER_CONFIG_URL = new URL("../../cloudflare-worker/wrangler.jsonc", import.meta.url);
 
 const DRAFTS_COMMANDS = ["create", "get", "list", "revise", "submit", "revision"];
+
+/** An `approve` or `reject` command or option line in a help text; prose may still mention verdicts. */
+const VERDICT_COMMAND_OR_OPTION_PATTERN =
+  /^ {2}(?:--)?(?:approve|reject)\b|--(?:approve|reject)\b/im;
 
 /** Distinctive, so a test can tell it apart from any other text in the output. */
 const AGENT_TOKEN = "agent_cli-process-test-token-6f1d0c";
@@ -73,6 +75,7 @@ test("the root help lists only the drafts commands, names the token variable and
 
   expect(result.exitCode).toBe(0);
   expect(listHelpCommands(result.stdout)).toStrictEqual(["drafts", "help"]);
+  expect(result.stdout).not.toMatch(VERDICT_COMMAND_OR_OPTION_PATTERN);
   expect(result.stdout).toContain("DRAFT_APPROVAL_TOKEN");
   expect(result.stdout).toContain("https://resend-challenge.patricktree.me/api/openapi.json");
 });
@@ -93,6 +96,7 @@ test.for(DRAFTS_COMMANDS)(
     expect(result.stdout).toContain(`Usage: draft-approval drafts ${command}`);
     expect(result.stdout).toContain("--json");
     expect(result.stdout).toContain("--api-url");
+    expect(result.stdout).not.toMatch(VERDICT_COMMAND_OR_OPTION_PATTERN);
   },
 );
 
@@ -102,7 +106,7 @@ test.for(["approve", "reject"])(
     const result = await runCli(["drafts", command]);
 
     expect(result.exitCode).toBe(1);
-    expect(parseError(result.stderr)).toStrictEqual({
+    expect(JSON.parse(result.stderr)).toStrictEqual({
       error: { code: "INVALID_REQUEST", message: expect.stringContaining("unknown command") },
     });
   },
@@ -160,7 +164,7 @@ test("without DRAFT_APPROVAL_TOKEN the CLI sends the public Agent token that pro
   });
 
   expect(result.exitCode).toBe(0);
-  const productionAgentToken = await readProductionAgentToken();
+  const productionAgentToken = await readProductionVar("AGENT_TOKEN");
   expect(api.requests.map((request) => request.authorization)).toStrictEqual([
     `Bearer ${productionAgentToken}`,
   ]);
@@ -211,6 +215,27 @@ test("`drafts create --body-file` reads the body from a file", async ({
     to: ["ada@example.com"],
     subject: "Hi",
     body: { plainText: "Hello from a file.\n" },
+  });
+});
+
+// `pnpm draft-approval` runs the CLI in the repository root and keeps the caller's directory in INIT_CWD.
+test("`drafts create --body-file` resolves a relative path against the directory pnpm was called from", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const api = await useApiStub(onTestFinished, () => ({ status: 201, body: DRAFT_SUMMARY }));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "draft-approval-cli-"));
+  onTestFinished(() => fs.rm(directory, { recursive: true, force: true }));
+  await fs.writeFile(path.join(directory, "body.txt"), "Hello from the caller's directory.\n");
+
+  const result = await runCli(
+    ["drafts", "create", "--to", "ada@example.com", "--subject", "Hi", "--body-file", "body.txt"],
+    { env: { DRAFT_APPROVAL_API_URL: api.url, INIT_CWD: directory } },
+  );
+
+  expect(result.exitCode).toBe(0);
+  expect(api.requests[0]?.body).toMatchObject({
+    body: { plainText: "Hello from the caller's directory.\n" },
   });
 });
 
@@ -277,7 +302,7 @@ test("a 409 prints its code and message as JSON on stderr and exits with 1", asy
 
   expect(result.exitCode).toBe(1);
   expect(result.stdout).toBe("");
-  expect(parseError(result.stderr)).toStrictEqual({
+  expect(JSON.parse(result.stderr)).toStrictEqual({
     error: {
       code: "REVISION_SUPERSEDED",
       message: "The Revision is not the Draft's latest Revision.",
@@ -511,7 +536,7 @@ test.for([
 
     expect(result.exitCode).toBe(1);
     expect(result.stdout).toBe("");
-    expect(parseError(result.stderr)).toMatchObject({ error: { code: "INVALID_REQUEST" } });
+    expect(JSON.parse(result.stderr)).toMatchObject({ error: { code: "INVALID_REQUEST" } });
     expect(api.requests).toStrictEqual([]);
   },
 );
@@ -530,7 +555,7 @@ test("an invalid recipient's error names the option and lists the schema's issue
     "Hello",
   ]);
 
-  expect(parseError(result.stderr)).toStrictEqual({
+  expect(JSON.parse(result.stderr)).toStrictEqual({
     error: {
       code: "INVALID_REQUEST",
       message: "Invalid input. --to: Must be a valid email address.",
@@ -551,7 +576,7 @@ test.for([
     const result = await runCli([...args, "drafts", "get", DRAFT_ID], { env });
 
     expect(result.exitCode).toBe(1);
-    expect(parseError(result.stderr)).toStrictEqual({
+    expect(JSON.parse(result.stderr)).toStrictEqual({
       error: {
         code: "INVALID_REQUEST",
         message:
@@ -560,6 +585,37 @@ test.for([
     });
   },
 );
+
+// Nothing listens on the port, so reaching the network step shows the URL passed the HTTPS check.
+test.for(["localhost", "[::1]"])("plain HTTP on %s is allowed", async (hostname, { expect }) => {
+  const { port } = new URL(await getUnreachableUrl());
+
+  const result = await runCli(["drafts", "get", DRAFT_ID], {
+    env: { DRAFT_APPROVAL_API_URL: `http://${hostname}:${port}` },
+  });
+
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr)).toMatchObject({ error: { code: "NETWORK_ERROR" } });
+});
+
+test("an API URL with a path is refused rather than cut to its origin", async ({ expect }) => {
+  const result = await runCli([
+    "--api-url",
+    "https://resend-challenge.patricktree.me/api/v1",
+    "drafts",
+    "get",
+    DRAFT_ID,
+  ]);
+
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr)).toStrictEqual({
+    error: {
+      code: "INVALID_REQUEST",
+      message:
+        'The API URL "https://resend-challenge.patricktree.me/api/v1" must be an origin, such as https://resend-challenge.patricktree.me, without a path.',
+    },
+  });
+});
 
 test("--api-url takes precedence over DRAFT_APPROVAL_API_URL", async ({
   expect,
@@ -627,7 +683,7 @@ test("a response without the API's error envelope fails with UNEXPECTED_ERROR", 
   });
 
   expect(result.exitCode).toBe(1);
-  expect(parseError(result.stderr)).toStrictEqual({
+  expect(JSON.parse(result.stderr)).toStrictEqual({
     error: {
       code: "UNEXPECTED_ERROR",
       message: "The API answered with status 502 and no error envelope.",
@@ -643,7 +699,7 @@ test("an unreachable API fails with NETWORK_ERROR", async ({ expect }) => {
   });
 
   expect(result.exitCode).toBe(1);
-  expect(parseError(result.stderr)).toStrictEqual({
+  expect(JSON.parse(result.stderr)).toStrictEqual({
     error: {
       code: "NETWORK_ERROR",
       message: expect.stringContaining(`Could not reach the API at ${unreachableUrl}`),
@@ -686,16 +742,4 @@ function listHelpCommands(helpText: string): string[] {
     .split("\n")
     .map((line) => /^ {2}(?<name>\S+)/.exec(line)?.groups?.["name"])
     .filter((name) => name !== undefined);
-}
-
-function parseError(stderr: string): unknown {
-  return JSON.parse(stderr);
-}
-
-async function readProductionAgentToken(): Promise<string> {
-  const configTree = jsonc.parseTree(await fs.readFile(WRANGLER_CONFIG_URL, "utf8"));
-  const agentToken: unknown =
-    configTree && jsonc.findNodeAtLocation(configTree, ["vars", "AGENT_TOKEN"])?.value;
-  assert(typeof agentToken === "string", "wrangler.jsonc configures no `vars.AGENT_TOKEN`");
-  return agentToken;
 }

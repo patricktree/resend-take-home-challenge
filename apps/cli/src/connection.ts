@@ -62,6 +62,14 @@ function resolveApiUrl(configuredApiUrl: string): URL {
       `The API URL "${apiUrl.origin}" must use HTTPS; plain HTTP is allowed only on localhost, 127.0.0.1 and [::1].`,
     );
   }
+
+  // The routes carry their full paths (`/api/v1/…`), so anything after the origin would be dropped.
+  if (apiUrl.pathname !== "/" || apiUrl.search !== "" || apiUrl.hash !== "") {
+    throw new CliError(
+      ERROR_CODE.INVALID_REQUEST,
+      `The API URL "${configuredApiUrl}" must be an origin, such as ${PRODUCTION_API_URL}, without a path.`,
+    );
+  }
   return apiUrl;
 }
 

@@ -50,13 +50,16 @@ const program = new Command()
   )
   .option(
     "--api-url <url>",
-    `the API URL; HTTPS except on localhost (default: $${ENVIRONMENT_VARIABLE.API_URL}, then ${PRODUCTION_API_URL})`,
+    `the API's origin; HTTPS except on localhost (default: $${ENVIRONMENT_VARIABLE.API_URL}, then ${PRODUCTION_API_URL})`,
   )
   .option("--json", "print exactly one JSON value on stdout")
   .addHelpText("after", ROOT_HELP_FOOTER)
-  // Inherited by every command created below.
+  // These three settings are inherited by every command created below.
   .configureHelp({ showGlobalOptions: true })
+  // Commander's plain-text usage errors stay silent; the `catch` around `parseAsync` at the bottom
+  // prints them as the JSON error envelope instead.
   .configureOutput({ outputError: () => {} })
+  // Throw instead of exiting, so that `catch` sees every usage error and every help request.
   .exitOverride();
 
 const drafts = program

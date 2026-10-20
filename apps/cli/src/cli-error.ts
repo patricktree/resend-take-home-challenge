@@ -1,14 +1,17 @@
 import { CommanderError } from "@commander-js/extra-typings";
 
 import { ApiError } from "@draft-approval/api.client";
-import { ERROR_CODE } from "@draft-approval/api.routes";
+import { ERROR_CODE, type ErrorCode } from "@draft-approval/api.routes";
+
+/** The API's codes and the CLI's own. */
+export type CliErrorCode = ErrorCode | (typeof CLI_ERROR_CODE)[keyof typeof CLI_ERROR_CODE];
 
 /**
  * What the CLI prints on stderr for every failure: code and message, plus the request id and extras
  * (such as `issues` or `existingVerdict`) where there are any, like the API's error envelope.
  */
 export type ErrorEnvelope = {
-  error: { code: string; message: string } & Record<string, unknown>;
+  error: { code: CliErrorCode; message: string } & Record<string, unknown>;
 };
 
 /**
@@ -24,10 +27,10 @@ export const CLI_ERROR_CODE = {
 
 /** A failure the CLI detects itself, with the code and message it prints. */
 export class CliError extends Error {
-  readonly code: string;
+  readonly code: CliErrorCode;
   readonly extras: Record<string, unknown>;
 
-  constructor(code: string, message: string, extras: Record<string, unknown> = {}) {
+  constructor(code: CliErrorCode, message: string, extras: Record<string, unknown> = {}) {
     super(message);
     this.name = "CliError";
     this.code = code;

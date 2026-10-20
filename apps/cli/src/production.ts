@@ -7,7 +7,9 @@
 export const PRODUCTION_API_URL = "https://resend-challenge.patricktree.me";
 
 /**
- * The public Agent token, the production Worker's `AGENT_TOKEN`. `pnpm secrets:generate` rewrites
- * it together with `wrangler.jsonc` and the README.
+ * The public Agent token, the production Worker's `AGENT_TOKEN`. `pnpm secrets:generate`
+ * (`tooling/secrets-generate`) rewrites it together with `wrangler.jsonc` and the README by finding
+ * the exact text `PUBLIC_AGENT_TOKEN = "<token>";`, so keep the declaration on one line in this
+ * form.
  */
 export const PUBLIC_AGENT_TOKEN = "agent_placeholder-run-pnpm-secrets-generate";

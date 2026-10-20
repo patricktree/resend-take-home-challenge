@@ -26,7 +26,7 @@ curl -sS https://resend-challenge.patricktree.me/api/v1/drafts/<draft-id> \
 
 ## Act as an Agent with the CLI
 
-After `pnpm install` (see [AGENTS.md](AGENTS.md#environment-setup)), run the `draft-approval` CLI from the repository root. It calls production with the public Agent token unless you set `DRAFT_APPROVAL_TOKEN`, and `--api-url` or `DRAFT_APPROVAL_API_URL` points it at another API, such as `http://localhost:5173` with the local Agent token. It has no command to approve or reject: only the Reviewer decides, in the Review UI. `pnpm draft-approval --help` and `--help` on every command describe the options.
+After `pnpm install` (see [AGENTS.md](AGENTS.md#environment-setup)), run the `draft-approval` CLI from the repository root. It calls production with the public Agent token unless you set `DRAFT_APPROVAL_TOKEN`, and `--api-url` or `DRAFT_APPROVAL_API_URL` points it at another API origin, such as `http://localhost:5173` with the local Agent token. It has no command to approve or reject: only the Reviewer decides, in the Review UI. `pnpm draft-approval --help` and `--help` on every command describe the options.
 
 Create a Draft, read its id and the id of its latest Revision from the output, then submit that Revision for review:
 
@@ -48,7 +48,7 @@ pnpm draft-approval drafts revise <draft-id> --base-revision <revision-id> \
   --to delivered@resend.dev --subject 'Hello again' --body-file body.txt
 ```
 
-`drafts list` filters with `--review-status` and `--sending-status` and pages with `--limit` and `--cursor`; `drafts revision <draft-id> <revision-id>` reads any Revision. With `--json`, a command prints exactly one JSON value on stdout. A failure exits with 1 and prints `{"error":{"code","message"}}` as JSON on stderr: API errors keep the API's code, invalid input fails with `INVALID_REQUEST` before any request, an unreachable API fails with `NETWORK_ERROR`, and anything else, such as a response without the API's error envelope, with `UNEXPECTED_ERROR`. pnpm adds its own lines to stderr; run `node apps/cli/src/cli.ts` instead of `pnpm draft-approval` when a program reads stderr. `--body-file` resolves a relative path against the repository root, where pnpm runs the CLI.
+`drafts list` filters with `--review-status` and `--sending-status` and pages with `--limit` and `--cursor`; `drafts revision <draft-id> <revision-id>` reads any Revision. With `--json`, a command prints exactly one JSON value on stdout. A failure exits with 1 and prints `{"error":{"code","message"}}` as JSON on stderr: API errors keep the API's code, invalid input fails with `INVALID_REQUEST` before any request, an unreachable API fails with `NETWORK_ERROR`, and anything else, such as a response without the API's error envelope, with `UNEXPECTED_ERROR`. pnpm adds its own lines to stderr; run `node apps/cli/src/cli.ts` instead of `pnpm draft-approval` when a program reads stderr.
 
 ## Local development
 

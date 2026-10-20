@@ -11,6 +11,7 @@ import { runOnDatabaseSession } from "#src/database-session.ts";
 import { DRAFT_HANDLERS } from "#src/draft-handlers.ts";
 import { jsonError } from "#src/http-errors.ts";
 import { createMcpEndpoint, MCP_PATH, requireAgent } from "#src/mcp-endpoint.ts";
+import { mountReviewUi } from "#src/review-ui.ts";
 
 export type { ApiServerEnvironment } from "#src/api-server-environment.ts";
 
@@ -48,6 +49,7 @@ export function createApiServer(): Hono<ApiServerHonoEnvironment> {
   );
 
   app.get("/", (context) => context.redirect("/app/", 302));
+  mountReviewUi(app);
 
   app.use("/api/*", authenticate);
   // Before the database session middleware: an Agent's verdict request never reaches D1.

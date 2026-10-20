@@ -18,6 +18,8 @@ export type ApiServerEnvironment = {
   REVISION_BODIES: R2Bucket;
   /** The Send Queue's producer binding; an Approval hands its Send intent to it. */
   SEND_QUEUE: SendQueue;
+  /** The Worker's static assets: the built Review UI, below `app/`. */
+  ASSETS: Fetcher;
 };
 
 export type ApiServerHonoEnvironment = {

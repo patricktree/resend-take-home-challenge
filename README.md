@@ -87,6 +87,8 @@ pnpm dev
 
 It applies the D1 migrations to the local database and serves the Worker at <http://localhost:5173>, with D1, R2 and the Queue running locally in Miniflare. Wrangler warns that the required secret `REVIEWER_TOKEN` is missing; local development uses the local tokens instead.
 
+The Review UI runs at <http://localhost:5173/app/> with hot reload; enter the local Reviewer token `reviewer_local-development-only` on its token screen. In development only, its Content-Security-Policy also allows inline scripts and styles, which Vite's dev server injects for hot reload; the production build needs neither.
+
 Call the local API with the local tokens from [`libs/api.routes/src/local-tokens.ts`](libs/api.routes/src/local-tokens.ts), which only a Worker with `LOCAL_DEVELOPMENT="true"` accepts, and only on `localhost`:
 
 ```sh
@@ -114,7 +116,7 @@ curl -sS 'http://localhost:5173/cdn-cgi/handler/scheduled?cron=*+*+*+*+*'
 
 ## Validation
 
-Run `pnpm validate:fast` for the format check, markdownlint, Knip, build and typecheck, lint, and the unit, integration and CLI process tests, and `pnpm validate:extended` for the e2e tests. [AGENTS.md](AGENTS.md#validation) describes both.
+Run `pnpm validate:fast` for the format check, markdownlint, Knip, build and typecheck, lint, and the unit, integration and CLI process tests, and `pnpm validate:extended` for the e2e tests, which run the Review UI in a browser in Docker. [AGENTS.md](AGENTS.md#validation) describes both.
 
 ## Infrastructure
 
@@ -164,7 +166,7 @@ These steps need Patrick's Cloudflare and Resend accounts, so no agent runs them
 - [ ] **Generate the tokens.** Run `pnpm secrets:generate`. It writes a new public Agent token into `apps/cloudflare-worker/wrangler.jsonc`, this README and the CLI's fallback in `apps/cli/src/production.ts`, and pipes a new Reviewer token into `wrangler secret put REVIEWER_TOKEN`; if the Worker `draft-approval` does not exist yet, Wrangler creates an empty one to hold the secret. Success: the script prints `Set the Worker secret REVIEWER_TOKEN.` followed by the Reviewer token. If Wrangler fails, the files already hold a new Agent token; fix the cause and run the script again. Store the Reviewer token in the password manager, since it is not shown again, and commit the changed `wrangler.jsonc`, `README.md` and `apps/cli/src/production.ts`.
 - [ ] **Set the Resend API key.** Run `pnpm --filter '@draft-approval/cloudflare-worker' exec wrangler secret put RESEND_API_KEY` and paste the sending-only key when Wrangler asks for it. Success: Wrangler prints `Success! Uploaded secret RESEND_API_KEY`.
 - [ ] **Apply the D1 migrations.** Run `pnpm --filter '@draft-approval/cloudflare-worker' run migrations:apply:remote` and confirm. Success: Wrangler lists every migration in `libs/drafts/migrations` with status ✅.
-- [ ] **Deploy the Worker.** Run `pnpm --filter '@draft-approval/cloudflare-worker' run deploy`, which builds the Worker and runs `wrangler deploy`. Success: Wrangler lists the triggers `resend-challenge.patricktree.me (custom domain)`, `schedule: * * * * *`, `Producer for draft-approval-send`, `Consumer for draft-approval-send` and `Consumer for draft-approval-send-dlq`. A first deploy of the custom domain can take a few minutes to serve.
+- [ ] **Deploy the Worker.** Run `pnpm --filter '@draft-approval/cloudflare-worker' run deploy`, which builds the Worker with the Review UI as its static assets and runs `wrangler deploy`. Success: Wrangler lists the triggers `resend-challenge.patricktree.me (custom domain)`, `schedule: * * * * *`, `Producer for draft-approval-send`, `Consumer for draft-approval-send` and `Consumer for draft-approval-send-dlq`. A first deploy of the custom domain can take a few minutes to serve.
 - [ ] **Verify production.** Create and get a Draft with the public Agent token, as in [Act as an Agent](#act-as-an-agent): creating answers `201`, getting answers `200` with the body. Then check that production refuses the local tokens and redirects the root:
 
   ```sh

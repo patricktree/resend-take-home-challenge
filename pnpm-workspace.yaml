@@ -6,9 +6,11 @@ packages:
   # Opt in to additional .patricktree-stack projects only when the consuming repo uses them.
   - .patricktree-stack/tooling/config-oxfmt
   - .patricktree-stack/tooling/config-oxlint
+  - .patricktree-stack/tooling/config-playwright
   - .patricktree-stack/tooling/config-turbo-typescript
   - .patricktree-stack/tooling/config-typescript
   - .patricktree-stack/tooling/config-vitest
+  - .patricktree-stack/tooling/config-wyw-in-js
   - .patricktree-stack/qa-utils/test-utils-node
 
 allowBuilds:
@@ -19,6 +21,8 @@ allowBuilds:
   workerd: true
 
 catalog:
+  # keep in step with the Playwright Docker image, whose tag the e2e configuration derives from it
+  "@playwright/test": 1.64.0
   "@types/node": ^26.6.5
   "@typescript/native": "npm:typescript@^7.0.2"
   # keep the runner and its coverage provider on the same exact version (coverage-v8 has an exact peer dependency on vitest)
@@ -43,6 +47,12 @@ catalogs:
   web-app:
     # keep in step with the wrangler version in the default catalog (both bundle workerd/miniflare)
     "@cloudflare/vite-plugin": 1.62.2
+    "@types/react": ^19.3.0
+    "@types/react-dom": ^19.3.0
+    "@vitejs/plugin-react": ^6.1.2
+    "@wyw-in-js/vite": ^2.5.1
+    react: ^19.3.0
+    react-dom: ^19.3.0
     vite: ^8.3.4
 
 packageExtensions:

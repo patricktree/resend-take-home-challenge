@@ -69,7 +69,12 @@ export class DraftApprovalClient {
   readonly #fetch: (request: Request) => Promise<Response>;
   #readBookmark: string | undefined;
 
-  constructor({ baseUrl, token, fetch = globalThis.fetch }: DraftApprovalClientOptions) {
+  constructor({
+    baseUrl,
+    token,
+    // Browsers refuse `fetch` called as a method of another object ("Illegal invocation").
+    fetch = (request) => globalThis.fetch(request),
+  }: DraftApprovalClientOptions) {
     this.#token = token;
     this.#fetch = fetch;
     this.#honoClient = hc<ApiContractApp>(baseUrl.replace(/\/$/, ""), {

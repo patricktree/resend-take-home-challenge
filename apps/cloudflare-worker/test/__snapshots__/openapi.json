@@ -30,6 +30,7 @@
                 "enum": [
                   "INVALID_REQUEST",
                   "UNAUTHENTICATED",
+                  "AGENT_ONLY",
                   "REVIEWER_ONLY",
                   "NOT_FOUND",
                   "DRAFT_NOT_FOUND",

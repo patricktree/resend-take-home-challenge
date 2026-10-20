@@ -58,7 +58,7 @@ const revisionReviewStatusSchema = z
   .openapi("RevisionReviewStatus");
 
 /** A Draft's review status is its latest Revision's, which is never Superseded. */
-const draftReviewStatusSchema = z
+export const draftReviewStatusSchema = z
   .enum(["UNSUBMITTED", "PENDING", "APPROVED", "REJECTED"])
   .openapi("DraftReviewStatus");
 
@@ -205,7 +205,7 @@ const sendingFailureSchema = z
   })
   .openapi("SendingFailure");
 
-const sendingStatusSchema = z
+export const sendingStatusSchema = z
   .enum(["NOT_SENT", "QUEUED", "SENT", "FAILED"])
   .openapi("SendingStatus");
 

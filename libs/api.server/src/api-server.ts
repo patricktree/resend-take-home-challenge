@@ -10,6 +10,7 @@ import { authenticate, requireReviewer } from "#src/authentication.ts";
 import { runOnDatabaseSession } from "#src/database-session.ts";
 import { DRAFT_HANDLERS } from "#src/draft-handlers.ts";
 import { jsonError } from "#src/http-errors.ts";
+import { createMcpEndpoint, MCP_PATH, requireAgent } from "#src/mcp-endpoint.ts";
 
 export type { ApiServerEnvironment } from "#src/api-server-environment.ts";
 
@@ -68,6 +69,8 @@ export function createApiServer(): Hono<ApiServerHonoEnvironment> {
   );
   app.use("/api/v1/*", runOnDatabaseSession);
   app.route("/", createApiContractApp<ApiServerHonoEnvironment>(DRAFT_HANDLERS));
+
+  app.all(MCP_PATH, authenticate, requireAgent, createMcpEndpoint(app));
 
   return app;
 }

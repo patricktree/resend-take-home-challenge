@@ -35,7 +35,7 @@ Run `pnpm validate:fast` before every commit and both before opening a pull requ
 ## Conventions
 
 - Work test-first: a failing test, then the code that makes it pass. Integration tests come first, through the `useWorker()` fixture in `apps/cloudflare-worker/test/use-worker.ts` (one Worker per test, concurrent within a file, migrations applied, empty storage).
-- Race tests that need a deterministic interleaving live in the drafts suite (`libs/drafts/test/`): `useBindings()` gives each test fresh D1 and R2 bindings in Wrangler's local test runtime, and `createGatedD1Database()` wraps `DB` so a test holds a chosen statement or batch (`holdNext()`, then `release()`) while another use case commits. Production code has no test hooks.
+- Race tests that need a deterministic interleaving live in the drafts suite (`libs/drafts/test/`): `useBindings()` gives each test fresh D1 and R2 bindings in Wrangler's local test runtime, and `createGatedD1Database()` wraps `DB` so a test holds a chosen statement or batch (`holdNext()`, then `release()`) while another use case commits. A held call also reveals its SQL, which `libs/drafts/test/list-drafts.test.ts` runs through `EXPLAIN QUERY PLAN` to pin the list's index use. Production code has no test hooks.
 - Fix the underlying cause of every lint, type or test failure; lint rules, type checks and tests stay enabled, with no disable comments, `@ts-expect-error`, skipped tests or Knip ignores for real findings.
 - "Harness" means an agent harness only; call a test setup a test runtime, fixture or test setup.
 - Tests start their own servers on OS-assigned ports and never attach to a running server. Vitest runs with `retry: 0`.

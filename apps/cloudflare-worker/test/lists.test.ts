@@ -1,3 +1,4 @@
+import buffer from "node:buffer";
 import { Temporal } from "temporal-polyfill";
 import { test } from "vitest";
 
@@ -288,9 +289,13 @@ test("a cursor reused with other filters or another ordering answers with 400 IN
     const created = await createDraft(worker);
     await submitRevision(worker, created.id, created.latestRevision.id);
   }
-  const firstPage = await expectPage(worker, "?reviewStatus=PENDING&limit=1");
-  const cursor = firstPage.nextCursor ?? "";
+  const { nextCursor: cursor } = await expectPage(worker, "?reviewStatus=PENDING&limit=1");
+  if (cursor === undefined) {
+    throw new Error("The first page has no next cursor.");
+  }
+  const tamperedResponse = await listDrafts(worker, `?reviewStatus=PENDING&cursor=${cursor}~~`);
 
+  expect(tamperedResponse.status).toBe(400);
   for (const otherQuery of [
     "reviewStatus=UNSUBMITTED",
     "reviewStatus=PENDING&reviewStatus=UNSUBMITTED",
@@ -604,5 +609,5 @@ async function setTimestamps(
 }
 
 function encodeBase64Url(text: string): string {
-  return Buffer.from(text, "utf8").toString("base64url");
+  return buffer.Buffer.from(text, "utf8").toString("base64url");
 }

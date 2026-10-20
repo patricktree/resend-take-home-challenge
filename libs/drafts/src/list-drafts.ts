@@ -32,6 +32,18 @@ export type ListDraftsResult =
   /** The cursor does not decode, or it belongs to other filters or another ordering. */
   | { outcome: "INVALID_CURSOR" };
 
+/** Each ordering's column, and how to read its value from a Draft row. */
+const ORDERINGS = {
+  createdAt: {
+    column: drafts.createdAt,
+    valueOf: (row: typeof drafts.$inferSelect) => row.createdAt,
+  },
+  lastActionAt: {
+    column: drafts.lastActionAt,
+    valueOf: (row: typeof drafts.$inferSelect) => row.lastActionAt,
+  },
+} as const;
+
 /** Where a page ends: the ordering value and id of its last Draft. */
 type CursorPosition = { orderingValue: number; draftId: DraftId };
 
@@ -59,7 +71,7 @@ export async function listDrafts(
     position = cursor;
   }
 
-  const orderingColumn = query.orderBy === "createdAt" ? drafts.createdAt : drafts.lastActionAt;
+  const ordering = ORDERINGS[query.orderBy];
   const orderDirection = query.order === "asc" ? asc : desc;
   const conditions: SQL[] = [];
   if (query.reviewStatuses.length > 0) {
@@ -72,7 +84,7 @@ export async function listDrafts(
     // A row-value comparison, which SQLite answers with a range scan of the `(…, id)` index.
     const comparison = query.order === "asc" ? sql.raw(">") : sql.raw("<");
     conditions.push(
-      sql`(${orderingColumn}, ${drafts.id}) ${comparison} (${position.orderingValue}, ${position.draftId})`,
+      sql`(${ordering.column}, ${drafts.id}) ${comparison} (${position.orderingValue}, ${position.draftId})`,
     );
   }
 
@@ -82,7 +94,7 @@ export async function listDrafts(
     .from(drafts)
     .innerJoin(revisions, eq(revisions.id, drafts.latestRevisionId))
     .where(and(...conditions))
-    .orderBy(orderDirection(orderingColumn), orderDirection(drafts.id))
+    .orderBy(orderDirection(ordering.column), orderDirection(drafts.id))
     .limit(query.limit + 1);
 
   const pageRows = rows.slice(0, query.limit);
@@ -95,10 +107,7 @@ export async function listDrafts(
     ...(hasNextPage
       ? {
           nextCursor: encodeCursor({
-            orderingValue:
-              query.orderBy === "createdAt"
-                ? lastRow.drafts.createdAt
-                : lastRow.drafts.lastActionAt,
+            orderingValue: ordering.valueOf(lastRow.drafts),
             draftId: lastRow.drafts.id,
             queryFingerprint,
           }),
@@ -128,9 +137,16 @@ function encodeCursor({ orderingValue, draftId, queryFingerprint }: Cursor): str
 
 /** Decodes a cursor; `undefined` when it is not one this module issued. */
 function decodeCursor(encodedCursor: string): Cursor | undefined {
+  // Decoding skips characters outside the base64url alphabet, so only a cursor that encodes back
+  // to itself is one this module issued.
+  const bytes = buffer.Buffer.from(encodedCursor, "base64url");
+  if (bytes.toString("base64url") !== encodedCursor) {
+    return undefined;
+  }
+
   let decoded: unknown;
   try {
-    decoded = JSON.parse(buffer.Buffer.from(encodedCursor, "base64url").toString("utf8"));
+    decoded = JSON.parse(bytes.toString("utf8"));
   } catch {
     return undefined;
   }

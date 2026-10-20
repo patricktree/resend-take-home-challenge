@@ -1,0 +1,66 @@
+// The e2e tests' Wrangler config: the production Worker (its source entry and its built static
+// assets) with local resources. Each test starts its own `wrangler dev` with it
+// (test-e2e/fixtures.ts). There is no `.dev.vars` next to it, so a developer's local variables never
+// reach the tests.
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "draft-approval-e2e",
+  "main": "../../apps/cloudflare-worker/src/index.ts",
+  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_date": "2026-08-18",
+  "assets": {
+    // Built by `pnpm --filter '@draft-approval/e2e' test:e2e` before the tests run.
+    "directory": "../../apps/cloudflare-worker/dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "none",
+    "html_handling": "none",
+    "run_worker_first": true,
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "draft-approval",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "../../libs/drafts/migrations",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "REVISION_BODIES",
+      "bucket_name": "draft-approval-revision-bodies",
+    },
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "SEND_QUEUE",
+        "queue": "draft-approval-send",
+      },
+    ],
+    // As in production (wrangler.jsonc), so Miniflare delivers each Send to the consumer.
+    "consumers": [
+      {
+        "queue": "draft-approval-send",
+        "max_concurrency": 1,
+        "max_batch_size": 8,
+        "max_batch_timeout": 1,
+        "max_retries": 100,
+        "dead_letter_queue": "draft-approval-send-dlq",
+      },
+      {
+        "queue": "draft-approval-send-dlq",
+      },
+    ],
+  },
+  "vars": {
+    // Each test's port is known only once its `wrangler dev` runs, so `reviewUrl`s keep the
+    // production origin and the tests open their path on the test's origin.
+    "PUBLIC_BASE_URL": "https://resend-challenge.patricktree.me",
+    "RESEND_FROM": "drafts@resend-challenge.patricktree.me",
+    // Unreachable on purpose (discard port): the tests never call Resend.
+    "RESEND_BASE_URL": "http://127.0.0.1:9",
+    // Accepts LOCAL_AGENT_TOKEN and LOCAL_REVIEWER_TOKEN on local hosts, host.docker.internal included.
+    "LOCAL_DEVELOPMENT": "true",
+    "AGENT_TOKEN": "agent_e2e-configured-agent-token",
+  },
+}

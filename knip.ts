@@ -20,6 +20,14 @@ const config: KnipConfig = {
       /* `cloudflare:workers` is a module built into the Workers runtime, not a package; Knip reads its scheme as the package name `cloudflare`. */
       ignoreDependencies: ["cloudflare"],
     },
+    "qa/e2e": {
+      ignoreDependencies: [
+        /* Not imported: the tests serve its build output (wrangler.jsonc, `assets`), so Turbo must build it first. */
+        "@draft-approval/cloudflare-worker",
+        /* Run as a binary from test-e2e/fixtures.ts, which starts `wrangler dev` for each test. */
+        "wrangler",
+      ],
+    },
     "libs/drafts": {
       /* Wrangler loads the drafts suite's test Worker entry point from test/wrangler.test.jsonc. */
       entry: ["test/worker.ts"],

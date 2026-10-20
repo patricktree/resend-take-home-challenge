@@ -1,0 +1,4 @@
+/* A stand-in for a built Review UI file, served by the integration tests' assets binding. */
+#root {
+  color: black;
+}

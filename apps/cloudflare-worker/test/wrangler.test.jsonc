@@ -7,6 +7,14 @@
   "main": "worker.ts",
   "compatibility_flags": ["nodejs_compat"],
   "compatibility_date": "2026-08-18",
+  // A small fixed stand-in for the built Review UI, so the `/app` tests need no build.
+  "assets": {
+    "directory": "./assets",
+    "binding": "ASSETS",
+    "not_found_handling": "none",
+    "html_handling": "none",
+    "run_worker_first": true,
+  },
   "d1_databases": [
     {
       "binding": "DB",

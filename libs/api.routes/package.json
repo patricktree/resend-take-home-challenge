@@ -1,0 +1,43 @@
+{
+  "name": "@draft-approval/api.routes",
+  "private": true,
+  "description": "The HTTP API contract: OpenAPI routes, Zod schemas, the error envelope and the local tokens",
+  "files": [
+    "src/**"
+  ],
+  "type": "module",
+  "imports": {
+    "#src/*": "./src/*"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "turbo run turbo:build",
+    "clean": "del-cli --dot=true \"dist\" \"*.tsbuildinfo\"",
+    "lint": "turbo run turbo:lint",
+    "lint:fix": "turbo run turbo:lint:fix",
+    "turbo:build": "prepare-declaration-build --declaration-output-dir ./dist/types --build-info-file ./dist/tsconfig.build.tsbuildinfo --source-package-json ./src/package.json && tsc --build ./tsconfig.json",
+    "turbo:lint": "oxlint --type-aware --max-warnings 0 .",
+    "turbo:lint:fix": "pnpm run turbo:lint --fix"
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "catalog:hono",
+    "hono": "catalog:hono",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@draft-approval/config-oxlint": "workspace:*",
+    "@draft-approval/prepare-declaration-build": "workspace:*",
+    "@patricktree-stack/config-typescript": "workspace:*",
+    "@types/node": "catalog:",
+    "@typescript/native": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "typescript": "catalog:"
+  }
+}

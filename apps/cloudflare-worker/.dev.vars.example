@@ -1,0 +1,8 @@
+# Copy to .dev.vars (gitignored) for `pnpm dev`. Wrangler and the Vite plugin read it in local development.
+
+# Accepts the local tokens (LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN from libs/api.routes) on localhost.
+LOCAL_DEVELOPMENT="true"
+
+# Your own Resend API key: local Sends call the real Resend API. Send to Resend's test recipients
+# delivered@resend.dev or bounced@resend.dev, which exercise the real API without delivering mail.
+RESEND_API_KEY=""

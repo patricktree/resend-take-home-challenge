@@ -1,0 +1,11 @@
+{
+  "$schema": "../../node_modules/turbo/schema.json",
+  "extends": ["//", "@patricktree-stack/config-turbo-typescript"],
+  "tasks": {
+    /* Worker types are generated, not committed: every task that typechecks this package waits for them. */
+    "turbo:build": { "dependsOn": ["$TURBO_EXTENDS$", "turbo:cf-typegen"] },
+    "turbo:lint": { "dependsOn": ["$TURBO_EXTENDS$", "turbo:cf-typegen"] },
+    "turbo:lint:fix": { "dependsOn": ["$TURBO_EXTENDS$", "turbo:cf-typegen"] },
+    "turbo:test": { "dependsOn": ["$TURBO_EXTENDS$", "turbo:cf-typegen"] },
+  },
+}

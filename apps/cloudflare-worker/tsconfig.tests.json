@@ -1,0 +1,14 @@
+{
+  "extends": [
+    "@patricktree-stack/config-typescript/tsconfig.defaults.json",
+    "@patricktree-stack/config-typescript/tsconfig.cloudflare-workers.json",
+    "@patricktree-stack/config-typescript/tsconfig.node24.json",
+    "@patricktree-stack/config-typescript/tsconfig.typescript-execution-via-type-stripping.json",
+    "@patricktree-stack/config-typescript/tsconfig.vitest.json"
+  ],
+  "compilerOptions": {
+    "types": ["./worker-configuration.d.ts", "node"]
+  },
+  "include": ["test/**/*", "worker-configuration.d.ts"],
+  "references": [{ "path": "./tsconfig.build.json" }]
+}

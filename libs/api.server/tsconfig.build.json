@@ -1,0 +1,15 @@
+{
+  "extends": [
+    "@patricktree-stack/config-typescript/tsconfig.defaults.json",
+    "@patricktree-stack/config-typescript/tsconfig.cloudflare-workers.json",
+    "@patricktree-stack/config-typescript/tsconfig.composite-emit-declaration-only.json",
+    "@patricktree-stack/config-typescript/tsconfig.typescript-execution-via-type-stripping.json"
+  ],
+  "compilerOptions": {
+    /* Modules */
+    "rootDir": "./src",
+    "types": ["./worker-configuration.d.ts", "node"]
+  },
+  "include": ["src/**/*"],
+  "exclude": ["**/node_modules", "**/*.test.ts"]
+}

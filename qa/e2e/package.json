@@ -1,0 +1,6 @@
+{
+  "name": "@draft-approval/e2e",
+  "private": true,
+  "description": "Playwright e2e tests of the review flow",
+  "type": "module"
+}

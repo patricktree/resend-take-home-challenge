@@ -40,8 +40,9 @@ test("a Send with an unknown outcome says the email may have been sent", async (
     resendStub.respondNext({ status: 503 });
   }
   await reviewerClient.approveRevision(draft.id, draft.latestRevision.id);
-  // The real path to `OUTCOME_UNKNOWN` takes the 23 h deadline (the deadline travels in the Queue
-  // message), so the test records the outcome as the consumer's `recordFailed()` does.
+  // Every real path to `OUTCOME_UNKNOWN` takes the 23 h deadline (which travels in the Queue
+  // message) or 100 failed attempts (the DLQ), so the test records the outcome as `recordFailed()`
+  // in libs/drafts does.
   await executeSql(
     `UPDATE drafts SET sending_status = 'FAILED', failure_reason = 'OUTCOME_UNKNOWN' WHERE id = '${draft.id}' AND sending_status = 'QUEUED'`,
   );

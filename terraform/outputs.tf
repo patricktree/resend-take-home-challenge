@@ -37,8 +37,3 @@ output "resend_domain_id" {
   description = "The Resend sending domain's id."
   value       = resend_domain.sending.id
 }
-
-output "resend_domain_status" {
-  description = "The sending domain's verification status as of the last apply or refresh; `verified` before the first real Send."
-  value       = resend_domain.sending.status
-}

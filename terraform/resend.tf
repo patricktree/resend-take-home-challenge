@@ -18,6 +18,7 @@ locals {
   }
 }
 
+# Resend sends from its EU region (Ireland), close to the operator.
 resource "resend_domain" "sending" {
   name           = local.sending_domain
   region         = "eu-west-1"

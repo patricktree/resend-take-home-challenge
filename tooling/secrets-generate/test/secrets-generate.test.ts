@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -58,10 +59,11 @@ test("writes a new Agent token into wrangler.jsonc and the README, keeping comme
 
   const config = await fs.readFile(repository.wranglerConfigPath, "utf8");
   const agentToken = /"AGENT_TOKEN": "(?<token>[^"]+)"/.exec(config)?.groups?.["token"];
+  assert(agentToken !== undefined, "wrangler.jsonc has no AGENT_TOKEN");
   expect(agentToken).toMatch(AGENT_TOKEN_PATTERN);
-  expect(config).toBe(WRANGLER_CONFIG.replace(PLACEHOLDER_AGENT_TOKEN, agentToken ?? ""));
+  expect(config).toBe(WRANGLER_CONFIG.replace(PLACEHOLDER_AGENT_TOKEN, agentToken));
   expect(await fs.readFile(repository.readmePath, "utf8")).toBe(
-    README.replaceAll(PLACEHOLDER_AGENT_TOKEN, agentToken ?? ""),
+    README.replaceAll(PLACEHOLDER_AGENT_TOKEN, agentToken),
   );
 });
 

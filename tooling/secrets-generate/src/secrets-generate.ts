@@ -31,12 +31,19 @@ export async function generateSecrets({
   await writeAgentToken(repositoryRoot, agentToken);
   print("Wrote the new Agent token into apps/cloudflare-worker/wrangler.jsonc and README.md.");
 
-  await putWorkerSecret({
-    wranglerExecutable,
-    workerDirectory: getWorkerDirectory(repositoryRoot),
-    secretName: "REVIEWER_TOKEN",
-    secretValue: reviewerToken,
-  });
+  try {
+    await putWorkerSecret({
+      wranglerExecutable,
+      workerDirectory: getWorkerDirectory(repositoryRoot),
+      secretName: "REVIEWER_TOKEN",
+      secretValue: reviewerToken,
+    });
+  } catch (error) {
+    throw new Error(
+      `${error instanceof Error ? error.message : "Setting REVIEWER_TOKEN failed."} wrangler.jsonc and README.md already hold the new Agent token; fix the cause and run the script again, or revert them.`,
+      { cause: error },
+    );
+  }
   print(
     "Set the Worker secret REVIEWER_TOKEN. Store the Reviewer token now; it is not shown again:",
   );

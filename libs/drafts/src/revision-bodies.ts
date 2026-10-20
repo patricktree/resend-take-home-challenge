@@ -34,7 +34,8 @@ export async function getRevisionBody(
   return body;
 }
 
-function revisionBodyKey(revisionId: RevisionId): string {
+/** The R2 key of a Revision's body. */
+export function revisionBodyKey(revisionId: RevisionId): string {
   return `revisions/${revisionId}/body`;
 }
 

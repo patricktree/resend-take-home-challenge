@@ -2,18 +2,15 @@ import { and, eq, exists } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 
 import type { DraftsStorage } from "#src/database.ts";
-import type { DraftSummary } from "#src/draft.ts";
-import { toDraftSummary } from "#src/draft.ts";
+import type { DraftSummary, Verdict } from "#src/draft.ts";
+import { selectLastVerdictRow, toDraftSummary } from "#src/draft.ts";
 import { isDraftId, isRevisionId, type DraftId, type RevisionId } from "#src/ids.ts";
-import { drafts, revisions, type ReviewStatus } from "#src/schema.ts";
+import { drafts, revisions } from "#src/schema.ts";
 
 export type SubmitRevisionResult =
   | { outcome: "SUBMITTED"; draft: DraftSummary }
   | { outcome: "REVISION_ALREADY_DECIDED"; existingVerdict: Verdict }
   | { outcome: SubmitRevisionRefusal };
-
-/** The verdict a decided Revision has. */
-type Verdict = Extract<ReviewStatus, "APPROVED" | "REJECTED">;
 
 /**
  * Why a Submission changed nothing, besides `REVISION_ALREADY_DECIDED`, which carries the existing
@@ -70,7 +67,7 @@ export async function submitRevision(
         ),
       ),
   );
-  const [updatedDrafts, updatedRevisions] = await database.batch([
+  const [updatedDrafts, updatedRevisions, lastVerdictRows] = await database.batch([
     database
       .update(drafts)
       .set({ lastActionAt: now })
@@ -82,12 +79,17 @@ export async function submitRevision(
       .set({ reviewStatus: "PENDING", submittedAt: now })
       .where(and(eq(revisions.id, revisionId), isLatestAndUnsubmitted))
       .returning(),
+    // Only reads: the verdict on an earlier Revision, such as a Rejection the Agent revised after.
+    selectLastVerdictRow(database, draftId),
   ]);
 
   const [draftRow] = updatedDrafts;
   const [revisionRow] = updatedRevisions;
   if (draftRow !== undefined && revisionRow !== undefined) {
-    return { outcome: "SUBMITTED", draft: toDraftSummary(draftRow, revisionRow) };
+    return {
+      outcome: "SUBMITTED",
+      draft: toDraftSummary(draftRow, revisionRow, lastVerdictRows[0]),
+    };
   }
 
   return explainRefusal(database, draftId, revisionId);

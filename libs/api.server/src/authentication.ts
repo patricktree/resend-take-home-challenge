@@ -67,6 +67,24 @@ export const authenticate = createMiddleware<ApiServerHonoEnvironment>(async (co
 });
 
 /**
+ * Lets only the Reviewer token through, for the routes that render a verdict; any other role gets
+ * 403 `REVIEWER_ONLY`. Runs after {@link authenticate} and before any database access, so an Agent
+ * can never change a Draft through these routes.
+ */
+export const requireReviewer = createMiddleware<ApiServerHonoEnvironment>(async (context, next) => {
+  if (context.get("role") !== ROLE.REVIEWER) {
+    return jsonError(
+      context,
+      403,
+      ERROR_CODE.REVIEWER_ONLY,
+      "Only the Reviewer token may approve or reject a Revision.",
+    );
+  }
+
+  return next();
+});
+
+/**
  * Resolves the role of a presented bearer token. The role comes only from which configured token
  * matched, never from the token's prefix.
  *

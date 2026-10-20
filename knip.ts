@@ -17,6 +17,8 @@ const config: KnipConfig = {
     "apps/cloudflare-worker": {
       /* Wrangler loads the test runtime's Worker entry point from test/wrangler.test.jsonc. */
       entry: ["test/worker.ts"],
+      /* `cloudflare:workers` is a module built into the Workers runtime, not a package; Knip reads its scheme as the package name `cloudflare`. */
+      ignoreDependencies: ["cloudflare"],
     },
     "libs/drafts": {
       /* Wrangler loads the drafts suite's test Worker entry point from test/wrangler.test.jsonc. */

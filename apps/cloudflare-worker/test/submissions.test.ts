@@ -117,7 +117,7 @@ test("submitting a Rejected Revision answers with 409 REVISION_ALREADY_DECIDED w
   const worker = await useWorker({ onTestFinished });
   const created = await createDraft(worker);
   await expectSubmitted(worker, created.id, created.latestRevision.id);
-  await rejectDirectly(worker, created.id, created.latestRevision.id);
+  await expectRejected(worker, created.id, created.latestRevision.id);
   const rowsBefore = await readRows(worker);
 
   const response = await submitRevision(worker, created.id, created.latestRevision.id);
@@ -148,7 +148,7 @@ test.for([
       await expectSubmitted(worker, created.id, created.latestRevision.id);
     }
     if (isRejectedBeforeRevise) {
-      await rejectDirectly(worker, created.id, created.latestRevision.id);
+      await expectRejected(worker, created.id, created.latestRevision.id);
     }
     await expectRevised(worker, created.id, created.latestRevision.id);
     const rowsBefore = await readRows(worker);
@@ -179,7 +179,7 @@ test.for([
     const created = await createDraft(worker);
     const revised = await expectRevised(worker, created.id, created.latestRevision.id);
     await expectSubmitted(worker, created.id, revised.latestRevision.id);
-    await approveDirectly(worker, created.id, revised.latestRevision.id);
+    await expectApproved(worker, created.id, revised.latestRevision.id);
     const rowsBefore = await readRows(worker);
 
     const response = await submitRevision(
@@ -237,7 +237,7 @@ test("submitting another Draft's Revision through an approved Draft answers with
   const created = await createDraft(worker);
   const other = await createDraft(worker);
   await expectSubmitted(worker, created.id, created.latestRevision.id);
-  await approveDirectly(worker, created.id, created.latestRevision.id);
+  await expectApproved(worker, created.id, created.latestRevision.id);
   const rowsBefore = await readRows(worker);
 
   // REVISION_NOT_FOUND takes precedence over DRAFT_APPROVED.
@@ -319,7 +319,7 @@ test("after a Rejection, the revised Revision can be submitted and the Rejected 
   const worker = await useWorker({ onTestFinished });
   const created = await createDraft(worker);
   await expectSubmitted(worker, created.id, created.latestRevision.id);
-  await rejectDirectly(worker, created.id, created.latestRevision.id);
+  await expectRejected(worker, created.id, created.latestRevision.id);
   const revised = await expectRevised(worker, created.id, created.latestRevision.id);
 
   const response = await submitRevision(worker, created.id, revised.latestRevision.id);
@@ -491,37 +491,28 @@ async function readRows(worker: TestWorker) {
   return { drafts: drafts?.results, revisions: revisions?.results };
 }
 
-/** Verdicts do not exist yet: rejects the Pending latest Revision directly. */
-async function rejectDirectly(worker: TestWorker, draftId: string, revisionId: string) {
-  const env = await worker.getEnv();
-  const now = Temporal.Now.instant().epochMilliseconds;
-  const [, revisionUpdate] = await env.DB.batch([
-    env.DB.prepare("UPDATE drafts SET last_action_at = ?1 WHERE id = ?2").bind(now, draftId),
-    env.DB.prepare(
-      "UPDATE revisions SET review_status = 'REJECTED', decided_at = ?1, rejection_reason = 'Wrong recipient' WHERE id = ?2 AND review_status = 'PENDING'",
-    ).bind(now, revisionId),
-  ]);
-  if (revisionUpdate?.meta.changes !== 1) {
-    throw new Error(`Revision ${revisionId} is not Pending, so it cannot be rejected.`);
+/** Rejects the Pending latest Revision with the reason "Wrong recipient"; fails the test otherwise. */
+async function expectRejected(worker: TestWorker, draftId: string, revisionId: string) {
+  const response = await worker.fetch(
+    `/api/v1/drafts/${draftId}/revisions/${revisionId}/rejection`,
+    {
+      method: "POST",
+      headers: { ...AGENT_HEADERS, Authorization: `Bearer ${LOCAL_REVIEWER_TOKEN}` },
+      body: JSON.stringify({ reason: "Wrong recipient" }),
+    },
+  );
+  if (response.status !== 200) {
+    throw new Error(`The Rejection answered with ${response.status}: ${await response.text()}`);
   }
 }
 
-/**
- * Verdicts do not exist yet: approves the Pending latest Revision directly, with a consistent
- * outbox.
- */
-async function approveDirectly(worker: TestWorker, draftId: string, revisionId: string) {
-  const env = await worker.getEnv();
-  const now = Temporal.Now.instant().epochMilliseconds;
-  const [, revisionUpdate] = await env.DB.batch([
-    env.DB.prepare(
-      "UPDATE drafts SET sending_status = 'QUEUED', approved_revision_id = ?1, approved_at = ?2, idempotency_key = ?3, outgoing_email = '{}', deadline = ?4, last_action_at = ?2 WHERE id = ?5",
-    ).bind(revisionId, now, `draft-send/${draftId}`, now + 23 * 60 * 60 * 1000, draftId),
-    env.DB.prepare(
-      "UPDATE revisions SET review_status = 'APPROVED', decided_at = ?1 WHERE id = ?2 AND review_status = 'PENDING'",
-    ).bind(now, revisionId),
-  ]);
-  if (revisionUpdate?.meta.changes !== 1) {
-    throw new Error(`Revision ${revisionId} is not Pending, so it cannot be approved.`);
+/** Approves the Pending latest Revision; fails the test otherwise. */
+async function expectApproved(worker: TestWorker, draftId: string, revisionId: string) {
+  const response = await worker.fetch(
+    `/api/v1/drafts/${draftId}/revisions/${revisionId}/approval`,
+    { method: "POST", headers: { Authorization: `Bearer ${LOCAL_REVIEWER_TOKEN}` } },
+  );
+  if (response.status !== 200) {
+    throw new Error(`The Approval answered with ${response.status}: ${await response.text()}`);
   }
 }

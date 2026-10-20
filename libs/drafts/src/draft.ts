@@ -1,7 +1,9 @@
+import { and, desc, eq, isNotNull } from "drizzle-orm";
+import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { Temporal } from "temporal-polyfill";
 
 import type { DraftId, RevisionId } from "#src/ids.ts";
-import type { drafts, FailureReason, ReviewStatus, revisions } from "#src/schema.ts";
+import { revisions, type drafts, type FailureReason, type ReviewStatus } from "#src/schema.ts";
 
 /** The body of a Revision; an object so that a later `html` becomes a sibling field. */
 export type RevisionBody = { plainText: string };
@@ -28,6 +30,21 @@ export type RevisionSummary = {
 
 export type Revision = RevisionSummary & { body: RevisionBody };
 
+/** The verdict a decided Revision has. */
+export type Verdict = Extract<ReviewStatus, "APPROVED" | "REJECTED">;
+
+/**
+ * The newest verdict on any of a Draft's Revisions: the one with the highest number that has a
+ * verdict. Only the latest Revision can get a verdict, so that is also the newest one.
+ */
+export type LastVerdict = {
+  revisionId: RevisionId;
+  revisionNumber: number;
+  verdict: Verdict;
+  reason?: string;
+  decidedAt: Temporal.Instant;
+};
+
 export type Sending =
   | { status: "NOT_SENT" }
   | { status: "QUEUED" }
@@ -40,6 +57,8 @@ export type DraftSummary = {
   createdAt: Temporal.Instant;
   lastActionAt: Temporal.Instant;
   latestRevision: RevisionSummary;
+  /** Absent while none of the Draft's Revisions has a verdict. */
+  lastVerdict?: LastVerdict;
   sending: Sending;
 };
 
@@ -51,18 +70,36 @@ type SendingFailure = {
   resendErrorMessage?: string;
 };
 
-/** Maps a Draft row and its latest Revision row to a Draft summary. */
+/**
+ * Maps a Draft row, its latest Revision row and the row of its last verdict (see
+ * {@link selectLastVerdictRow}) to a Draft summary.
+ */
 export function toDraftSummary(
   draftRow: typeof drafts.$inferSelect,
   latestRevisionRow: typeof revisions.$inferSelect,
+  lastVerdictRow: typeof revisions.$inferSelect | undefined,
 ): DraftSummary {
   return {
     id: draftRow.id,
     createdAt: toInstant(draftRow.createdAt),
     lastActionAt: toInstant(draftRow.lastActionAt),
     latestRevision: toRevisionSummary(latestRevisionRow),
+    ...(lastVerdictRow === undefined ? {} : { lastVerdict: toLastVerdict(lastVerdictRow) }),
     sending: toSending(draftRow),
   };
+}
+
+/**
+ * Selects the row of the Draft's last verdict: its Revision with the highest number that has a
+ * verdict. Selects nothing while there is none.
+ */
+export function selectLastVerdictRow(database: DrizzleD1Database, draftId: DraftId) {
+  return database
+    .select()
+    .from(revisions)
+    .where(and(eq(revisions.draftId, draftId), isNotNull(revisions.decidedAt)))
+    .orderBy(desc(revisions.revisionNumber))
+    .limit(1);
 }
 
 /** Maps a Revision row to a Revision summary. */
@@ -77,6 +114,24 @@ export function toRevisionSummary(row: typeof revisions.$inferSelect): RevisionS
     ...(row.submittedAt === null ? {} : { submittedAt: toInstant(row.submittedAt) }),
     ...(row.decidedAt === null ? {} : { decidedAt: toInstant(row.decidedAt) }),
     ...(row.rejectionReason === null ? {} : { rejectionReason: row.rejectionReason }),
+  };
+}
+
+/** Reads the verdict of a decided Revision row; the `CHECK` constraints of `revisions` guarantee it. */
+function toLastVerdict(row: typeof revisions.$inferSelect): LastVerdict {
+  if (
+    row.decidedAt === null ||
+    (row.reviewStatus !== "APPROVED" && row.reviewStatus !== "REJECTED")
+  ) {
+    throw new Error(`Revision ${row.id} is ${row.reviewStatus} and has no verdict.`);
+  }
+
+  return {
+    revisionId: row.id,
+    revisionNumber: row.revisionNumber,
+    verdict: row.reviewStatus,
+    ...(row.rejectionReason === null ? {} : { reason: row.rejectionReason }),
+    decidedAt: toInstant(row.decidedAt),
   };
 }
 

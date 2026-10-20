@@ -1,8 +1,11 @@
-import { Temporal } from "temporal-polyfill";
 import { test } from "vitest";
 
 import { ApiError, DraftApprovalClient } from "@draft-approval/api.client";
-import { LOCAL_AGENT_TOKEN, type ListDraftsQuery } from "@draft-approval/api.routes";
+import {
+  LOCAL_AGENT_TOKEN,
+  LOCAL_REVIEWER_TOKEN,
+  type ListDraftsQuery,
+} from "@draft-approval/api.routes";
 
 import { useWorker, type TestWorker } from "#test/use-worker.ts";
 
@@ -107,13 +110,10 @@ test("submitting a Rejected Revision throws an ApiError with REVISION_ALREADY_DE
   const client = createClient(worker, LOCAL_AGENT_TOKEN);
   const created = await client.createDraft(DRAFT_DATA);
   await client.submitRevision(created.id, created.latestRevision.id);
-  const env = await worker.getEnv();
-  // Verdicts do not exist yet: the Rejection is written directly.
-  await env.DB.prepare(
-    "UPDATE revisions SET review_status = 'REJECTED', decided_at = ?1 WHERE id = ?2",
-  )
-    .bind(Temporal.Now.instant().epochMilliseconds, created.latestRevision.id)
-    .run();
+  await createClient(worker, LOCAL_REVIEWER_TOKEN).rejectRevision(
+    created.id,
+    created.latestRevision.id,
+  );
 
   const error = await catchApiError(client.submitRevision(created.id, created.latestRevision.id));
 
@@ -123,6 +123,80 @@ test("submitting a Rejected Revision throws an ApiError with REVISION_ALREADY_DE
     extras: { existingVerdict: "REJECTED" },
   });
 });
+
+test("the Reviewer's client approves a Revision, and a repeated Approval throws an ApiError with REVISION_ALREADY_DECIDED", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const worker = await useWorker({ onTestFinished });
+  const agentClient = createClient(worker, LOCAL_AGENT_TOKEN);
+  const reviewerClient = createClient(worker, LOCAL_REVIEWER_TOKEN);
+  const created = await agentClient.createDraft(DRAFT_DATA);
+  await agentClient.submitRevision(created.id, created.latestRevision.id);
+
+  const approved = await reviewerClient.approveRevision(created.id, created.latestRevision.id);
+  const error = await catchApiError(
+    reviewerClient.approveRevision(created.id, created.latestRevision.id),
+  );
+
+  expect(approved).toMatchObject({
+    reviewStatus: "APPROVED",
+    lastVerdict: { revisionId: created.latestRevision.id, verdict: "APPROVED" },
+    sending: { status: "QUEUED" },
+  });
+  expect(error).toMatchObject({
+    status: 409,
+    code: "REVISION_ALREADY_DECIDED",
+    extras: { existingVerdict: "APPROVED" },
+  });
+});
+
+test("the Reviewer's client rejects a Revision with and without a reason", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const worker = await useWorker({ onTestFinished });
+  const agentClient = createClient(worker, LOCAL_AGENT_TOKEN);
+  const reviewerClient = createClient(worker, LOCAL_REVIEWER_TOKEN);
+  const first = await agentClient.createDraft(DRAFT_DATA);
+  const second = await agentClient.createDraft(DRAFT_DATA);
+  await agentClient.submitRevision(first.id, first.latestRevision.id);
+  await agentClient.submitRevision(second.id, second.latestRevision.id);
+
+  const withReason = await reviewerClient.rejectRevision(first.id, first.latestRevision.id, {
+    reason: "Wrong recipient",
+  });
+  const withoutReason = await reviewerClient.rejectRevision(second.id, second.latestRevision.id);
+
+  expect(withReason).toMatchObject({
+    reviewStatus: "REJECTED",
+    lastVerdict: { verdict: "REJECTED", reason: "Wrong recipient" },
+    sending: { status: "NOT_SENT" },
+  });
+  expect(withoutReason).toMatchObject({ lastVerdict: { verdict: "REJECTED" } });
+  expect(withoutReason.lastVerdict).not.toHaveProperty("reason");
+});
+
+test.for([
+  { name: "approve", isApproval: true },
+  { name: "reject", isApproval: false },
+])(
+  "an Agent's client that tries to $name throws an ApiError with REVIEWER_ONLY",
+  async ({ isApproval }, { expect, onTestFinished }) => {
+    const worker = await useWorker({ onTestFinished });
+    const client = createClient(worker, LOCAL_AGENT_TOKEN);
+    const created = await client.createDraft(DRAFT_DATA);
+    await client.submitRevision(created.id, created.latestRevision.id);
+
+    const error = await catchApiError(
+      isApproval
+        ? client.approveRevision(created.id, created.latestRevision.id)
+        : client.rejectRevision(created.id, created.latestRevision.id),
+    );
+
+    expect(error).toMatchObject({ status: 403, code: "REVIEWER_ONLY", extras: {} });
+  },
+);
 
 test("getting another Draft's Revision throws an ApiError with REVISION_NOT_FOUND", async ({
   expect,

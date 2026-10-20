@@ -8,6 +8,8 @@ export type DraftResponse = z.infer<typeof draftSchema>;
 
 export type ReviseRequest = z.input<typeof reviseRequestSchema>;
 
+export type RejectionRequest = z.input<typeof rejectionRequestSchema>;
+
 export type RevisionResponse = z.infer<typeof revisionSchema>;
 
 /** The parameters of a list; every one is optional. */
@@ -23,6 +25,8 @@ const MAX_SUBJECT_LENGTH = 998;
 
 /** The Reviewer must read the whole body before approving; Gmail clips messages over about 102 KB. */
 const MAX_BODY_UTF8_BYTES = 100 * 1024;
+
+const MAX_REJECTION_REASON_LENGTH = 2000;
 
 const DRAFT_ID_PATTERN = /^drf_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -118,6 +122,25 @@ export const reviseRequestSchema = z
     }),
   })
   .openapi("ReviseRequest");
+
+/** The optional reason of a Rejection. */
+export const rejectionRequestSchema = z
+  .strictObject({
+    // Trimmed before the length check; an empty or whitespace-only reason counts as absent.
+    reason: z
+      .string()
+      .trim()
+      .refine(
+        (reason) => countCodePoints(reason) <= MAX_REJECTION_REASON_LENGTH,
+        `At most ${MAX_REJECTION_REASON_LENGTH} characters after trimming.`,
+      )
+      .optional()
+      .openapi({
+        // No `maxLength`: the limit applies after trimming, so a longer raw string can be valid.
+        description: `Why the Revision is rejected, shown to the Agent: up to ${MAX_REJECTION_REASON_LENGTH} characters after trimming; an empty or whitespace-only reason counts as absent`,
+      }),
+  })
+  .openapi("RejectionRequest");
 
 export const draftParamsSchema = z.object({
   draftId: draftIdSchema.openapi({ param: { name: "draftId", in: "path" } }),

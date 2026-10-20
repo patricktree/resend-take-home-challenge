@@ -4,6 +4,7 @@ import { test } from "vitest";
 
 import {
   draftListSchema,
+  draftSchema,
   draftSummarySchema,
   LOCAL_AGENT_TOKEN,
   LOCAL_REVIEWER_TOKEN,
@@ -278,6 +279,73 @@ test("the Decided list answers with Approved and Rejected Drafts, newest verdict
     },
   ]);
   expect(page.items).toHaveLength(3);
+});
+
+test("list items carry each Draft's lastVerdict, also a Rejection the Agent has since revised after", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const worker = await useWorker({ onTestFinished });
+  const reviewerHeaders = { ...AGENT_HEADERS, Authorization: `Bearer ${LOCAL_REVIEWER_TOKEN}` };
+  const withoutVerdict = await createDraft(worker);
+  await submitRevision(worker, withoutVerdict.id, withoutVerdict.latestRevision.id);
+  const revisedAfterRejection = await createDraft(worker);
+  const rejectedRevisionId = revisedAfterRejection.latestRevision.id;
+  await submitRevision(worker, revisedAfterRejection.id, rejectedRevisionId);
+  const rejection = await worker.fetch(
+    `/api/v1/drafts/${revisedAfterRejection.id}/revisions/${rejectedRevisionId}/rejection`,
+    { method: "POST", headers: reviewerHeaders, body: JSON.stringify({ reason: "Too long" }) },
+  );
+  const rejectedAt = draftSummarySchema.parse(await rejection.json()).lastActionAt;
+  const revised = await reviseDraft(worker, revisedAfterRejection.id, rejectedRevisionId);
+  await submitRevision(worker, revisedAfterRejection.id, revised.latestRevision.id);
+  const approved = await createDraft(worker);
+  await submitRevision(worker, approved.id, approved.latestRevision.id);
+  const approval = await worker.fetch(
+    `/api/v1/drafts/${approved.id}/revisions/${approved.latestRevision.id}/approval`,
+    { method: "POST", headers: reviewerHeaders },
+  );
+  const approvedAt = draftSummarySchema.parse(await approval.json()).lastActionAt;
+
+  const page = await expectPage(worker, "?orderBy=createdAt&order=asc");
+
+  expect(page.items).toMatchObject([
+    { id: withoutVerdict.id, reviewStatus: "PENDING" },
+    {
+      id: revisedAfterRejection.id,
+      reviewStatus: "PENDING",
+      latestRevision: { revisionNumber: 2 },
+      lastVerdict: {
+        revisionId: rejectedRevisionId,
+        revisionNumber: 1,
+        verdict: "REJECTED",
+        reason: "Too long",
+        decidedAt: rejectedAt,
+      },
+    },
+    {
+      id: approved.id,
+      reviewStatus: "APPROVED",
+      lastVerdict: {
+        revisionId: approved.latestRevision.id,
+        revisionNumber: 1,
+        verdict: "APPROVED",
+        decidedAt: approvedAt,
+      },
+      sending: { status: "QUEUED" },
+    },
+  ]);
+  expect(page.items[0]).not.toHaveProperty("lastVerdict");
+  // A list item is the Draft without the body, exactly as the Draft's own read shows it.
+  const reads = await Promise.all(
+    page.items.map(async (item) => {
+      const response = await worker.fetch(`/api/v1/drafts/${item.id}`, { headers: AGENT_HEADERS });
+      const { latestRevision, ...draft } = draftSchema.parse(await response.json());
+      const { body: _body, ...latestRevisionSummary } = latestRevision;
+      return { ...draft, latestRevision: latestRevisionSummary };
+    }),
+  );
+  expect(page.items).toStrictEqual(reads);
 });
 
 test("a cursor reused with other filters or another ordering answers with 400 INVALID_REQUEST", async ({

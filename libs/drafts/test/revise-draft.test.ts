@@ -1,11 +1,13 @@
-import { Temporal } from "temporal-polyfill";
 import { test } from "vitest";
 
+import { approveRevision } from "#src/approve-revision.ts";
 import { createDraft } from "#src/create-draft.ts";
 import { drizzleForSession, type DraftsStorage } from "#src/database.ts";
 import { reviseDraft } from "#src/revise-draft.ts";
+import { submitRevision } from "#src/submit-revision.ts";
 
 import { createGatedD1Database } from "#test/gated-d1-database.ts";
+import { createRecordingSendQueue } from "#test/recording-send-queue.ts";
 import { useBindings, type TestBindings } from "#test/use-bindings.ts";
 
 const DRAFT_DATA = {
@@ -51,13 +53,15 @@ test("revise ‖ revise on the same base: the revise whose batch commits second 
   ]);
 });
 
-test("a revise whose batch commits after an Approval gets DRAFT_APPROVED and changes nothing", async ({
+test("approve ‖ revise, approve first: the revise gets DRAFT_APPROVED and changes nothing", async ({
   expect,
   onTestFinished,
 }) => {
   const bindings = await useBindings({ onTestFinished });
   const gatedDatabase = createGatedD1Database(bindings.DB);
-  const created = await createDraft(storageOn(bindings.DB, bindings), DRAFT_DATA);
+  const storage = storageOn(bindings.DB, bindings);
+  const created = await createDraft(storage, DRAFT_DATA);
+  await submitRevision(storage, created.id, created.latestRevision.id);
 
   const gate = gatedDatabase.holdNext((call) => call.kind === "batch");
   const heldRevise = reviseDraft(storageOn(gatedDatabase.database, bindings), created.id, {
@@ -65,10 +69,16 @@ test("a revise whose batch commits after an Approval gets DRAFT_APPROVED and cha
     baseRevisionId: created.latestRevision.id,
   });
   await gate.reached;
-  await approveDirectly(bindings.DB, created.id, created.latestRevision.id);
+  const committedApproval = await approveRevision(
+    storage,
+    { sendQueue: createRecordingSendQueue(), from: "drafts@resend-challenge.patricktree.me" },
+    created.id,
+    created.latestRevision.id,
+  );
   const rowsOfApprovedDraft = await readRows(bindings.DB);
   gate.release();
 
+  expect(committedApproval).toMatchObject({ outcome: "APPROVED" });
   expect(await heldRevise).toStrictEqual({ outcome: "DRAFT_APPROVED" });
   expect(await readRows(bindings.DB)).toStrictEqual(rowsOfApprovedDraft);
 });
@@ -86,21 +96,4 @@ async function readRows(database: D1Database) {
     database.prepare("SELECT * FROM revisions ORDER BY draft_id, revision_number"),
   ]);
   return { drafts: drafts?.results, revisions: revisions?.results };
-}
-
-/** Approvals do not exist yet: puts the Draft into the approved state with a consistent outbox. */
-async function approveDirectly(database: D1Database, draftId: string, revisionId: string) {
-  const now = Temporal.Now.instant().epochMilliseconds;
-  await database.batch([
-    database
-      .prepare(
-        "UPDATE drafts SET sending_status = 'QUEUED', approved_revision_id = ?1, approved_at = ?2, idempotency_key = ?3, outgoing_email = '{}', deadline = ?4, last_action_at = ?2 WHERE id = ?5",
-      )
-      .bind(revisionId, now, `draft-send/${draftId}`, now + 23 * 60 * 60 * 1000, draftId),
-    database
-      .prepare(
-        "UPDATE revisions SET review_status = 'APPROVED', submitted_at = ?1, decided_at = ?1 WHERE id = ?2",
-      )
-      .bind(now, revisionId),
-  ]);
 }

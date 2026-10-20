@@ -4,7 +4,6 @@ import {
   type CallToolResult,
   type VersionNegotiationMode,
 } from "@modelcontextprotocol/client";
-import { Temporal } from "temporal-polyfill";
 import { test, type TestContext } from "vitest";
 
 import {
@@ -307,13 +306,14 @@ test("submit_draft of a Rejected Revision is a tool error with REVISION_ALREADY_
   const created = await callToolSuccessfully(mcpClient, "create_draft", DRAFT_DATA);
   const submission = { draftId: created.id, revisionId: created.latestRevision.id };
   await callToolSuccessfully(mcpClient, "submit_draft", submission);
-  const env = await worker.getEnv();
-  // No verdict tool exists, by design: the Rejection is written directly.
-  await env.DB.prepare(
-    "UPDATE revisions SET review_status = 'REJECTED', decided_at = ?1 WHERE id = ?2",
-  )
-    .bind(Temporal.Now.instant().epochMilliseconds, created.latestRevision.id)
-    .run();
+  // No verdict tool exists, by design: the Reviewer rejects through the API.
+  const rejection = await worker.fetch(
+    `/api/v1/drafts/${created.id}/revisions/${created.latestRevision.id}/rejection`,
+    { method: "POST", headers: { Authorization: `Bearer ${LOCAL_REVIEWER_TOKEN}` } },
+  );
+  if (rejection.status !== 200) {
+    throw new Error(`The Rejection answered with ${rejection.status}: ${await rejection.text()}`);
+  }
 
   const result = await mcpClient.callTool({ name: "submit_draft", arguments: submission });
 

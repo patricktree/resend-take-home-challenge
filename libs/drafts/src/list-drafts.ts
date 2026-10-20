@@ -4,7 +4,7 @@
  * the same however deep it is, and it never reads R2: list items are Draft summaries.
  */
 
-import { and, asc, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, sql, type SQL } from "drizzle-orm";
 import buffer from "node:buffer";
 
 import type { DraftsStorage } from "#src/database.ts";
@@ -100,10 +100,16 @@ export async function listDrafts(
   const pageRows = rows.slice(0, query.limit);
   const lastRow = pageRows.at(-1);
   const hasNextPage = rows.length > query.limit && lastRow !== undefined;
+  const lastVerdictRows = await readLastVerdictRows(
+    database,
+    pageRows.map((row) => row.revisions),
+  );
 
   return {
     outcome: "LISTED",
-    drafts: pageRows.map((row) => toDraftSummary(row.drafts, row.revisions)),
+    drafts: pageRows.map((row) =>
+      toDraftSummary(row.drafts, row.revisions, lastVerdictRows.get(row.drafts.id)),
+    ),
     ...(hasNextPage
       ? {
           nextCursor: encodeCursor({
@@ -114,6 +120,55 @@ export async function listDrafts(
         }
       : {}),
   };
+}
+
+/**
+ * Reads the last verdict of each listed Draft, by Draft id, with one query for the whole page.
+ *
+ * It runs after the page query, so a verdict committed in between could show up next to the
+ * still-Pending latest Revision of the page. Only the latest Revision can get a verdict, so a
+ * verdict on an earlier Revision is final; the latest Revision's own verdict comes from the page's
+ * row, which keeps each item consistent.
+ */
+async function readLastVerdictRows(
+  database: DraftsStorage["database"],
+  latestRevisionRows: (typeof revisions.$inferSelect)[],
+): Promise<Map<DraftId, typeof revisions.$inferSelect>> {
+  const lastVerdictRows = new Map<DraftId, typeof revisions.$inferSelect>();
+  if (latestRevisionRows.length === 0) {
+    return lastVerdictRows;
+  }
+
+  const earlierVerdictRows = await database
+    .select()
+    .from(revisions)
+    .where(
+      and(
+        inArray(
+          revisions.draftId,
+          latestRevisionRows.map((row) => row.draftId),
+        ),
+        isNotNull(revisions.decidedAt),
+      ),
+    )
+    .orderBy(asc(revisions.revisionNumber));
+  const latestRevisionNumbers = new Map(
+    latestRevisionRows.map((row) => [row.draftId, row.revisionNumber]),
+  );
+  for (const row of earlierVerdictRows) {
+    const latestRevisionNumber = latestRevisionNumbers.get(row.draftId);
+    // Ascending order: a later Revision's verdict replaces an earlier one's.
+    if (latestRevisionNumber !== undefined && row.revisionNumber < latestRevisionNumber) {
+      lastVerdictRows.set(row.draftId, row);
+    }
+  }
+  for (const row of latestRevisionRows) {
+    if (row.decidedAt !== null) {
+      lastVerdictRows.set(row.draftId, row);
+    }
+  }
+
+  return lastVerdictRows;
 }
 
 /**

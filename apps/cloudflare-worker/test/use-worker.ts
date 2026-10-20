@@ -2,7 +2,11 @@ import nodeUrl from "node:url";
 import type { TestContext } from "vitest";
 import { createTestHarness, type WorkerHandle } from "wrangler";
 
-export type TestWorker = WorkerHandle<TestWorkerEnvironment>;
+import type { SendQueueMessage } from "@draft-approval/drafts";
+
+import type * as testWorkerModule from "#test/worker.ts";
+
+export type TestWorker = WorkerHandle<TestWorkerEnvironment, typeof testWorkerModule>;
 
 /** The configured Agent token (`AGENT_TOKEN`) of every test Worker. */
 export const TEST_AGENT_TOKEN = "agent_test-configured-agent-token";
@@ -49,8 +53,17 @@ export async function useWorker(
   onTestFinished(() => testRuntime.close());
 
   await testRuntime.listen();
-  const worker = testRuntime.getWorker<TestWorkerEnvironment>();
+  const worker = testRuntime.getWorker<TestWorkerEnvironment, typeof testWorkerModule>();
   await worker.applyD1Migrations("DB");
 
   return worker;
+}
+
+/**
+ * Reads every message the Worker's requests sent to the Send Queue, in order, from the recording
+ * double that test/worker.ts wraps around the `SEND_QUEUE` binding.
+ */
+export async function readSentSendQueueMessages(worker: TestWorker): Promise<SendQueueMessage[]> {
+  const testWorkerExport = await worker.getExport();
+  return testWorkerExport.sentSendQueueMessages();
 }

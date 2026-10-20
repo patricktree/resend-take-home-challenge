@@ -96,6 +96,14 @@ curl -sS -X POST http://localhost:5173/api/v1/drafts \
   -d '{"to":["delivered@resend.dev"],"subject":"Hello","body":{"plainText":"Hello from a local Agent."}}'
 ```
 
+With `pnpm dev` running, fill the local database with sample Drafts through the typed client and the local tokens: three Pending ones, one Rejected with a reason and one Approved to `delivered@resend.dev`. The script prints each Draft's review status, id and subject:
+
+```sh
+pnpm seed
+```
+
+It calls <http://localhost:5173> by default; pass `--base-url <url>` or set `DRAFT_APPROVAL_BASE_URL` for another local address. Each run adds new Drafts. Only the Reviewer token can approve or reject a Revision, for example with `POST /api/v1/drafts/<draft-id>/revisions/<revision-id>/approval` and `Authorization: Bearer reviewer_local-development-only`.
+
 The cron trigger does not fire locally. Run the Send reconciler by calling the scheduled handler, which answers `200` with `ok`:
 
 ```sh

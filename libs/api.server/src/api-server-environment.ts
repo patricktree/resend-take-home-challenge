@@ -1,4 +1,4 @@
-import type { DraftsStorage } from "@draft-approval/drafts";
+import type { DraftsStorage, SendQueue } from "@draft-approval/drafts";
 
 import type { Role } from "#src/authentication.ts";
 
@@ -12,8 +12,12 @@ export type ApiServerEnvironment = {
   LOCAL_DEVELOPMENT: string;
   /** The origin of the deployed Worker; `reviewUrl`s point below it. */
   PUBLIC_BASE_URL: string;
+  /** The sender of every email, frozen into the outgoing email when the Approval is recorded. */
+  RESEND_FROM: string;
   DB: D1Database;
   REVISION_BODIES: R2Bucket;
+  /** The Send Queue's producer binding; an Approval hands its Send intent to it. */
+  SEND_QUEUE: SendQueue;
 };
 
 export type ApiServerHonoEnvironment = {

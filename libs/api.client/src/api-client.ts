@@ -10,6 +10,7 @@ import type {
   ErrorExtras,
   ErrorResponse,
   ListDraftsQuery,
+  RejectionRequest,
   ReviseRequest,
   RevisionResponse,
 } from "@draft-approval/api.routes";
@@ -161,6 +162,48 @@ export class DraftApprovalClient {
       header: NO_HEADERS,
       // Hono RPC repeats array values as query parameters; numbers travel as strings.
       query: { ...query, ...(limit === undefined ? {} : { limit: String(limit) }) },
+    });
+    if (response.status === 200) {
+      return response.json();
+    }
+    throw await toApiError(response);
+  }
+
+  /**
+   * Approves one Revision, the Draft's latest and `PENDING`; Reviewer token only. The Draft becomes
+   * `APPROVED` with sending status `QUEUED`. Throws {@link ApiError} with `REVIEWER_ONLY` for any
+   * other token, with `REVISION_SUPERSEDED` when the Revision is no longer the latest, with
+   * `REVISION_ALREADY_DECIDED` (and `existingVerdict`) when it already has a verdict, also after a
+   * retried request, and with `REVISION_NOT_SUBMITTED` when it is `UNSUBMITTED`.
+   */
+  async approveRevision(draftId: string, revisionId: string): Promise<DraftSummaryResponse> {
+    const response = await this.#honoClient.api.v1.drafts[":draftId"].revisions[
+      ":revisionId"
+    ].approval.$post({
+      header: NO_HEADERS,
+      param: { draftId, revisionId },
+    });
+    if (response.status === 200) {
+      return response.json();
+    }
+    throw await toApiError(response);
+  }
+
+  /**
+   * Rejects one Revision, the Draft's latest and `PENDING`, optionally with a reason; Reviewer
+   * token only. Throws {@link ApiError} with the same codes as {@link approveRevision}.
+   */
+  async rejectRevision(
+    draftId: string,
+    revisionId: string,
+    rejectionRequest: RejectionRequest = {},
+  ): Promise<DraftSummaryResponse> {
+    const response = await this.#honoClient.api.v1.drafts[":draftId"].revisions[
+      ":revisionId"
+    ].rejection.$post({
+      header: NO_HEADERS,
+      param: { draftId, revisionId },
+      json: rejectionRequest,
     });
     if (response.status === 200) {
       return response.json();

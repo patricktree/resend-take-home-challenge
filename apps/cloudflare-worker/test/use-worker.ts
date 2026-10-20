@@ -1,6 +1,7 @@
 import nodeUrl from "node:url";
 import type { TestContext } from "vitest";
 import { createTestHarness, type WorkerHandle } from "wrangler";
+import { z } from "zod";
 
 import type { SendQueueMessage } from "@draft-approval/drafts";
 
@@ -22,12 +23,39 @@ type TestWorkerEnvironment = {
   SEND_QUEUE: Queue;
 };
 
+/** What the Send Queue consumer did to one message of a batch from `deliverSendQueueBatch()`. */
+type MessageHandling = z.infer<typeof messageHandlingsSchema>[number];
+
+/** One message of a Send Queue batch delivered through `deliverSendQueueBatch()`. */
+type DeliveredMessage = {
+  body: unknown;
+  /** `message.attempts`: 1 for the first delivery, the default. */
+  attempts?: number;
+  /** The Queue's message id; one per message of the batch by default. */
+  id?: string;
+};
+
 type UseWorkerOptions = {
   /** Test-only vars that override wrangler.test.jsonc, for example `LOCAL_DEVELOPMENT`. */
   vars?: Record<string, string>;
   /** Test-only secrets, for example `REVIEWER_TOKEN` (absent by default, as in local development). */
   secrets?: Record<string, string>;
+  /**
+   * Consumes the Send Queue for real, as Miniflare delivers it (the `send-queue-delivery`
+   * environment of wrangler.test.jsonc). Off by default: consumer scenarios deliver their batches
+   * through `deliverSendQueueBatch()`, which a real consumer would race.
+   */
+  shouldConsumeSendQueue?: boolean;
 };
+
+/** The answer of `POST /__test/queue` (test/worker.ts). */
+const messageHandlingsSchema = z.array(
+  z.strictObject({
+    id: z.string(),
+    outcome: z.enum(["ACK", "RETRY", "NONE"]),
+    delaySeconds: z.number().optional(),
+  }),
+);
 
 /**
  * Starts a fresh instance of the whole Worker in Wrangler's local test runtime, with the D1
@@ -45,6 +73,7 @@ export async function useWorker(
     workers: [
       {
         configPath: "./test/wrangler.test.jsonc",
+        ...(options.shouldConsumeSendQueue === true ? { env: "send-queue-delivery" } : {}),
         vars: { AGENT_TOKEN: TEST_AGENT_TOKEN, ...options.vars },
         secrets: options.secrets ?? {},
       },
@@ -66,4 +95,32 @@ export async function useWorker(
 export async function readSentSendQueueMessages(worker: TestWorker): Promise<SendQueueMessage[]> {
   const testWorkerExport = await worker.getExport();
   return testWorkerExport.sentSendQueueMessages();
+}
+
+/**
+ * Delivers one batch to the Send Queue consumer through the test-only route `POST /__test/queue` of
+ * test/worker.ts, which runs the real `queue()` handler with the real bindings, and returns what
+ * the handler did to each message, in order.
+ */
+export async function deliverSendQueueBatch(
+  worker: TestWorker,
+  messages: DeliveredMessage[],
+): Promise<MessageHandling[]> {
+  const response = await worker.fetch("/__test/queue", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messages: messages.map(({ body, attempts = 1, id }, index) => ({
+        id: id ?? `message-${index}`,
+        body,
+        attempts,
+      })),
+    }),
+  });
+  if (response.status !== 200) {
+    throw new Error(
+      `POST /__test/queue answered with ${response.status}: ${await response.text()}`,
+    );
+  }
+  return messageHandlingsSchema.parse(await response.json());
 }

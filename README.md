@@ -175,7 +175,7 @@ These steps need Patrick's Cloudflare and Resend accounts, so no agent runs them
 
   Success: the first two commands print `401`, the third `302 https://resend-challenge.patricktree.me/app/`.
 
-- [ ] **Run the live Resend contract test** once it exists (ticket 08): `pnpm test:resend-live` with the sending-only key, which sends only to `delivered@resend.dev`.
+- [ ] **Run the live Resend contract test.** Run `RESEND_API_KEY=<key> pnpm test:resend-live`, replacing `<key>` with the sending-only key. It sends three emails from `RESEND_FROM` of `wrangler.jsonc` (override it with `RESEND_FROM`) to `delivered@resend.dev`, and checks Resend's idempotency behavior that the local tests' Resend stub models. Success: Vitest reports 3 passed tests.
 
 Every later deploy is `terraform apply` if `terraform/` changed, then the migrations step, then the deploy step. To rotate a token, run `pnpm secrets:generate` again and redeploy; the old tokens stop working with no overlap.
 

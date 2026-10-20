@@ -19,6 +19,12 @@ export type SendQueueMessage = z.infer<typeof sendQueueMessageSchema>;
  */
 export type SendQueue = { send(message: SendQueueMessage): Promise<unknown> };
 
+/** The Send Queue, as named in wrangler.jsonc. */
+export const SEND_QUEUE_NAME = "draft-approval-send";
+
+/** The Send Queue's dead-letter queue, as named in wrangler.jsonc. */
+export const SEND_DLQ_NAME = "draft-approval-send-dlq";
+
 const outgoingEmailSchema = z.strictObject({
   /** Resolved from `RESEND_FROM` when the Approval is recorded; not part of the review. */
   from: z.string().min(1),

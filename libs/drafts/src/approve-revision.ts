@@ -32,10 +32,11 @@ const SEND_DEADLINE_AFTER_APPROVAL = { hours: 23 } as const;
  *
  * Runs one guarded batch (spec section 8): every statement carries the guard "the Revision is the
  * Draft's latest and `PENDING`", and the statement that makes it false runs last, so only one
- * verdict per Draft ever commits and a losing Approval writes nothing. After the commit it hands
- * the Send intent to the Send Queue and records the hand-off in `enqueued_at`. A failed hand-off
- * never fails the Approval: it is logged, `enqueued_at` stays unset, and the Send reconciler
- * re-enqueues it. Writes, so the database session must start with `"first-primary"`.
+ * verdict per Revision and only one Approval per Draft ever commits, and a losing Approval writes
+ * nothing. After the commit it hands the Send intent to the Send Queue and records the hand-off in
+ * `enqueued_at`. A failed hand-off never fails the Approval: it is logged, `enqueued_at` stays
+ * unset, and the Send reconciler re-enqueues it. Writes, so the database session must start with
+ * `"first-primary"`.
  */
 export async function approveRevision(
   { database }: DraftsStorage,
@@ -117,8 +118,17 @@ async function handOffSend(
   const draftId: DraftId = draftRow.id;
   const message = toSendQueueMessage(draftRow);
 
+  // Only root causes' messages are logged: wrapping errors such as Drizzle's carry SQL parameters.
   try {
     await sendQueue.send(message);
+  } catch (error) {
+    console.error(
+      `Sending the Send of Draft ${draftId} to the Send Queue failed; the Send reconciler re-enqueues it. ${findRootCauseMessage(error)}`,
+    );
+    return;
+  }
+
+  try {
     await database
       .update(drafts)
       .set({ enqueuedAt: Temporal.Now.instant().epochMilliseconds })
@@ -126,9 +136,8 @@ async function handOffSend(
         and(eq(drafts.id, draftId), eq(drafts.sendingStatus, "QUEUED"), isNull(drafts.enqueuedAt)),
       );
   } catch (error) {
-    // Only the root cause's message: wrapping errors such as Drizzle's carry SQL parameters.
     console.error(
-      `Handing the Send of Draft ${draftId} to the Send Queue failed; the Send reconciler re-enqueues it. ${findRootCauseMessage(error)}`,
+      `Recording the Send Queue hand-off of Draft ${draftId} failed; the Send reconciler re-enqueues it, and the idempotency key absorbs the duplicate. ${findRootCauseMessage(error)}`,
     );
   }
 }

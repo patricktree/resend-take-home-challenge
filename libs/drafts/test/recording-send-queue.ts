@@ -13,11 +13,20 @@ export function createRecordingSendQueue(): RecordingSendQueue {
   };
 }
 
-/** A Send Queue test double whose every `send()` fails, as during a Queues outage. */
-export function createFailingSendQueue(errorMessage: string): SendQueue {
+/**
+ * A Send Queue test double whose every `send()` fails, as during a Queues outage. The error wraps
+ * its root cause, which carries `rootCauseMessage`, in an error whose message is `wrapperMessage`.
+ */
+export function createFailingSendQueue({
+  rootCauseMessage,
+  wrapperMessage,
+}: {
+  rootCauseMessage: string;
+  wrapperMessage: string;
+}): SendQueue {
   return {
     send: async () => {
-      throw new Error(errorMessage);
+      throw new Error(wrapperMessage, { cause: new Error(rootCauseMessage) });
     },
   };
 }

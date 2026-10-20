@@ -116,7 +116,13 @@ test("a failed hand-off to the Send Queue does not fail the Approval: the Draft 
 
   const result = await approveRevision(
     storage,
-    { sendQueue: createFailingSendQueue("Queue unavailable"), from: RESEND_FROM },
+    {
+      sendQueue: createFailingSendQueue({
+        rootCauseMessage: "Queue unavailable",
+        wrapperMessage: "Wrapped with secret parameters",
+      }),
+      from: RESEND_FROM,
+    },
     created.id,
     created.latestRevision.id,
   );
@@ -137,6 +143,8 @@ test("a failed hand-off to the Send Queue does not fail the Approval: the Draft 
   expect(consoleError).toHaveBeenCalledExactlyOnceWith(
     expect.stringContaining("Queue unavailable"),
   );
+  // Only the root cause is logged, never a wrapping error's message.
+  expect(consoleError).not.toHaveBeenCalledWith(expect.stringContaining("secret parameters"));
 });
 
 test("approve ‖ approve: the Approval whose batch commits second gets REVISION_ALREADY_DECIDED with APPROVED, changes nothing and enqueues nothing", async ({

@@ -136,8 +136,8 @@ export const rejectionRequestSchema = z
       )
       .optional()
       .openapi({
+        // No `maxLength`: the limit applies after trimming, so a longer raw string can be valid.
         description: `Why the Revision is rejected, shown to the Agent: up to ${MAX_REJECTION_REASON_LENGTH} characters after trimming; an empty or whitespace-only reason counts as absent`,
-        maxLength: MAX_REJECTION_REASON_LENGTH,
       }),
   })
   .openapi("RejectionRequest");

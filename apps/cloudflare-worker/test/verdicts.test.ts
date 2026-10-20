@@ -724,7 +724,7 @@ test("5 concurrent Rejections and 5 concurrent revises on the same base: the fir
   ).toStrictEqual(expect.arrayContaining(observed.losingRejectionCodes));
 });
 
-type Verdict = "approve" | "reject";
+type VerdictAction = "approve" | "reject";
 
 type Outcome =
   | { status: number; body: unknown }
@@ -807,7 +807,7 @@ async function reject(worker: TestWorker, draftId: string, revisionId: string, b
 
 async function renderVerdict(
   worker: TestWorker,
-  verdict: Verdict,
+  verdict: VerdictAction,
   draftId: string,
   revisionId: string,
   rejection?: { reason: string },
@@ -820,7 +820,7 @@ async function renderVerdict(
 /** Approves or rejects the Revision and fails the test unless the verdict is recorded. */
 async function expectVerdict(
   worker: TestWorker,
-  verdict: Verdict,
+  verdict: VerdictAction,
   draftId: string,
   revisionId: string,
   rejection?: { reason: string },

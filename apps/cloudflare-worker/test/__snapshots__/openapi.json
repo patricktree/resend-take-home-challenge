@@ -558,7 +558,6 @@
         "properties": {
           "reason": {
             "type": "string",
-            "maxLength": 2000,
             "description": "Why the Revision is rejected, shown to the Agent: up to 2000 characters after trimming; an empty or whitespace-only reason counts as absent"
           }
         },

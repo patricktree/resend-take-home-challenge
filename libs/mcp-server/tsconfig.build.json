@@ -1,0 +1,13 @@
+{
+  "extends": [
+    "@patricktree-stack/config-typescript/tsconfig.defaults.json",
+    "@patricktree-stack/config-typescript/tsconfig.typescript-execution-via-type-stripping.json",
+    "@patricktree-stack/config-typescript/tsconfig.composite-emit-declaration-only.json"
+  ],
+  "compilerOptions": {
+    /* Modules */
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["**/node_modules", "**/*.test.ts"]
+}

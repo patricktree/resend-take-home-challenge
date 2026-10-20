@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** done (https://github.com/patricktree/resend-take-home-challenge/pull/1)
+**Status:** done (<https://github.com/patricktree/resend-take-home-challenge/pull/1>)
 
 - [x] pnpm + Turborepo monorepo with the packages from the spec's package table (empty where later tickets fill them), shared config from the `.patricktree-stack` submodule, oxlint, oxfmt, Knip, markdownlint, Vitest; no Git hooks
 - [x] One Worker exporting `fetch` (plus stub `queue` and `scheduled`), routing as in the spec: `/` → 302 `/app/`, unknown `/api/…` and other paths → JSON 404 `NOT_FOUND`

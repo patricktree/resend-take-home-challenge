@@ -38,6 +38,9 @@ const revisionIdSchema = z
     example: "rev_019a0b7e-5c3d-7f2a-9b1e-4d6c8a2f0e14",
   });
 
+/** The verdict of an Approval or a Rejection. */
+export const verdictSchema = z.enum(["APPROVED", "REJECTED"]);
+
 const revisionReviewStatusSchema = z
   .enum(["UNSUBMITTED", "PENDING", "APPROVED", "REJECTED", "SUPERSEDED"])
   .openapi("RevisionReviewStatus");
@@ -152,7 +155,7 @@ const lastVerdictSchema = z
   .object({
     revisionId: revisionIdSchema,
     revisionNumber: z.int().min(1),
-    verdict: z.enum(["APPROVED", "REJECTED"]),
+    verdict: verdictSchema,
     reason: z.string().optional().openapi({ description: "The reason of a Rejection, when given" }),
     decidedAt: timestampSchema,
   })

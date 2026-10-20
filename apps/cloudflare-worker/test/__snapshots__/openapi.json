@@ -34,6 +34,8 @@
                   "DRAFT_NOT_FOUND",
                   "REVISION_NOT_FOUND",
                   "REVISION_SUPERSEDED",
+                  "REVISION_ALREADY_DECIDED",
+                  "REVISION_ALREADY_SUBMITTED",
                   "DRAFT_APPROVED",
                   "PAYLOAD_TOO_LARGE",
                   "INTERNAL_ERROR"
@@ -54,6 +56,14 @@
                   "$ref": "#/components/schemas/ValidationIssue"
                 },
                 "description": "With `INVALID_REQUEST`: every violation of the request's schema"
+              },
+              "existingVerdict": {
+                "type": "string",
+                "enum": [
+                  "APPROVED",
+                  "REJECTED"
+                ],
+                "description": "With `REVISION_ALREADY_DECIDED`: the verdict the Revision already has"
               }
             },
             "required": [
@@ -1113,6 +1123,182 @@
           },
           "404": {
             "description": "`DRAFT_NOT_FOUND`: no Draft has this id. `REVISION_NOT_FOUND`: the Draft has no Revision with this id, including when it is another Draft's Revision.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": false,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`: an unexpected error occurred.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": false,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/drafts/{draftId}/revisions/{revisionId}/submission": {
+      "post": {
+        "operationId": "submitRevision",
+        "tags": [
+          "Drafts"
+        ],
+        "summary": "Submit a Revision for review",
+        "description": "Submits one specific Revision, the Draft's latest and `UNSUBMITTED`, for the Reviewer's verdict; the Revision and the Draft become `PENDING`. Takes no request body. Each Revision is submitted at most once. Revising the Draft afterwards supersedes the Pending Revision, which withdraws its Submission until you submit the new Revision.",
+        "security": [
+          {
+            "agentAuth": []
+          },
+          {
+            "reviewerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^drf_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "description": "A Draft id: `drf_` followed by a UUIDv7",
+              "example": "drf_019a0b7e-5c3d-7f2a-9b1e-4d6c8a2f0e13"
+            },
+            "required": true,
+            "description": "A Draft id: `drf_` followed by a UUIDv7",
+            "name": "draftId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^rev_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "description": "A Revision id: `rev_` followed by a UUIDv7",
+              "example": "rev_019a0b7e-5c3d-7f2a-9b1e-4d6c8a2f0e14"
+            },
+            "required": true,
+            "description": "A Revision id: `rev_` followed by a UUIDv7",
+            "name": "revisionId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+            },
+            "required": false,
+            "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one.",
+            "name": "x-read-bookmark",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The Pending Draft, without the body.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": true,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`INVALID_REQUEST`: an id or a header is malformed; see `issues`.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": false,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`UNAUTHENTICATED`: a valid bearer token is required.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": false,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`DRAFT_NOT_FOUND`: no Draft has this id. `REVISION_NOT_FOUND`: the Draft has no Revision with this id, including when it is another Draft's Revision.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": false,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "In order of precedence: `DRAFT_APPROVED`: the Draft is approved and accepts no Submission, also of its approved Revision. `REVISION_SUPERSEDED`: the Revision is no longer the Draft's latest; read the Draft again and submit its latest Revision. `REVISION_ALREADY_DECIDED`: the Revision already has a verdict, named in `existingVerdict`; revise the Draft to submit a new Revision. `REVISION_ALREADY_SUBMITTED`: the Revision is already Pending, for example because an earlier attempt of this request went through.",
             "headers": {
               "X-Read-Bookmark": {
                 "schema": {

@@ -1,5 +1,7 @@
 import { z } from "@hono/zod-openapi";
 
+import { verdictSchema } from "#src/drafts.ts";
+
 export type ErrorCode = (typeof ERROR_CODE)[keyof typeof ERROR_CODE];
 
 export type ErrorResponse = z.infer<typeof errorResponseSchema>;
@@ -14,6 +16,8 @@ export const ERROR_CODE = {
   DRAFT_NOT_FOUND: "DRAFT_NOT_FOUND",
   REVISION_NOT_FOUND: "REVISION_NOT_FOUND",
   REVISION_SUPERSEDED: "REVISION_SUPERSEDED",
+  REVISION_ALREADY_DECIDED: "REVISION_ALREADY_DECIDED",
+  REVISION_ALREADY_SUBMITTED: "REVISION_ALREADY_SUBMITTED",
   DRAFT_APPROVED: "DRAFT_APPROVED",
   PAYLOAD_TOO_LARGE: "PAYLOAD_TOO_LARGE",
   INTERNAL_ERROR: "INTERNAL_ERROR",
@@ -39,6 +43,9 @@ export const errorResponseSchema = z
         .openapi({ description: "The request's id, also sent as the `X-Request-Id` header" }),
       issues: z.array(validationIssueSchema).optional().openapi({
         description: "With `INVALID_REQUEST`: every violation of the request's schema",
+      }),
+      existingVerdict: verdictSchema.optional().openapi({
+        description: "With `REVISION_ALREADY_DECIDED`: the verdict the Revision already has",
       }),
     }),
   })

@@ -129,6 +129,26 @@ export class DraftApprovalClient {
     throw await toApiError(response);
   }
 
+  /**
+   * Submits one Revision, the Draft's latest and `UNSUBMITTED`, for review; the Draft becomes
+   * `PENDING`. Throws {@link ApiError} with `REVISION_ALREADY_SUBMITTED` when the Revision is
+   * already Pending (for example after a retried request), with `REVISION_SUPERSEDED` when it is no
+   * longer the latest, with `REVISION_ALREADY_DECIDED` (and `existingVerdict`) when it has a
+   * verdict, and with `DRAFT_APPROVED` when the Draft is approved.
+   */
+  async submitRevision(draftId: string, revisionId: string): Promise<DraftSummaryResponse> {
+    const response = await this.#honoClient.api.v1.drafts[":draftId"].revisions[
+      ":revisionId"
+    ].submission.$post({
+      header: NO_HEADERS,
+      param: { draftId, revisionId },
+    });
+    if (response.status === 200) {
+      return response.json();
+    }
+    throw await toApiError(response);
+  }
+
   /** Adds the token and the latest read bookmark to every request and keeps the returned bookmark. */
   async #send(request: Request): Promise<Response> {
     request.headers.set("Authorization", `Bearer ${this.#token}`);

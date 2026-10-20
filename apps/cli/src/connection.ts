@@ -1,0 +1,83 @@
+import { DraftApprovalClient } from "@draft-approval/api.client";
+import { ERROR_CODE } from "@draft-approval/api.routes";
+
+import { CLI_ERROR_CODE, CliError } from "#src/cli-error.ts";
+import { PRODUCTION_API_URL, PUBLIC_AGENT_TOKEN } from "#src/production.ts";
+
+export const ENVIRONMENT_VARIABLE = {
+  TOKEN: "DRAFT_APPROVAL_TOKEN",
+  API_URL: "DRAFT_APPROVAL_API_URL",
+} as const;
+
+/** Plain HTTP is allowed only on these hosts, where nothing leaves the machine. */
+const LOOPBACK_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+/**
+ * Creates the typed client for one invocation: the API URL from `--api-url`, then
+ * `DRAFT_APPROVAL_API_URL`, then production; the token from `DRAFT_APPROVAL_TOKEN`, then the public
+ * Agent token.
+ */
+export function createClient(
+  apiUrlOption: string | undefined,
+  environment: NodeJS.ProcessEnv,
+): DraftApprovalClient {
+  const apiUrl = resolveApiUrl(
+    apiUrlOption ?? readNonEmpty(environment, ENVIRONMENT_VARIABLE.API_URL) ?? PRODUCTION_API_URL,
+  );
+  const token = readNonEmpty(environment, ENVIRONMENT_VARIABLE.TOKEN) ?? PUBLIC_AGENT_TOKEN;
+
+  return new DraftApprovalClient({
+    baseUrl: apiUrl.origin,
+    token,
+    fetch: async (request) => {
+      try {
+        return await fetch(request);
+      } catch (error) {
+        throw new CliError(
+          CLI_ERROR_CODE.NETWORK_ERROR,
+          `Could not reach the API at ${apiUrl.origin}: ${describeNetworkFailure(error)}.`,
+        );
+      }
+    },
+  });
+}
+
+/** The bearer token must never cross the network in plain text, so HTTPS is required off loopback. */
+function resolveApiUrl(configuredApiUrl: string): URL {
+  let apiUrl: URL;
+  try {
+    apiUrl = new URL(configuredApiUrl);
+  } catch {
+    throw new CliError(
+      ERROR_CODE.INVALID_REQUEST,
+      `The API URL "${configuredApiUrl}" is not a URL.`,
+    );
+  }
+
+  const isHttps = apiUrl.protocol === "https:";
+  const isLoopbackHttp = apiUrl.protocol === "http:" && LOOPBACK_HOSTNAMES.has(apiUrl.hostname);
+  if (!isHttps && !isLoopbackHttp) {
+    throw new CliError(
+      ERROR_CODE.INVALID_REQUEST,
+      `The API URL "${apiUrl.origin}" must use HTTPS; plain HTTP is allowed only on localhost, 127.0.0.1 and [::1].`,
+    );
+  }
+  return apiUrl;
+}
+
+/** An empty variable counts as unset, as with `DRAFT_APPROVAL_TOKEN= pnpm draft-approval …`. */
+function readNonEmpty(environment: NodeJS.ProcessEnv, name: string): string | undefined {
+  const value = environment[name];
+  return value === undefined || value === "" ? undefined : value;
+}
+
+/**
+ * `fetch` rejects with a generic "fetch failed" and keeps the reason, such as ECONNREFUSED, in
+ * `cause`.
+ */
+function describeNetworkFailure(error: unknown): string {
+  if (error instanceof Error && error.cause instanceof Error) {
+    return error.cause.message;
+  }
+  return error instanceof Error ? error.message : "the request failed";
+}

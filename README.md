@@ -24,6 +24,32 @@ curl -sS https://resend-challenge.patricktree.me/api/v1/drafts/<draft-id> \
   -H 'Authorization: Bearer agent_placeholder-run-pnpm-secrets-generate'
 ```
 
+## Act as an Agent with the CLI
+
+After `pnpm install` (see [AGENTS.md](AGENTS.md#environment-setup)), run the `draft-approval` CLI from the repository root. It calls production with the public Agent token unless you set `DRAFT_APPROVAL_TOKEN`, and `--api-url` or `DRAFT_APPROVAL_API_URL` points it at another API, such as `http://localhost:5173` with the local Agent token. It has no command to approve or reject: only the Reviewer decides, in the Review UI. `pnpm draft-approval --help` and `--help` on every command describe the options.
+
+Create a Draft, read its id and the id of its latest Revision from the output, then submit that Revision for review:
+
+```sh
+pnpm draft-approval drafts create --to delivered@resend.dev --subject 'Hello' --body 'Hello from an Agent.'
+pnpm draft-approval drafts submit <draft-id> <revision-id>
+```
+
+The Reviewer opens the printed `Review URL`. Poll the Draft for its review status and sending status:
+
+```sh
+pnpm draft-approval drafts get <draft-id>
+```
+
+After a Rejection, revise the Draft on top of the Revision you read, with the body from a file or from stdin (`--body-file -`), and submit the new Revision:
+
+```sh
+pnpm draft-approval drafts revise <draft-id> --base-revision <revision-id> \
+  --to delivered@resend.dev --subject 'Hello again' --body-file body.txt
+```
+
+`drafts list` filters with `--review-status` and `--sending-status` and pages with `--limit` and `--cursor`; `drafts revision <draft-id> <revision-id>` reads any Revision. With `--json`, a command prints exactly one JSON value on stdout. A failure exits with 1 and prints `{"error":{"code","message"}}` as JSON on stderr: API errors keep the API's code, invalid input fails with `INVALID_REQUEST` before any request, an unreachable API fails with `NETWORK_ERROR`, and anything else, such as a response without the API's error envelope, with `UNEXPECTED_ERROR`. pnpm adds its own lines to stderr; run `node apps/cli/src/cli.ts` instead of `pnpm draft-approval` when a program reads stderr. `--body-file` resolves a relative path against the repository root, where pnpm runs the CLI.
+
 ## Local development
 
 Set up the repository as described in [AGENTS.md](AGENTS.md#environment-setup), including the copy of `apps/cloudflare-worker/.dev.vars.example` to `apps/cloudflare-worker/.dev.vars`. That file sets `LOCAL_DEVELOPMENT="true"` and takes your own `RESEND_API_KEY`; local Sends call the real Resend API, so send only to Resend's test recipients `delivered@resend.dev` and `bounced@resend.dev`.
@@ -53,7 +79,7 @@ curl -sS 'http://localhost:5173/cdn-cgi/handler/scheduled?cron=*+*+*+*+*'
 
 ## Validation
 
-Run `pnpm validate:fast` for the format check, markdownlint, Knip, build and typecheck, lint, and the unit and integration tests, and `pnpm validate:extended` for the e2e tests. [AGENTS.md](AGENTS.md#validation) describes both.
+Run `pnpm validate:fast` for the format check, markdownlint, Knip, build and typecheck, lint, and the unit, integration and CLI process tests, and `pnpm validate:extended` for the e2e tests. [AGENTS.md](AGENTS.md#validation) describes both.
 
 ## Infrastructure
 
@@ -100,7 +126,7 @@ These steps need Patrick's Cloudflare and Resend accounts, so no agent runs them
   Success: the response has `"status":"verified"`, and **Domains** in the Resend dashboard shows `resend-challenge.patricktree.me` as **Verified**.
 
 - [ ] **Create the Worker's Resend API key.** In the Resend dashboard, go to **API Keys > Create API Key**, choose **Sending access** and the domain `resend-challenge.patricktree.me`. Resend shows the key only once; keep it for the step **Set the Resend API key**.
-- [ ] **Generate the tokens.** Run `pnpm secrets:generate`. It writes a new public Agent token into `apps/cloudflare-worker/wrangler.jsonc` and this README, and pipes a new Reviewer token into `wrangler secret put REVIEWER_TOKEN`; if the Worker `draft-approval` does not exist yet, Wrangler creates an empty one to hold the secret. Success: the script prints `Set the Worker secret REVIEWER_TOKEN.` followed by the Reviewer token. If Wrangler fails, the files already hold a new Agent token; fix the cause and run the script again. Store the Reviewer token in the password manager, since it is not shown again, and commit the changed `wrangler.jsonc` and `README.md`.
+- [ ] **Generate the tokens.** Run `pnpm secrets:generate`. It writes a new public Agent token into `apps/cloudflare-worker/wrangler.jsonc`, this README and the CLI's fallback in `apps/cli/src/production.ts`, and pipes a new Reviewer token into `wrangler secret put REVIEWER_TOKEN`; if the Worker `draft-approval` does not exist yet, Wrangler creates an empty one to hold the secret. Success: the script prints `Set the Worker secret REVIEWER_TOKEN.` followed by the Reviewer token. If Wrangler fails, the files already hold a new Agent token; fix the cause and run the script again. Store the Reviewer token in the password manager, since it is not shown again, and commit the changed `wrangler.jsonc`, `README.md` and `apps/cli/src/production.ts`.
 - [ ] **Set the Resend API key.** Run `pnpm --filter '@draft-approval/cloudflare-worker' exec wrangler secret put RESEND_API_KEY` and paste the sending-only key when Wrangler asks for it. Success: Wrangler prints `Success! Uploaded secret RESEND_API_KEY`.
 - [ ] **Apply the D1 migrations.** Run `pnpm --filter '@draft-approval/cloudflare-worker' run migrations:apply:remote` and confirm. Success: Wrangler lists every migration in `libs/drafts/migrations` with status ✅.
 - [ ] **Deploy the Worker.** Run `pnpm --filter '@draft-approval/cloudflare-worker' run deploy`, which builds the Worker and runs `wrangler deploy`. Success: Wrangler lists the triggers `resend-challenge.patricktree.me (custom domain)`, `schedule: * * * * *`, `Producer for draft-approval-send`, `Consumer for draft-approval-send` and `Consumer for draft-approval-send-dlq`. A first deploy of the custom domain can take a few minutes to serve.

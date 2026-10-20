@@ -25,10 +25,10 @@ The `.patricktree-stack` submodule holds the shared configs; if it is missing, `
 
 ## Validation
 
-| Command                  | Runs                                                                                    | Needs                          |
-| ------------------------ | --------------------------------------------------------------------------------------- | ------------------------------ |
-| `pnpm validate:fast`     | Format check, markdownlint, Knip, build and typecheck, lint, unit and integration tests | Nothing beyond the setup above |
-| `pnpm validate:extended` | e2e tests (none exist yet, so it passes trivially)                                      | Docker, once e2e tests exist   |
+| Command                  | Runs                                                                                                 | Needs                          |
+| ------------------------ | ---------------------------------------------------------------------------------------------------- | ------------------------------ |
+| `pnpm validate:fast`     | Format check, markdownlint, Knip, build and typecheck, lint, unit, integration and CLI process tests | Nothing beyond the setup above |
+| `pnpm validate:extended` | e2e tests (none exist yet, so it passes trivially)                                                   | Docker, once e2e tests exist   |
 
 Run `pnpm validate:fast` before every commit and both before opening a pull request. Use `pnpm fix` to apply formatting and autofixable lint findings. There are no Git hooks.
 
@@ -42,7 +42,8 @@ Run `pnpm validate:fast` before every commit and both before opening a pull requ
 - Mark every new kind of committed generated file `linguist-generated=true` in `.gitattributes`, so pull request diffs and agent reviews (`git diff -- . ':(exclude,attr:linguist-generated=true)'`) leave it out. The OpenAPI snapshot (`apps/cloudflare-worker/test/__snapshots__/openapi.json`) is one; regenerate it with `pnpm --filter '@draft-approval/cloudflare-worker' test -u` rather than editing it.
 - D1 migrations live in `libs/drafts/migrations/`; every Wrangler config points `migrations_dir` there. They are generated from the Drizzle schema in `libs/drafts/src/schema.ts`: after changing it, run `pnpm --filter '@draft-approval/drafts' migrations:generate --name <change>` and commit the new SQL file with the updated `meta/` files; never edit a generated migration.
 - Clients of the API use the typed client `DraftApprovalClient` from `libs/api.client`; it keeps and resends the read bookmark and throws `ApiError` for error responses.
-- `apps/review-ui`, `apps/cli`, `libs/mcp-server` and `qa/e2e` are placeholders (a `package.json` only) until their tickets fill them.
+- `apps/review-ui`, `libs/mcp-server` and `qa/e2e` are placeholders (a `package.json` only) until their tickets fill them.
+- The Agent CLI lives in `apps/cli` and runs as `pnpm draft-approval …` from the repository root. Its process tests in `apps/cli/test/` spawn the real CLI against a `node:http` API stub (`useApiStub()` in `apps/cli/test/api-stub.ts`) and pass it its whole environment, so `DRAFT_APPROVAL_TOKEN` and `DRAFT_APPROVAL_API_URL` never leak in. Its fallback token `PUBLIC_AGENT_TOKEN` and production URL in `apps/cli/src/production.ts` must equal `AGENT_TOKEN` and `PUBLIC_BASE_URL` in `wrangler.jsonc`; `pnpm secrets:generate` rewrites the token in both.
 - `apps/cloudflare-worker/wrangler.jsonc` is the production config and the one `pnpm dev` uses; `apps/cloudflare-worker/test/wrangler-config.test.ts` pins the settings the spec prescribes. Its resources come from `terraform/` (providers pinned, lock file committed). After changing `terraform/`, run `terraform -chdir=terraform fmt` and `terraform -chdir=terraform init -backend=false && terraform -chdir=terraform validate`; they need Terraform 1.10 or newer and are not part of `pnpm validate:fast`.
 - The README's [Human steps](README.md#human-steps) are the deploy procedure; `pnpm secrets:generate` belongs to them, since it sets a production secret.
 - Never deploy or touch real Cloudflare or Resend resources (`wrangler deploy`, `wrangler login`, `wrangler secret put`, `wrangler d1 migrations apply --remote`, `pnpm secrets:generate`, `terraform init` with the real backend, `terraform apply`) unless Patrick asks.

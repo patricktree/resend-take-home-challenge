@@ -4,7 +4,7 @@
 
 **Blocked by:** 08 (Send through Resend), 12 (Review UI: read-only screens)
 
-**Status:** ready-for-agent
+**Status:** done (<https://github.com/patricktree/resend-take-home-challenge/pull/13>)
 
 - [x] Approve (contained), optional reason textarea, Reject (outlined); no confirmation; disabled in flight; state keyed by the loaded Revision id; after success the page stays and refetches, lists invalidated
 - [x] Sending-status labels per the spec (also in the Decided list); the Draft page polls every 3 s while `QUEUED`

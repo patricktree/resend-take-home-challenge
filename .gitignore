@@ -22,3 +22,10 @@
 **/.dev.vars
 **/.env
 **/.env.*
+!**/.env.example
+
+# Terraform local data, state and plans (the provider lock file is committed)
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfplan

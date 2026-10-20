@@ -26,6 +26,7 @@
     "lint:fix": "turbo run turbo:lint:fix",
     "pnpm:devPreinstall": "sh ./preinstall.sh",
     "postinstall": "sh ./postinstall.sh",
+    "secrets:generate": "pnpm --filter '@draft-approval/secrets-generate' run start",
     "test": "turbo run turbo:test",
     "test:e2e": "pnpm --filter '@draft-approval/e2e' --if-present run test:e2e",
     "validate": "pnpm run validate:fast && pnpm run validate:extended",

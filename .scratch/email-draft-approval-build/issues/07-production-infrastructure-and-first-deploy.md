@@ -6,8 +6,8 @@
 
 **Status:** ready-for-agent
 
-- [ ] Terraform (Cloudflare provider v5, Resend provider, R2 S3-backend state with a documented manual bootstrap) for D1 (read replication `auto`), the R2 body bucket, Send Queue, Send DLQ, and the Resend sending domain with its DNS records
-- [ ] Production `wrangler.jsonc`: custom-domain route, cron every minute, Queue producer and both consumers with the spec's settings, bindings with committed resource ids, vars, `secrets.required` for `REVIEWER_TOKEN` and `RESEND_API_KEY`, `nodejs_compat`, `workers_dev: false`, `preview_urls: false`
-- [ ] `pnpm secrets:generate` writes the Agent token into the config and pipes the Reviewer token into `wrangler secret put`, printing it once
-- [ ] README: deploy order (`terraform apply` → remote migrations → `wrangler deploy`), the public Agent token, local development, triggering the cron locally
+- [x] Terraform (Cloudflare provider v5, Resend provider, R2 S3-backend state with a documented manual bootstrap) for D1 (read replication `auto`), the R2 body bucket, Send Queue, Send DLQ, and the Resend sending domain with its DNS records
+- [x] Production `wrangler.jsonc`: custom-domain route, cron every minute, Queue producer and both consumers with the spec's settings, bindings with committed resource ids, vars, `secrets.required` for `REVIEWER_TOKEN` and `RESEND_API_KEY`, `nodejs_compat`, `workers_dev: false`, `preview_urls: false`
+- [x] `pnpm secrets:generate` writes the Agent token into the config and pipes the Reviewer token into `wrangler secret put`, printing it once
+- [x] README: deploy order (`terraform apply` → remote migrations → `wrangler deploy`), the public Agent token, local development, triggering the cron locally
 - [ ] Deployed; create and get verified against production; local tokens refused there

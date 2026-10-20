@@ -1,3 +1,5 @@
+// The production config, also used by `pnpm dev` (where `.dev.vars` overrides `LOCAL_DEVELOPMENT`).
+// The resources come from terraform/; README.md, "Human steps", lists the deploy order.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "draft-approval",
@@ -6,6 +8,16 @@
   "compatibility_date": "2026-08-18",
   "workers_dev": false,
   "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "resend-challenge.patricktree.me",
+      "custom_domain": true,
+    },
+  ],
+  "triggers": {
+    // The Send reconciler.
+    "crons": ["* * * * *"],
+  },
   "assets": {
     "binding": "ASSETS",
     "not_found_handling": "none",
@@ -16,7 +28,7 @@
     {
       "binding": "DB",
       "database_name": "draft-approval",
-      // Local placeholder; the real id from `terraform output` replaces it before the first deploy.
+      // PLACEHOLDER until the first deploy: replace with `terraform -chdir=terraform output -raw d1_database_id`.
       "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "../../libs/drafts/migrations",
     },
@@ -34,13 +46,33 @@
         "queue": "draft-approval-send",
       },
     ],
+    "consumers": [
+      {
+        "queue": "draft-approval-send",
+        // One invocation at a time, 8 messages of at least 1.0 s each: about 8 Resend requests per
+        // second, under Resend's 10 per second per team (spec section 9).
+        "max_concurrency": 1,
+        "max_batch_size": 8,
+        "max_batch_timeout": 1,
+        // The Queue is the only retry clock; the 23 h deadline ends a Send long before 100 retries.
+        "max_retries": 100,
+        "dead_letter_queue": "draft-approval-send-dlq",
+      },
+      {
+        "queue": "draft-approval-send-dlq",
+      },
+    ],
   },
   "vars": {
     "PUBLIC_BASE_URL": "https://resend-challenge.patricktree.me",
     "RESEND_FROM": "drafts@resend-challenge.patricktree.me",
     "RESEND_BASE_URL": "https://api.resend.com",
     "LOCAL_DEVELOPMENT": "false",
-    // Placeholder until the real, public Agent token is generated (`pnpm secrets:generate`, spec section 12, not built yet).
+    // The public Agent token, written by `pnpm secrets:generate`; README.md shows the same value.
     "AGENT_TOKEN": "agent_placeholder-run-pnpm-secrets-generate",
+  },
+  // Set with `wrangler secret put`; a deploy without them fails. Locally, `.dev.vars` may provide them.
+  "secrets": {
+    "required": ["REVIEWER_TOKEN", "RESEND_API_KEY"],
   },
 }

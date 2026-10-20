@@ -1,0 +1,123 @@
+/*
+ * cup's CSS reset and base styles (apps/web-app/src/app/global-styles.ts), as a stylesheet that
+ * Vite emits as a file: cup injects them through an inline `<style>`, which the Review UI's
+ * Content-Security-Policy blocks.
+ */
+
+@layer reset {
+  /* based on https://www.joshwcomeau.com/css/custom-css-reset/ */
+
+  /* 1. Use a more-intuitive box-sizing model */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  /* 2. Remove default margin */
+  *:not(dialog) {
+    margin: 0;
+  }
+
+  /* 3. Enable keyword animations */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      interpolate-size: allow-keywords;
+    }
+  }
+
+  body {
+    /* 4. Increase line-height */
+    line-height: 1.5;
+    /* 5. Improve text rendering */
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* 6. Improve media defaults */
+  img,
+  picture,
+  video,
+  canvas,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  /* 7. Inherit fonts for form controls */
+  input,
+  button,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  /* 8. Avoid text overflows */
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    overflow-wrap: break-word;
+  }
+
+  /* 9. Improve line wrapping */
+  p {
+    text-wrap: pretty;
+  }
+
+  /* 10. Create a root stacking context */
+  #root {
+    isolation: isolate;
+  }
+}
+
+@layer base {
+  :root {
+    font-family: var(--font-family-1);
+    font-size: 1rem;
+    color: var(--color-fg);
+    background-color: var(--color-bg);
+    --font-family-1: "Inter Variable", sans-serif;
+
+    /* design tokens */
+    --color-white: #f2f2f2;
+    --color-black-hsl: 0 0% 12%;
+    --color-black: hsl(var(--color-black-hsl));
+    --color-fg: var(--color-black);
+    --color-bg: var(--color-white);
+    --color-input-bg: #fff;
+    --color-primary-hsl: var(--color-black-hsl);
+    --color-primary: hsl(var(--color-primary-hsl));
+    --color-fg-emphasized-sm: hsl(var(--color-black-hsl) / 65%);
+
+    --font-size-sm: 14px;
+    --font-size-md: 16px;
+    --font-size-lg: 18px;
+    --font-size-xl: 22px;
+    --font-weight-inter-figma-medium: 500;
+
+    --spacing-base: 8px;
+    --app-padding-block: calc(1.5 * var(--spacing-base));
+    --app-padding-inline: calc(2 * var(--spacing-base));
+    --app-max-width: 960px;
+
+    --border-radius-sm: 4px;
+  }
+
+  ::selection {
+    color: var(--color-bg);
+    background: var(--color-fg);
+  }
+
+  a {
+    color: inherit;
+    text-underline-offset: 0.2em;
+  }
+
+  :where(a, button, input, textarea):focus-visible {
+    outline: 2px solid var(--color-fg);
+    outline-offset: 2px;
+  }
+}

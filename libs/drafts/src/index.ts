@@ -1,5 +1,5 @@
 export { createDraft } from "#src/create-draft.ts";
-export { drizzleForSession, type DraftsDatabase } from "#src/database.ts";
+export { drizzleForSession, type DraftsStorage } from "#src/database.ts";
 export type {
   Draft,
   DraftData,

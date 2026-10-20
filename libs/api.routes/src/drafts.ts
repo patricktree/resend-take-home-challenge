@@ -53,11 +53,16 @@ const recipientsSchema = z
     "Recipients must not repeat (compared case-insensitively).",
   );
 
+// Counts characters (code points) like JSON Schema's `maxLength`, not UTF-16 code units.
 const subjectSchema = z
   .string()
   .min(1, "Must not be empty.")
-  .max(MAX_SUBJECT_LENGTH, `At most ${MAX_SUBJECT_LENGTH} characters.`)
-  .refine((subject) => !/[\r\n]/.test(subject), "Must not contain line breaks.");
+  .refine(
+    (subject) => countCodePoints(subject) <= MAX_SUBJECT_LENGTH,
+    `At most ${MAX_SUBJECT_LENGTH} characters.`,
+  )
+  .refine((subject) => !/[\r\n]/.test(subject), "Must not contain line breaks.")
+  .openapi({ maxLength: MAX_SUBJECT_LENGTH });
 
 const plainTextSchema = z
   .string()
@@ -180,3 +185,7 @@ export const draftSummarySchema = z
 export const draftSchema = z
   .object({ ...draftSummaryFields, latestRevision: revisionSchema })
   .openapi("Draft");
+
+function countCodePoints(text: string): number {
+  return text.match(/./gsu)?.length ?? 0;
+}

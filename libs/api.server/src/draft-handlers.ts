@@ -11,23 +11,15 @@ import {
 import type { ApiServerHonoEnvironment } from "#src/api-server-environment.ts";
 import { jsonError } from "#src/http-errors.ts";
 
-type DraftHandlers = Pick<ApiHandlers<ApiServerHonoEnvironment>, "createDraft" | "getDraft">;
-
-export const DRAFT_HANDLERS: DraftHandlers = {
+export const DRAFT_HANDLERS: ApiHandlers<ApiServerHonoEnvironment> = {
   createDraft: async (context) => {
-    const draft = await createDraft(
-      { database: context.get("database"), revisionBodies: context.env.REVISION_BODIES },
-      context.req.valid("json"),
-    );
+    const draft = await createDraft(context.get("draftsStorage"), context.req.valid("json"));
 
     return context.json(toDraftSummaryResponse(draft, context.env.PUBLIC_BASE_URL), 201);
   },
 
   getDraft: async (context) => {
-    const draft = await getDraft(
-      { database: context.get("database"), revisionBodies: context.env.REVISION_BODIES },
-      context.req.valid("param").draftId,
-    );
+    const draft = await getDraft(context.get("draftsStorage"), context.req.valid("param").draftId);
     if (draft === undefined) {
       return jsonError(context, 404, ERROR_CODE.DRAFT_NOT_FOUND, "No Draft has this id.");
     }

@@ -4,6 +4,9 @@ export type ErrorCode = (typeof ERROR_CODE)[keyof typeof ERROR_CODE];
 
 export type ErrorResponse = z.infer<typeof errorResponseSchema>;
 
+/** Everything an error envelope carries besides code, message and request id, such as `issues`. */
+export type ErrorExtras = Omit<ErrorResponse["error"], "code" | "message" | "requestId">;
+
 export const ERROR_CODE = {
   INVALID_REQUEST: "INVALID_REQUEST",
   UNAUTHENTICATED: "UNAUTHENTICATED",

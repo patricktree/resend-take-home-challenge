@@ -1,11 +1,11 @@
-import type { RevisionBody } from "#src/draft.ts";
-import type { RevisionId } from "#src/ids.ts";
-
 /*
  * Every Revision's body is one JSON object in R2, written once before the D1 write that creates the
  * Revision. Revisions are immutable, so the object never changes; a failed D1 write leaves an
  * orphaned object that nothing references.
  */
+
+import type { RevisionBody } from "#src/draft.ts";
+import type { RevisionId } from "#src/ids.ts";
 
 export async function putRevisionBody(
   revisionBodies: R2Bucket,

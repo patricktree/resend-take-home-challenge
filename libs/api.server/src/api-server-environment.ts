@@ -1,4 +1,4 @@
-import type { DraftsDatabase } from "@draft-approval/drafts";
+import type { DraftsStorage } from "@draft-approval/drafts";
 
 import type { Role } from "#src/authentication.ts";
 
@@ -23,6 +23,6 @@ export type ApiServerHonoEnvironment = {
     /** Set by the authentication middleware on every authenticated request. */
     role: Role;
     /** Set by the database session middleware on every `/api/v1` request. */
-    database: DraftsDatabase;
+    draftsStorage: DraftsStorage;
   };
 };

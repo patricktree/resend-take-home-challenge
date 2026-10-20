@@ -23,6 +23,8 @@ test.for([
   { name: "50 recipients", to: recipients(50) },
   { name: "1-character subject", subject: "H" },
   { name: "998-character subject", subject: "x".repeat(998) },
+  // "📧" is one character, but two UTF-16 code units.
+  { name: "998-character subject of emoji", subject: "📧".repeat(998) },
   { name: "1-character body", plainText: "H" },
   { name: "body of exactly 100 KB in ASCII", plainText: "x".repeat(BODY_LIMIT_BYTES) },
   // "é" takes 2 bytes in UTF-8.
@@ -55,6 +57,11 @@ test.for([
   },
   { name: "an empty subject", override: { subject: "" }, path: ["subject"] },
   { name: "a 999-character subject", override: { subject: "x".repeat(999) }, path: ["subject"] },
+  {
+    name: "a 999-character subject of emoji",
+    override: { subject: "📧".repeat(999) },
+    path: ["subject"],
+  },
   { name: "a subject with a line feed", override: { subject: "Hello\nBcc: x" }, path: ["subject"] },
   {
     name: "a subject with a carriage return",

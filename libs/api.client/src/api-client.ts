@@ -6,6 +6,7 @@ import type {
   DraftResponse,
   DraftSummaryResponse,
   ErrorCode,
+  ErrorExtras,
   ErrorResponse,
 } from "@draft-approval/api.routes";
 
@@ -22,9 +23,6 @@ export type DraftApprovalClientOptions = {
 };
 
 type ErrorBody = ErrorResponse["error"];
-
-/** Everything an error envelope carries besides code, message and request id, such as `issues`. */
-type ErrorExtras = Omit<ErrorBody, "code" | "message" | "requestId">;
 
 /**
  * Only types come from the contract package, so the client does not bundle the contract's runtime;

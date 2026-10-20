@@ -1,26 +1,21 @@
 import { Temporal } from "temporal-polyfill";
 
-import type { DraftsDatabase } from "#src/database.ts";
+import type { DraftsStorage } from "#src/database.ts";
 import type { DraftData, DraftSummary } from "#src/draft.ts";
 import { toDraftSummary } from "#src/draft.ts";
 import { createDraftId, createRevisionId } from "#src/ids.ts";
 import { putRevisionBody } from "#src/revision-bodies.ts";
 import { drafts, revisions } from "#src/schema.ts";
 
-type CreateDraftDependencies = {
-  /** A database on a session started with `"first-primary"`. */
-  database: DraftsDatabase;
-  revisionBodies: R2Bucket;
-};
-
 /**
  * Creates a Draft with its first Revision, `UNSUBMITTED`. Writes the body to R2 first, then inserts
  * the Draft and the Revision in one batch, so a failed batch leaves at most an orphaned body.
  *
- * Not idempotent: every call creates a new Draft.
+ * Not idempotent: every call creates a new Draft. Writes, so the database session must start with
+ * `"first-primary"`.
  */
 export async function createDraft(
-  { database, revisionBodies }: CreateDraftDependencies,
+  { database, revisionBodies }: DraftsStorage,
   draftData: DraftData,
 ): Promise<DraftSummary> {
   const draftId = createDraftId();

@@ -1,11 +1,9 @@
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
-import type { ErrorCode, ErrorResponse } from "@draft-approval/api.routes";
+import type { ErrorCode, ErrorExtras, ErrorResponse } from "@draft-approval/api.routes";
 
 import type { ApiServerHonoEnvironment } from "#src/api-server-environment.ts";
-
-type ErrorExtras = Omit<ErrorResponse["error"], "code" | "message" | "requestId">;
 
 /**
  * Answers with the error envelope, carrying the request's id. The response is typed with its

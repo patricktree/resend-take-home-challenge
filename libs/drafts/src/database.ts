@@ -1,10 +1,16 @@
 import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 
-/** The Drafts database as the use cases see it: Drizzle on one D1 session. */
-export type DraftsDatabase = DrizzleD1Database;
+/**
+ * Where Drafts live: D1 for the rows, through Drizzle on one D1 session, and R2 for the Revision
+ * bodies. The use cases take it as a parameter.
+ */
+export type DraftsStorage = {
+  database: DrizzleD1Database;
+  revisionBodies: R2Bucket;
+};
 
-export type DraftsDatabaseSession = {
-  database: DraftsDatabase;
+type DraftsDatabaseSession = {
+  database: DrizzleD1Database;
   /** The session's read bookmark, `null` while no query has run. */
   getBookmark(): string | null;
 };

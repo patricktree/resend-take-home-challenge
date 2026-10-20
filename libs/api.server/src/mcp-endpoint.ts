@@ -36,7 +36,9 @@ export const requireAgent = createMiddleware<ApiServerHonoEnvironment>(async (co
  * so every tool call passes the same authentication, authorization and validation as an HTTP call;
  * the MCP server has no credential of its own and never fetches the Worker's public hostname.
  */
-export function createMcpEndpoint(app: Hono<ApiServerHonoEnvironment>) {
+export function createMcpEndpoint(
+  app: Hono<ApiServerHonoEnvironment>,
+): (context: Context<ApiServerHonoEnvironment>) => Promise<Response> {
   return async (context: Context<ApiServerHonoEnvironment>): Promise<Response> => {
     const callerToken = parseBearerToken(context.req.header("Authorization"));
     if (callerToken === undefined) {

@@ -33,7 +33,7 @@ const READ_ONLY = { readOnlyHint: true } as const;
  * The parameters of `list_drafts`. The list query of the API is shaped for a query string (a
  * repeated parameter arrives as a string or an array), so the two filters are plain arrays here.
  */
-const listDraftsInputSchema = z.object({
+const listDraftsInputSchema = z.strictObject({
   reviewStatus: z
     .array(draftReviewStatusSchema)
     .optional()
@@ -77,7 +77,7 @@ export function createDraftApprovalMcpServer({
       inputSchema: draftDataRequestSchema,
       outputSchema: draftSummarySchema,
     },
-    (draftData) => callApi(() => client.createDraft(draftData)),
+    (draftData) => runAsToolResult(() => client.createDraft(draftData)),
   );
 
   server.registerTool(
@@ -90,7 +90,7 @@ export function createDraftApprovalMcpServer({
       outputSchema: draftSchema,
       annotations: READ_ONLY,
     },
-    ({ draftId }) => callApi(() => client.getDraft(draftId)),
+    ({ draftId }) => runAsToolResult(() => client.getDraft(draftId)),
   );
 
   server.registerTool(
@@ -103,7 +103,7 @@ export function createDraftApprovalMcpServer({
       outputSchema: draftListSchema,
       annotations: READ_ONLY,
     },
-    (query) => callApi(() => client.listDrafts(query)),
+    (query) => runAsToolResult(() => client.listDrafts(query)),
   );
 
   server.registerTool(
@@ -115,7 +115,8 @@ export function createDraftApprovalMcpServer({
       inputSchema: reviseDraftInputSchema,
       outputSchema: draftSummarySchema,
     },
-    ({ draftId, ...reviseRequest }) => callApi(() => client.reviseDraft(draftId, reviseRequest)),
+    ({ draftId, ...reviseRequest }) =>
+      runAsToolResult(() => client.reviseDraft(draftId, reviseRequest)),
   );
 
   server.registerTool(
@@ -127,7 +128,7 @@ export function createDraftApprovalMcpServer({
       inputSchema: revisionParamsSchema,
       outputSchema: draftSummarySchema,
     },
-    ({ draftId, revisionId }) => callApi(() => client.submitRevision(draftId, revisionId)),
+    ({ draftId, revisionId }) => runAsToolResult(() => client.submitRevision(draftId, revisionId)),
   );
 
   server.registerTool(
@@ -140,7 +141,7 @@ export function createDraftApprovalMcpServer({
       outputSchema: revisionSchema,
       annotations: READ_ONLY,
     },
-    ({ draftId, revisionId }) => callApi(() => client.getRevision(draftId, revisionId)),
+    ({ draftId, revisionId }) => runAsToolResult(() => client.getRevision(draftId, revisionId)),
   );
 
   return server;
@@ -171,7 +172,9 @@ function describeInstructions(publicBaseUrl: string): string {
  * same JSON for hosts that ignore structured content. An error response of the API becomes a tool
  * error carrying its code, message, request id and extras (such as `existingVerdict`).
  */
-async function callApi(call: () => Promise<Record<string, unknown>>): Promise<CallToolResult> {
+async function runAsToolResult(
+  call: () => Promise<Record<string, unknown>>,
+): Promise<CallToolResult> {
   try {
     const response = await call();
     return toToolResult(response, { isError: false });

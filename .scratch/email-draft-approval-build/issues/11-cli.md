@@ -4,10 +4,10 @@
 
 **Blocked by:** 05 (List Drafts)
 
-**Status:** ready-for-agent
+**Status:** done (<https://github.com/patricktree/resend-take-home-challenge/pull/8>)
 
-- [ ] Commander CLI with `drafts create | get | list | revise | submit | revision` and the spec's options; no verdict command anywhere
-- [ ] Token from `DRAFT_APPROVAL_TOKEN`, falling back to the committed Agent token; URL from `--api-url`, `DRAFT_APPROVAL_API_URL`, then the built-in production URL; HTTPS required except on loopback
-- [ ] Human output by default, `--json` prints one JSON value; errors as `{ error: { code, message } }` on stderr with exit 1; input validated with the contract's schemas before any request; tokens never printed
-- [ ] `--help` on root and every command; root help links the OpenAPI document
-- [ ] Process tests spawning the real CLI against a `node:http` API stub, covering everything in the spec's CLI process tests list
+- [x] Commander CLI with `drafts create | get | list | revise | submit | revision` and the spec's options; no verdict command anywhere
+- [x] Token from `DRAFT_APPROVAL_TOKEN`, falling back to the committed Agent token; URL from `--api-url`, `DRAFT_APPROVAL_API_URL`, then the built-in production URL; HTTPS required except on loopback
+- [x] Human output by default, `--json` prints one JSON value; errors as `{ error: { code, message } }` on stderr with exit 1; input validated with the contract's schemas before any request; tokens never printed
+- [x] `--help` on root and every command; root help links the OpenAPI document
+- [x] Process tests spawning the real CLI against a `node:http` API stub, covering everything in the spec's CLI process tests list

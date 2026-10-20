@@ -3,7 +3,7 @@ import { Temporal } from "temporal-polyfill";
 
 import type { DraftsStorage } from "#src/database.ts";
 import type { DraftData, DraftSummary } from "#src/draft.ts";
-import { toDraftSummary } from "#src/draft.ts";
+import { selectLastVerdictRow, toDraftSummary } from "#src/draft.ts";
 import {
   createRevisionId,
   isDraftId,
@@ -76,7 +76,7 @@ export async function reviseDraft(
         ),
       ),
   );
-  const [, insertedRevisions, updatedDrafts] = await database.batch([
+  const [, insertedRevisions, updatedDrafts, lastVerdictRows] = await database.batch([
     // A Rejected base keeps its verdict; only a base without one is superseded.
     database
       .update(revisions)
@@ -115,12 +115,17 @@ export async function reviseDraft(
       .set({ latestRevisionId: revisionId, lastActionAt: now })
       .where(and(eq(drafts.id, draftId), isBaseLatestOfUnapprovedDraft))
       .returning(),
+    // Only reads: a Rejected base stays the last verdict of the revised Draft.
+    selectLastVerdictRow(database, draftId),
   ]);
 
   const [revisionRow] = insertedRevisions;
   const [draftRow] = updatedDrafts;
   if (revisionRow !== undefined && draftRow !== undefined) {
-    return { outcome: "REVISED", draft: toDraftSummary(draftRow, revisionRow) };
+    return {
+      outcome: "REVISED",
+      draft: toDraftSummary(draftRow, revisionRow, lastVerdictRows[0]),
+    };
   }
 
   return { outcome: await explainRefusal(database, draftId, baseRevisionId) };

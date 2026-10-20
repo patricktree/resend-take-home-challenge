@@ -142,13 +142,7 @@ test("getting a Revision answers with any of the Draft's Revisions, with its bod
 test("revising a Rejected base keeps it Rejected", async ({ expect, onTestFinished }) => {
   const worker = await useWorker({ onTestFinished });
   const created = await createDraft(worker);
-  const env = await worker.getEnv();
-  // Verdicts do not exist yet: the Rejection is written directly.
-  await env.DB.prepare(
-    "UPDATE revisions SET review_status = 'REJECTED', submitted_at = ?1, decided_at = ?1, rejection_reason = 'Wrong recipient' WHERE id = ?2",
-  )
-    .bind(Temporal.Now.instant().epochMilliseconds, created.latestRevision.id)
-    .run();
+  await expectSubmittedAndDecided(worker, created.id, created.latestRevision.id, "rejection");
 
   const revised = await expectRevised(
     worker,
@@ -204,7 +198,7 @@ test.for([
       REVISED_DRAFT_DATA,
       created.latestRevision.id,
     );
-    await approveDirectly(worker, created.id, revised.latestRevision.id);
+    await expectSubmittedAndDecided(worker, created.id, revised.latestRevision.id, "approval");
     const rowsBefore = await readRows(worker);
 
     const response = await reviseDraft(worker, created.id, {
@@ -459,16 +453,32 @@ async function readRows(worker: TestWorker) {
   return { drafts: drafts?.results, revisions: revisions?.results };
 }
 
-/** Approvals do not exist yet: puts the Draft into the approved state with a consistent outbox. */
-async function approveDirectly(worker: TestWorker, draftId: string, revisionId: string) {
-  const env = await worker.getEnv();
-  const now = Temporal.Now.instant().epochMilliseconds;
-  await env.DB.batch([
-    env.DB.prepare(
-      "UPDATE drafts SET sending_status = 'QUEUED', approved_revision_id = ?1, approved_at = ?2, idempotency_key = ?3, outgoing_email = '{}', deadline = ?4, last_action_at = ?2 WHERE id = ?5",
-    ).bind(revisionId, now, `draft-send/${draftId}`, now + 23 * 60 * 60 * 1000, draftId),
-    env.DB.prepare(
-      "UPDATE revisions SET review_status = 'APPROVED', submitted_at = ?1, decided_at = ?1 WHERE id = ?2",
-    ).bind(now, revisionId),
-  ]);
+/**
+ * Submits the Revision and renders the Reviewer's verdict on it (a Rejection with the reason "Wrong
+ * recipient"); fails the test unless both succeed.
+ */
+async function expectSubmittedAndDecided(
+  worker: TestWorker,
+  draftId: string,
+  revisionId: string,
+  verdict: "approval" | "rejection",
+) {
+  const revisionPath = `/api/v1/drafts/${draftId}/revisions/${revisionId}`;
+  const submission = await worker.fetch(`${revisionPath}/submission`, {
+    method: "POST",
+    headers: { Authorization: AGENT_HEADERS.Authorization },
+  });
+  const decision = await worker.fetch(`${revisionPath}/${verdict}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${LOCAL_REVIEWER_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(verdict === "rejection" ? { reason: "Wrong recipient" } : {}),
+  });
+  if (submission.status !== 200 || decision.status !== 200) {
+    throw new Error(
+      `The Submission answered with ${submission.status} and the ${verdict} with ${decision.status}: ${await decision.text()}`,
+    );
+  }
 }

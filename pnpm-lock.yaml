@@ -372,6 +372,9 @@ importers:
       wrangler:
         specifier: 'catalog:'
         version: 4.144.0(@types/node@26.6.5)
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
 
   apps/review-ui: {}
 
@@ -509,6 +512,9 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
     devDependencies:
       '@draft-approval/config-oxlint':
         specifier: workspace:*
@@ -654,6 +660,40 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.1.11(@types/node@26.6.5)(vite@8.3.4(@types/node@26.6.5))
+
+  tooling/seed:
+    dependencies:
+      '@draft-approval/api.client':
+        specifier: workspace:*
+        version: link:../../libs/api.client
+      '@draft-approval/api.routes':
+        specifier: workspace:*
+        version: link:../../libs/api.routes
+    devDependencies:
+      '@draft-approval/config-oxlint':
+        specifier: workspace:*
+        version: link:../config-oxlint
+      '@draft-approval/prepare-declaration-build':
+        specifier: workspace:*
+        version: link:../prepare-declaration-build
+      '@patricktree-stack/config-typescript':
+        specifier: workspace:*
+        version: link:../../.patricktree-stack/tooling/config-typescript
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.5
+      '@typescript/native':
+        specifier: 'catalog:'
+        version: typescript@7.0.2
+      oxlint:
+        specifier: 'catalog:'
+        version: 1.89.0(oxlint-tsgolint@7.0.2004)
+      oxlint-tsgolint:
+        specifier: 'catalog:'
+        version: 7.0.2004
+      typescript:
+        specifier: 'catalog:'
+        version: '@typescript/typescript6@6.0.2'
 
 packages:
 

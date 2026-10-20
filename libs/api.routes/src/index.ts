@@ -2,6 +2,7 @@ export {
   createApiContractApp,
   OPENAPI_DOCUMENT_PATH,
   READ_BOOKMARK_HEADER,
+  REVIEWER_ONLY_ROUTES,
   type ApiContractApp,
   type ApiContractEnvironment,
   type ApiHandlers,
@@ -11,8 +12,15 @@ export {
   type DraftDataRequest,
   type DraftResponse,
   type DraftSummaryResponse,
+  type RejectionRequest,
   type ReviseRequest,
   type RevisionResponse,
 } from "#src/drafts.ts";
-export { ERROR_CODE, type ErrorCode, type ErrorExtras, type ErrorResponse } from "#src/errors.ts";
+export {
+  ERROR_CODE,
+  errorResponseSchema,
+  type ErrorCode,
+  type ErrorExtras,
+  type ErrorResponse,
+} from "#src/errors.ts";
 export { LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN } from "#src/local-tokens.ts";

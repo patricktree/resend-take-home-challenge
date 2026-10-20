@@ -1,0 +1,39 @@
+{
+  "name": "@draft-approval/seed",
+  "private": true,
+  "description": "`pnpm seed`: creates Pending, Rejected and Approved Drafts on the local `pnpm dev` Worker through the typed client",
+  "files": [
+    "src/**"
+  ],
+  "type": "module",
+  "imports": {
+    "#src/*": "./src/*"
+  },
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "turbo run turbo:build",
+    "clean": "del-cli --dot=true \"dist\" \"*.tsbuildinfo\"",
+    "lint": "turbo run turbo:lint",
+    "lint:fix": "turbo run turbo:lint:fix",
+    "start": "node ./src/cli.ts",
+    "turbo:build": "prepare-declaration-build --declaration-output-dir ./dist/types --build-info-file ./dist/tsconfig.build.tsbuildinfo --source-package-json ./src/package.json && tsc --build ./tsconfig.json",
+    "turbo:lint": "oxlint --type-aware --max-warnings 0 .",
+    "turbo:lint:fix": "pnpm run turbo:lint --fix"
+  },
+  "dependencies": {
+    "@draft-approval/api.client": "workspace:*",
+    "@draft-approval/api.routes": "workspace:*"
+  },
+  "devDependencies": {
+    "@draft-approval/config-oxlint": "workspace:*",
+    "@draft-approval/prepare-declaration-build": "workspace:*",
+    "@patricktree-stack/config-typescript": "workspace:*",
+    "@types/node": "catalog:",
+    "@typescript/native": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "typescript": "catalog:"
+  }
+}

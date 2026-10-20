@@ -59,5 +59,6 @@ export async function createDraft(
     database.insert(revisions).values(revisionRow),
   ]);
 
-  return toDraftSummary(draftRow, revisionRow);
+  // A new Draft has no verdict yet.
+  return toDraftSummary(draftRow, revisionRow, undefined);
 }

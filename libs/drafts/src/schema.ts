@@ -11,6 +11,7 @@ import { sql, type SQL } from "drizzle-orm";
 import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 import type { DraftId, RevisionId } from "#src/ids.ts";
+import type { OutgoingEmail } from "#src/send-queue.ts";
 
 export type SendingStatus = (typeof SENDING_STATUSES)[number];
 
@@ -44,7 +45,7 @@ export const drafts = sqliteTable(
     approvedRevisionId: text("approved_revision_id").$type<RevisionId>(),
     approvedAt: integer("approved_at"),
     idempotencyKey: text("idempotency_key"),
-    outgoingEmail: text("outgoing_email", { mode: "json" }),
+    outgoingEmail: text("outgoing_email", { mode: "json" }).$type<OutgoingEmail>(),
     deadline: integer("deadline"),
     /** Set once the Send's Queue message has been sent. */
     enqueuedAt: integer("enqueued_at"),

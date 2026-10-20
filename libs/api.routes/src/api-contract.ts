@@ -5,6 +5,7 @@ import {
   draftParamsSchema,
   draftSchema,
   draftSummarySchema,
+  rejectionRequestSchema,
   reviseRequestSchema,
   revisionParamsSchema,
   revisionSchema,
@@ -21,6 +22,8 @@ export type ApiHandlers<E extends ApiContractEnvironment> = {
   reviseDraft: RouteHandler<typeof reviseDraftRoute, E>;
   getRevision: RouteHandler<typeof getRevisionRoute, E>;
   submitRevision: RouteHandler<typeof submitRevisionRoute, E>;
+  approveRevision: RouteHandler<typeof approveRevisionRoute, E>;
+  rejectRevision: RouteHandler<typeof rejectRevisionRoute, E>;
 };
 
 /** The contract app's type, from which the typed client infers every route. */
@@ -42,6 +45,9 @@ const AGENT_OR_REVIEWER_SECURITY = [
   { [SECURITY_SCHEME.AGENT]: [] },
   { [SECURITY_SCHEME.REVIEWER]: [] },
 ];
+
+/** Only the Reviewer token may call the route; the API server guards it (`REVIEWER_ONLY_ROUTES`). */
+const REVIEWER_ONLY_SECURITY = [{ [SECURITY_SCHEME.REVIEWER]: [] }];
 
 const READ_BOOKMARK_DESCRIPTION =
   "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one.";
@@ -214,6 +220,88 @@ const submitRevisionRoute = createRoute({
   },
 });
 
+const VERDICT_403_DESCRIPTION =
+  "`REVIEWER_ONLY`: only the Reviewer token may render a verdict; Agents never can.";
+
+const VERDICT_409_DESCRIPTION =
+  "In order of precedence: `REVISION_SUPERSEDED`: the Revision is no longer the Draft's latest; reload the Draft and review its latest Revision. `REVISION_ALREADY_DECIDED`: the Revision already has a verdict, named in `existingVerdict`, also when it is the same verdict again; nothing is recorded twice. `REVISION_NOT_SUBMITTED`: the Revision is `UNSUBMITTED` and awaits no verdict.";
+
+const approveRevisionRoute = createRoute({
+  method: "post",
+  path: "/api/v1/drafts/{draftId}/revisions/{revisionId}/approval",
+  operationId: "approveRevision",
+  tags: ["Drafts"],
+  summary: "Approve a Revision (Reviewer only)",
+  description:
+    "Reviewer only. Approves exactly the Revision you loaded, provided it is still the Draft's latest and `PENDING`; takes no request body. The Approval records the Draft's one Send intent: the Draft becomes `APPROVED` with sending status `QUEUED`, accepts no further Revisions or Submissions, and the email (recipients and content of this Revision, sender from configuration) is sent through Resend in the background. A repeated Approval never sends twice: it gets 409 `REVISION_ALREADY_DECIDED`.",
+  security: REVIEWER_ONLY_SECURITY,
+  request: {
+    params: revisionParamsSchema,
+    headers: readBookmarkRequestHeadersSchema,
+  },
+  responses: {
+    200: {
+      description: "The approved Draft with sending status `QUEUED`, without the body.",
+      headers: readBookmarkResponseHeadersSchema,
+      content: { "application/json": { schema: draftSummarySchema } },
+    },
+    400: errorResponse("`INVALID_REQUEST`: an id or a header is malformed; see `issues`."),
+    401: errorResponse("`UNAUTHENTICATED`: a valid bearer token is required."),
+    403: errorResponse(VERDICT_403_DESCRIPTION),
+    404: errorResponse(
+      "`DRAFT_NOT_FOUND`: no Draft has this id. `REVISION_NOT_FOUND`: the Draft has no Revision with this id, including when it is another Draft's Revision.",
+    ),
+    409: errorResponse(VERDICT_409_DESCRIPTION),
+    500: errorResponse("`INTERNAL_ERROR`: an unexpected error occurred."),
+  },
+});
+
+const rejectRevisionRoute = createRoute({
+  method: "post",
+  path: "/api/v1/drafts/{draftId}/revisions/{revisionId}/rejection",
+  operationId: "rejectRevision",
+  tags: ["Drafts"],
+  summary: "Reject a Revision (Reviewer only)",
+  description:
+    "Reviewer only. Rejects exactly the Revision you loaded, provided it is still the Draft's latest and `PENDING`, optionally with a reason for the Agent. The request body is optional. The Draft stays open: the Agent can revise it, building on the Rejected Revision, and submit the new Revision; the Draft's `lastVerdict` keeps the reason.",
+  security: REVIEWER_ONLY_SECURITY,
+  request: {
+    params: revisionParamsSchema,
+    headers: readBookmarkRequestHeadersSchema,
+    body: {
+      required: false,
+      content: { "application/json": { schema: rejectionRequestSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "The rejected Draft, without the body.",
+      headers: readBookmarkResponseHeadersSchema,
+      content: { "application/json": { schema: draftSummarySchema } },
+    },
+    400: errorResponse(
+      "`INVALID_REQUEST`: the request violates the schema or a limit; see `issues`.",
+    ),
+    401: errorResponse("`UNAUTHENTICATED`: a valid bearer token is required."),
+    403: errorResponse(VERDICT_403_DESCRIPTION),
+    404: errorResponse(
+      "`DRAFT_NOT_FOUND`: no Draft has this id. `REVISION_NOT_FOUND`: the Draft has no Revision with this id, including when it is another Draft's Revision.",
+    ),
+    409: errorResponse(VERDICT_409_DESCRIPTION),
+    413: errorResponse("`PAYLOAD_TOO_LARGE`: the request body exceeds 128 KB."),
+    500: errorResponse("`INTERNAL_ERROR`: an unexpected error occurred."),
+  },
+});
+
+/**
+ * The routes only the Reviewer token may call, with Hono routing paths: the API server guards them
+ * before any database access. Their OpenAPI security lists only `reviewerAuth`.
+ */
+export const REVIEWER_ONLY_ROUTES = [approveRevisionRoute, rejectRevisionRoute].map((route) => ({
+  method: route.method.toUpperCase(),
+  path: route.getRoutingPath(),
+}));
+
 /**
  * Creates the OpenAPI app that carries the API contract with the given route handlers and serves
  * its OpenAPI 3.1 document at {@link OPENAPI_DOCUMENT_PATH}. Requests that violate a route's schema
@@ -270,7 +358,9 @@ export function createApiContractApp<E extends ApiContractEnvironment>(handlers:
     .openapi(getDraftRoute, handlers.getDraft)
     .openapi(reviseDraftRoute, handlers.reviseDraft)
     .openapi(getRevisionRoute, handlers.getRevision)
-    .openapi(submitRevisionRoute, handlers.submitRevision);
+    .openapi(submitRevisionRoute, handlers.submitRevision)
+    .openapi(approveRevisionRoute, handlers.approveRevision)
+    .openapi(rejectRevisionRoute, handlers.rejectRevision);
 }
 
 function errorResponse(description: string) {

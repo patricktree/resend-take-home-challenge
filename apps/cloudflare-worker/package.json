@@ -55,6 +55,7 @@
     "typescript": "catalog:",
     "vite": "catalog:web-app",
     "vitest": "catalog:",
-    "wrangler": "catalog:"
+    "wrangler": "catalog:",
+    "zod": "^4.6.7"
   }
 }

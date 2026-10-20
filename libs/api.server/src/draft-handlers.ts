@@ -1,3 +1,5 @@
+import type { Context } from "hono";
+
 import type {
   ApiHandlers,
   DraftResponse,
@@ -6,13 +8,18 @@ import type {
 } from "@draft-approval/api.routes";
 import { ERROR_CODE } from "@draft-approval/api.routes";
 import {
+  approveRevision,
   createDraft,
   getDraft,
   getRevision,
+  rejectRevision,
   reviseDraft,
   submitRevision,
+  type ApproveRevisionResult,
   type Draft,
   type DraftSummary,
+  type LastVerdict,
+  type RejectRevisionResult,
   type Revision,
   type RevisionSummary,
 } from "@draft-approval/drafts";
@@ -162,7 +169,85 @@ export const DRAFT_HANDLERS: ApiHandlers<ApiServerHonoEnvironment> = {
       }
     }
   },
+
+  approveRevision: async (context) => {
+    const { draftId, revisionId } = context.req.valid("param");
+    const result = await approveRevision(
+      context.get("draftsStorage"),
+      { sendQueue: context.env.SEND_QUEUE, from: context.env.RESEND_FROM },
+      draftId,
+      revisionId,
+    );
+
+    if (result.outcome === "APPROVED") {
+      return context.json(toDraftSummaryResponse(result.draft, context.env.PUBLIC_BASE_URL), 200);
+    }
+    return verdictRefusalResponse(context, result);
+  },
+
+  rejectRevision: async (context) => {
+    const { draftId, revisionId } = context.req.valid("param");
+    const result = await rejectRevision(
+      context.get("draftsStorage"),
+      draftId,
+      revisionId,
+      context.req.valid("json"),
+    );
+
+    if (result.outcome === "REJECTED") {
+      return context.json(toDraftSummaryResponse(result.draft, context.env.PUBLIC_BASE_URL), 200);
+    }
+    return verdictRefusalResponse(context, result);
+  },
 };
+
+/** Answers a verdict that changed nothing, for both verdict routes. */
+function verdictRefusalResponse(
+  context: Context<ApiServerHonoEnvironment>,
+  refusal: Exclude<ApproveRevisionResult | RejectRevisionResult, { draft: unknown }>,
+) {
+  switch (refusal.outcome) {
+    case "DRAFT_NOT_FOUND": {
+      return jsonError(context, 404, ERROR_CODE.DRAFT_NOT_FOUND, "No Draft has this id.");
+    }
+    case "REVISION_NOT_FOUND": {
+      return jsonError(
+        context,
+        404,
+        ERROR_CODE.REVISION_NOT_FOUND,
+        "The Draft has no Revision with this id.",
+      );
+    }
+    case "REVISION_SUPERSEDED": {
+      return jsonError(
+        context,
+        409,
+        ERROR_CODE.REVISION_SUPERSEDED,
+        "The Revision is no longer the Draft's latest; reload the Draft and review its latest Revision.",
+      );
+    }
+    case "REVISION_ALREADY_DECIDED": {
+      return jsonError(
+        context,
+        409,
+        ERROR_CODE.REVISION_ALREADY_DECIDED,
+        "The Revision already has a verdict, named in `existingVerdict`; nothing was recorded.",
+        { extras: { existingVerdict: refusal.existingVerdict } },
+      );
+    }
+    case "REVISION_NOT_SUBMITTED": {
+      return jsonError(
+        context,
+        409,
+        ERROR_CODE.REVISION_NOT_SUBMITTED,
+        "The Revision is not submitted for review and awaits no verdict.",
+      );
+    }
+    default: {
+      return assertUnreachable(refusal);
+    }
+  }
+}
 
 function toDraftSummaryResponse(draft: DraftSummary, publicBaseUrl: string): DraftSummaryResponse {
   return {
@@ -171,6 +256,9 @@ function toDraftSummaryResponse(draft: DraftSummary, publicBaseUrl: string): Dra
     lastActionAt: toTimestamp(draft.lastActionAt),
     reviewStatus: toDraftReviewStatus(draft.latestRevision),
     latestRevision: toRevisionSummaryResponse(draft.latestRevision),
+    ...(draft.lastVerdict === undefined
+      ? {}
+      : { lastVerdict: toLastVerdictResponse(draft.lastVerdict) }),
     sending: draft.sending,
     reviewUrl: new URL(`/app/drafts/${draft.id}`, publicBaseUrl).href,
   };
@@ -204,6 +292,18 @@ function toRevisionSummaryResponse(
     ...(revision.rejectionReason === undefined
       ? {}
       : { rejectionReason: revision.rejectionReason }),
+  };
+}
+
+function toLastVerdictResponse(
+  lastVerdict: LastVerdict,
+): NonNullable<DraftSummaryResponse["lastVerdict"]> {
+  return {
+    revisionId: lastVerdict.revisionId,
+    revisionNumber: lastVerdict.revisionNumber,
+    verdict: lastVerdict.verdict,
+    ...(lastVerdict.reason === undefined ? {} : { reason: lastVerdict.reason }),
+    decidedAt: toTimestamp(lastVerdict.decidedAt),
   };
 }
 

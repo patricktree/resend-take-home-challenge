@@ -3,10 +3,10 @@ import { bodyLimit } from "hono/body-limit";
 import { HTTPException } from "hono/http-exception";
 import crypto from "node:crypto";
 
-import { createApiContractApp, ERROR_CODE } from "@draft-approval/api.routes";
+import { createApiContractApp, ERROR_CODE, REVIEWER_ONLY_ROUTES } from "@draft-approval/api.routes";
 
 import type { ApiServerHonoEnvironment } from "#src/api-server-environment.ts";
-import { authenticate } from "#src/authentication.ts";
+import { authenticate, requireReviewer } from "#src/authentication.ts";
 import { runOnDatabaseSession } from "#src/database-session.ts";
 import { DRAFT_HANDLERS } from "#src/draft-handlers.ts";
 import { jsonError } from "#src/http-errors.ts";
@@ -49,6 +49,10 @@ export function createApiServer(): Hono<ApiServerHonoEnvironment> {
   app.get("/", (context) => context.redirect("/app/", 302));
 
   app.use("/api/*", authenticate);
+  // Before the database session middleware: an Agent's verdict request never reaches D1.
+  for (const route of REVIEWER_ONLY_ROUTES) {
+    app.on(route.method, route.path, requireReviewer);
+  }
   app.use(
     "/api/*",
     bodyLimit({

@@ -1,0 +1,46 @@
+{
+  "name": "@draft-approval/resend-stub",
+  "private": true,
+  "description": "A node:http stand-in for Resend's POST /emails that models its idempotency, for the integration and e2e tests; plus the opt-in live contract test against the real API",
+  "files": [
+    "src/**"
+  ],
+  "type": "module",
+  "imports": {
+    "#src/*": "./src/*"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/types/resend-stub.d.ts",
+      "default": "./src/resend-stub.ts"
+    }
+  },
+  "scripts": {
+    "build": "turbo run turbo:build",
+    "clean": "del-cli --dot=true \"dist\" \"*.tsbuildinfo\"",
+    "lint": "turbo run turbo:lint",
+    "lint:fix": "turbo run turbo:lint:fix",
+    "test": "vitest run",
+    "test:resend-live": "vitest run --config ./vitest.live.config.ts",
+    "test:watch": "vitest",
+    "turbo:build": "prepare-declaration-build --declaration-output-dir ./dist/types --build-info-file ./dist/tsconfig.build.tsbuildinfo --source-package-json ./src/package.json && tsc --build ./tsconfig.json",
+    "turbo:lint": "oxlint --type-aware --max-warnings 0 .",
+    "turbo:lint:fix": "pnpm run turbo:lint --fix",
+    "turbo:test": "pnpm run test"
+  },
+  "devDependencies": {
+    "@draft-approval/config-oxlint": "workspace:*",
+    "@draft-approval/prepare-declaration-build": "workspace:*",
+    "@patricktree-stack/config-typescript": "workspace:*",
+    "@patricktree-stack/config-vitest": "workspace:*",
+    "@types/node": "catalog:",
+    "@typescript/native": "catalog:",
+    "jsonc-parser": "^3.3.1",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}

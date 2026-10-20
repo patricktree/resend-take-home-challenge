@@ -45,6 +45,7 @@
     "@draft-approval/api.routes": "workspace:*",
     "@draft-approval/config-oxlint": "workspace:*",
     "@draft-approval/prepare-declaration-build": "workspace:*",
+    "@draft-approval/resend-stub": "workspace:*",
     "@draft-approval/review-ui": "workspace:*",
     "@modelcontextprotocol/client": "catalog:mcp",
     "@patricktree-stack/config-typescript": "workspace:*",

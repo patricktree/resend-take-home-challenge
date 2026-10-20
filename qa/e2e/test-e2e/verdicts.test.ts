@@ -85,7 +85,7 @@ test("the Reviewer rejects a Pending Draft with a reason", async ({ page, review
   const { agentClient, reviewerClient, resendStub } = reviewEnvironment;
   const draft = await createPendingDraft(agentClient, createDraftData("Office move"));
   await openDraftPage(page, draft);
-  const reasonInput = page.getByLabel("Reason for rejection");
+  const reasonInput = page.getByRole("textbox", { name: "Reason for rejection" });
   await expect(reasonInput).toHaveAttribute("maxlength", "2000");
 
   await reasonInput.fill("  Mention the new office address.  ");
@@ -113,7 +113,7 @@ test("the Reviewer rejects a Pending Draft without a reason", async ({
   await openDraftPage(page, draft);
 
   // Only spaces count as no reason.
-  await page.getByLabel("Reason for rejection").fill("   ");
+  await page.getByRole("textbox", { name: "Reason for rejection" }).fill("   ");
   await page.getByRole("button", { name: "Reject" }).click();
 
   await expect(page.getByText("Rejected", { exact: true })).toBeVisible();

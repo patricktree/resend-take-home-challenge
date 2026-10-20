@@ -8,17 +8,15 @@ import type { DraftResponse } from "@draft-approval/api.routes";
 import { getApiClient } from "#src/api-client.ts";
 import { DSButton } from "#src/design-system/button.tsx";
 import { textFieldStyles } from "#src/design-system/text-field.ts";
-import { invalidateDraftQueries } from "#src/draft-queries.ts";
+import { draftQuery, invalidateDraftQueries } from "#src/draft-queries.ts";
 import { ErrorMessage } from "#src/error-message.tsx";
 
 type VerdictControlsProps = {
   /** A Pending Draft; render the controls keyed by its latest Revision id, so they reset with it. */
   draft: DraftResponse;
-  /** Reads the Draft again and rejects when that fails. */
-  reloadDraft: () => Promise<unknown>;
 };
 
-type Verdict = { verdict: "APPROVED" } | { verdict: "REJECTED"; reason: string | undefined };
+type Verdict = { kind: "APPROVAL" } | { kind: "REJECTION"; reason: string | undefined };
 
 type VerdictErrorProps = {
   error: Error;
@@ -28,7 +26,16 @@ type VerdictErrorProps = {
 
 type ExistingVerdict = NonNullable<ApiError["extras"]["existingVerdict"]>;
 
-/** The API's limit (spec section 6, "Limits and request format"). */
+/** A verdict error with its own message (spec section 11, "Verdict errors"). */
+type DescribedVerdictError = {
+  message: string;
+  canReloadDraft: boolean;
+};
+
+/**
+ * The API's limit (spec section 6, "Limits and request format"); `libs/api.routes` keeps its own
+ * copy unexported, and importing it would put the contract's runtime into the bundle.
+ */
 const REJECTION_REASON_MAX_LENGTH = 2000;
 
 const ALREADY_DECIDED_MESSAGES: Record<ExistingVerdict, string> = {
@@ -40,7 +47,7 @@ const ALREADY_DECIDED_MESSAGES: Record<ExistingVerdict, string> = {
  * Approve, an optional reason and Reject for the loaded Revision. A failed verdict shows inline
  * above the controls and is never retried: the Reviewer reloads the Draft and decides again.
  */
-export function VerdictControls({ draft, reloadDraft }: VerdictControlsProps): React.ReactNode {
+export function VerdictControls({ draft }: VerdictControlsProps): React.ReactNode {
   const reasonInputId = React.useId();
   const queryClient = useQueryClient();
   const draftId = draft.id;
@@ -49,7 +56,7 @@ export function VerdictControls({ draft, reloadDraft }: VerdictControlsProps): R
 
   const verdictMutation = useMutation({
     mutationFn: (verdict: Verdict) =>
-      verdict.verdict === "APPROVED"
+      verdict.kind === "APPROVAL"
         ? getApiClient().approveRevision(draftId, revisionId)
         : getApiClient().rejectRevision(
             draftId,
@@ -60,7 +67,11 @@ export function VerdictControls({ draft, reloadDraft }: VerdictControlsProps): R
     onSuccess: () => invalidateDraftQueries(queryClient),
   });
   const reloadMutation = useMutation({
-    mutationFn: reloadDraft,
+    mutationFn: () =>
+      queryClient.refetchQueries(
+        { queryKey: draftQuery(draftId).queryKey, exact: true },
+        { throwOnError: true },
+      ),
     onSuccess: () => verdictMutation.reset(),
   });
   const isBusy = verdictMutation.isPending || reloadMutation.isPending;
@@ -83,7 +94,7 @@ export function VerdictControls({ draft, reloadDraft }: VerdictControlsProps): R
     // The API trims the reason too; an empty one counts as none.
     const trimmedReason = reason.trim();
     submitVerdict({
-      verdict: "REJECTED",
+      kind: "REJECTION",
       reason: trimmedReason === "" ? undefined : trimmedReason,
     });
   }
@@ -98,7 +109,7 @@ export function VerdictControls({ draft, reloadDraft }: VerdictControlsProps): R
         type="button"
         className={buttonStyles}
         disabled={isBusy}
-        onClick={() => submitVerdict({ verdict: "APPROVED" })}
+        onClick={() => submitVerdict({ kind: "APPROVAL" })}
       >
         Approve
       </DSButton>
@@ -128,57 +139,63 @@ function VerdictError({ error, isBusy, onReloadDraft }: VerdictErrorProps): Reac
     return null;
   }
 
-  const reloadButton = (
-    <DSButton
-      variant="outlined"
-      type="button"
-      className={buttonStyles}
-      disabled={isBusy}
-      onClick={onReloadDraft}
-    >
-      Reload Draft
-    </DSButton>
+  const describedError = describeVerdictError(error);
+  return (
+    <div className={errorBoxStyles}>
+      {describedError === undefined ? (
+        <ErrorMessage error={error} />
+      ) : (
+        <>
+          <p role="alert">{describedError.message}</p>
+          {describedError.canReloadDraft && (
+            <DSButton
+              variant="outlined"
+              type="button"
+              className={buttonStyles}
+              disabled={isBusy}
+              onClick={onReloadDraft}
+            >
+              Reload Draft
+            </DSButton>
+          )}
+        </>
+      )}
+    </div>
   );
-
-  let content: React.ReactNode;
-  if (error instanceof ApiError && error.code === "REVISION_SUPERSEDED") {
-    content = (
-      <>
-        <p role="alert">
-          The Agent changed this Draft after you opened it; your verdict was not recorded.
-        </p>
-        {reloadButton}
-      </>
-    );
-  } else if (error instanceof ApiError && error.code === "REVISION_ALREADY_DECIDED") {
-    // Shown even when it is the verdict the Reviewer chose: someone else may have rendered it.
-    content = (
-      <>
-        <p role="alert">{ALREADY_DECIDED_MESSAGES[readExistingVerdict(error)]}</p>
-        {reloadButton}
-      </>
-    );
-  } else if (error instanceof ApiError && error.code === "REVIEWER_ONLY") {
-    content = (
-      <p role="alert">
-        The stored token is not the Reviewer token. Sign out and enter the Reviewer token.
-      </p>
-    );
-  } else {
-    content = <ErrorMessage error={error} />;
-  }
-
-  return <div className={errorBoxStyles}>{content}</div>;
 }
 
-function readExistingVerdict(error: ApiError): ExistingVerdict {
-  const { existingVerdict } = error.extras;
-  if (existingVerdict === undefined) {
-    throw new Error(
-      `The API answered REVISION_ALREADY_DECIDED without \`existingVerdict\` (request ID ${error.requestId}).`,
-    );
+/** The errors with their own message; any other shows its message and request ID. */
+function describeVerdictError(error: Error): DescribedVerdictError | undefined {
+  if (!(error instanceof ApiError)) {
+    return undefined;
   }
-  return existingVerdict;
+
+  switch (error.code) {
+    case "REVISION_SUPERSEDED": {
+      return {
+        message: "The Agent changed this Draft after you opened it; your verdict was not recorded.",
+        canReloadDraft: true,
+      };
+    }
+    case "REVISION_ALREADY_DECIDED": {
+      // Shown even when it is the verdict the Reviewer chose: it came from another tab or person.
+      const { existingVerdict } = error.extras;
+      // The API always names it (spec section 6); without it, the error shows like any other.
+      return existingVerdict === undefined
+        ? undefined
+        : { message: ALREADY_DECIDED_MESSAGES[existingVerdict], canReloadDraft: true };
+    }
+    case "REVIEWER_ONLY": {
+      return {
+        message:
+          "The stored token is not the Reviewer token. Sign out and enter the Reviewer token.",
+        canReloadDraft: false,
+      };
+    }
+    default: {
+      return undefined;
+    }
+  }
 }
 
 const controlsStyles = css`

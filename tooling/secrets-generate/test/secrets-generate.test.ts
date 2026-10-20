@@ -30,6 +30,10 @@ curl -H 'Authorization: Bearer ${PLACEHOLDER_AGENT_TOKEN}' https://example.com
 \`\`\`
 `;
 
+const CLI_PRODUCTION_DEFAULTS = `/** The public Agent token. */
+export const PUBLIC_AGENT_TOKEN = "${PLACEHOLDER_AGENT_TOKEN}";
+`;
+
 /** Records its arguments, working directory and stdin, like a `wrangler` that only listens. */
 const RECORDING_WRANGLER = `#!/usr/bin/env node
 import fs from "node:fs";
@@ -46,7 +50,7 @@ fs.readFileSync(0, "utf8");
 process.exitCode = 1;
 `;
 
-test("writes a new Agent token into wrangler.jsonc and the README, keeping comments and formatting", async ({
+test("writes a new Agent token into wrangler.jsonc, the README and the CLI, keeping comments and formatting", async ({
   expect,
 }) => {
   const repository = await createRepository(RECORDING_WRANGLER);
@@ -64,6 +68,9 @@ test("writes a new Agent token into wrangler.jsonc and the README, keeping comme
   expect(config).toBe(WRANGLER_CONFIG.replace(PLACEHOLDER_AGENT_TOKEN, agentToken));
   expect(await fs.readFile(repository.readmePath, "utf8")).toBe(
     README.replaceAll(PLACEHOLDER_AGENT_TOKEN, agentToken),
+  );
+  expect(await fs.readFile(repository.cliProductionDefaultsPath, "utf8")).toBe(
+    CLI_PRODUCTION_DEFAULTS.replace(PLACEHOLDER_AGENT_TOKEN, agentToken),
   );
 });
 
@@ -135,6 +142,27 @@ test("refuses to run when the README does not show the configured Agent token", 
   await expect(fs.access(repository.wranglerArgvPath)).rejects.toThrow();
 });
 
+test("refuses to run when the CLI does not hold the configured Agent token", async ({ expect }) => {
+  const repository = await createRepository(RECORDING_WRANGLER);
+  await fs.writeFile(
+    repository.cliProductionDefaultsPath,
+    'export const PUBLIC_AGENT_TOKEN = "";\n',
+  );
+
+  const run = generateSecrets({
+    repositoryRoot: repository.root,
+    wranglerExecutable: repository.wranglerExecutable,
+    print: () => {},
+  });
+
+  await expect(run).rejects.toThrow(
+    "apps/cli/src/production.ts does not hold the configured Agent token",
+  );
+  expect(await fs.readFile(repository.wranglerConfigPath, "utf8")).toBe(WRANGLER_CONFIG);
+  expect(await fs.readFile(repository.readmePath, "utf8")).toBe(README);
+  await expect(fs.access(repository.wranglerArgvPath)).rejects.toThrow();
+});
+
 /** A temporary copy of the files the script touches, with a fake `wrangler` next to them. */
 async function createRepository(wranglerScript: string) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "secrets-generate-"));
@@ -143,13 +171,17 @@ async function createRepository(wranglerScript: string) {
   const workerDirectory = path.join(root, "apps", "cloudflare-worker");
   const wranglerConfigPath = path.join(workerDirectory, "wrangler.jsonc");
   const readmePath = path.join(root, "README.md");
+  const cliSourceDirectory = path.join(root, "apps", "cli", "src");
+  const cliProductionDefaultsPath = path.join(cliSourceDirectory, "production.ts");
   const fakeWranglerDirectory = path.join(root, "fake-wrangler");
   const wranglerExecutable = path.join(fakeWranglerDirectory, "wrangler.mjs");
 
   await fs.mkdir(workerDirectory, { recursive: true });
+  await fs.mkdir(cliSourceDirectory, { recursive: true });
   await fs.mkdir(fakeWranglerDirectory);
   await fs.writeFile(wranglerConfigPath, WRANGLER_CONFIG);
   await fs.writeFile(readmePath, README);
+  await fs.writeFile(cliProductionDefaultsPath, CLI_PRODUCTION_DEFAULTS);
   await fs.writeFile(wranglerExecutable, wranglerScript, { mode: 0o755 });
 
   return {
@@ -157,6 +189,7 @@ async function createRepository(wranglerScript: string) {
     workerDirectory,
     wranglerConfigPath,
     readmePath,
+    cliProductionDefaultsPath,
     wranglerExecutable,
     wranglerArgvPath: path.join(fakeWranglerDirectory, "argv.json"),
     wranglerCwdPath: path.join(fakeWranglerDirectory, "cwd.txt"),

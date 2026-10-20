@@ -18,6 +18,10 @@ const config: KnipConfig = {
       /* Wrangler loads the test runtime's Worker entry point from test/wrangler.test.jsonc. */
       entry: ["test/worker.ts"],
     },
+    "libs/drafts": {
+      /* Wrangler loads the drafts suite's test Worker entry point from test/wrangler.test.jsonc. */
+      entry: ["test/worker.ts"],
+    },
   },
 };
 

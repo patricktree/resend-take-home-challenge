@@ -11,6 +11,8 @@ export {
   type DraftDataRequest,
   type DraftResponse,
   type DraftSummaryResponse,
+  type ReviseRequest,
+  type RevisionResponse,
 } from "#src/drafts.ts";
 export { ERROR_CODE, type ErrorCode, type ErrorExtras, type ErrorResponse } from "#src/errors.ts";
 export { LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN } from "#src/local-tokens.ts";

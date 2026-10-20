@@ -65,7 +65,8 @@ export function toDraftSummary(
   };
 }
 
-function toRevisionSummary(row: typeof revisions.$inferSelect): RevisionSummary {
+/** Maps a Revision row to a Revision summary. */
+export function toRevisionSummary(row: typeof revisions.$inferSelect): RevisionSummary {
   return {
     id: row.id,
     revisionNumber: row.revisionNumber,

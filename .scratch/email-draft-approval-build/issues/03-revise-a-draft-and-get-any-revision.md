@@ -4,11 +4,11 @@
 
 **Blocked by:** 02 (Create and get a Draft)
 
-**Status:** ready-for-agent
+**Status:** done (<https://github.com/patricktree/resend-take-home-challenge/pull/3>)
 
-- [ ] `POST /api/v1/drafts/{draftId}/revisions` requires `baseRevisionId`; one guarded batch supersedes an `UNSUBMITTED` base, inserts Revision N+1 and moves `latest_revision_id`; every statement carries the guard and the one that falsifies it runs last
-- [ ] Errors: 409 `DRAFT_APPROVED` when approved (checked first), else 409 `REVISION_SUPERSEDED` when the base is not the latest; a losing batch leaves rows unchanged
-- [ ] `GET /api/v1/drafts/{draftId}/revisions/{revisionId}` returns any of the Draft's Revisions with body, including Superseded ones; 404 `REVISION_NOT_FOUND` (also for another Draft's Revision)
-- [ ] Gated D1 test double in the drafts suite that holds a chosen statement until released (no hooks in production code)
-- [ ] revise ‖ revise on the same base: deterministic interleaving and a concurrent-requests smoke test; exactly one new Revision, the loser gets `REVISION_SUPERSEDED`
-- [ ] OpenAPI and snapshot updated
+- [x] `POST /api/v1/drafts/{draftId}/revisions` requires `baseRevisionId`; one guarded batch supersedes an `UNSUBMITTED` base, inserts Revision N+1 and moves `latest_revision_id`; every statement carries the guard and the one that falsifies it runs last
+- [x] Errors: 409 `DRAFT_APPROVED` when approved (checked first), else 409 `REVISION_SUPERSEDED` when the base is not the latest; a losing batch leaves rows unchanged
+- [x] `GET /api/v1/drafts/{draftId}/revisions/{revisionId}` returns any of the Draft's Revisions with body, including Superseded ones; 404 `REVISION_NOT_FOUND` (also for another Draft's Revision)
+- [x] Gated D1 test double in the drafts suite that holds a chosen statement until released (no hooks in production code)
+- [x] revise ‖ revise on the same base: deterministic interleaving and a concurrent-requests smoke test; exactly one new Revision, the loser gets `REVISION_SUPERSEDED`
+- [x] OpenAPI and snapshot updated

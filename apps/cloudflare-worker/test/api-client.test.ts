@@ -35,6 +35,63 @@ test("the client creates a Draft and reads it back with its body", async ({
   });
 });
 
+test("the client revises a Draft and reads any of its Revisions", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const worker = await useWorker({ onTestFinished });
+  const client = createClient(worker, LOCAL_AGENT_TOKEN);
+  const created = await client.createDraft(DRAFT_DATA);
+
+  const revised = await client.reviseDraft(created.id, {
+    ...DRAFT_DATA,
+    subject: "Hello again",
+    baseRevisionId: created.latestRevision.id,
+  });
+  const base = await client.getRevision(created.id, created.latestRevision.id);
+
+  expect(revised).toMatchObject({
+    id: created.id,
+    reviewStatus: "UNSUBMITTED",
+    latestRevision: { revisionNumber: 2, subject: "Hello again", reviewStatus: "UNSUBMITTED" },
+  });
+  expect(revised.latestRevision).not.toHaveProperty("body");
+  expect(base).toStrictEqual({
+    ...created.latestRevision,
+    reviewStatus: "SUPERSEDED",
+    body: { plainText: "Hello Ada" },
+  });
+});
+
+test("a revise on a superseded base throws an ApiError with REVISION_SUPERSEDED", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const worker = await useWorker({ onTestFinished });
+  const client = createClient(worker, LOCAL_AGENT_TOKEN);
+  const created = await client.createDraft(DRAFT_DATA);
+  const revise = { ...DRAFT_DATA, baseRevisionId: created.latestRevision.id };
+  await client.reviseDraft(created.id, revise);
+
+  const error = await catchApiError(client.reviseDraft(created.id, revise));
+
+  expect(error).toMatchObject({ status: 409, code: "REVISION_SUPERSEDED", extras: {} });
+});
+
+test("getting another Draft's Revision throws an ApiError with REVISION_NOT_FOUND", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const worker = await useWorker({ onTestFinished });
+  const client = createClient(worker, LOCAL_AGENT_TOKEN);
+  const created = await client.createDraft(DRAFT_DATA);
+  const other = await client.createDraft(DRAFT_DATA);
+
+  const error = await catchApiError(client.getRevision(created.id, other.latestRevision.id));
+
+  expect(error).toMatchObject({ status: 404, code: "REVISION_NOT_FOUND" });
+});
+
 test("the client sends the latest read bookmark it received on every request", async ({
   expect,
   onTestFinished,

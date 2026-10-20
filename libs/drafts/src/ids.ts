@@ -13,6 +13,8 @@ export type RevisionId = `rev_${string}`;
 
 const DRAFT_ID_PATTERN = /^drf_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
+const REVISION_ID_PATTERN = /^rev_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
 export function createDraftId(): DraftId {
   return `drf_${uuidv7()}`;
 }
@@ -23,4 +25,8 @@ export function createRevisionId(): RevisionId {
 
 export function isDraftId(value: string): value is DraftId {
   return DRAFT_ID_PATTERN.test(value);
+}
+
+export function isRevisionId(value: string): value is RevisionId {
+  return REVISION_ID_PATTERN.test(value);
 }

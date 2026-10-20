@@ -8,6 +8,8 @@ import type {
   ErrorCode,
   ErrorExtras,
   ErrorResponse,
+  ReviseRequest,
+  RevisionResponse,
 } from "@draft-approval/api.routes";
 
 export type DraftApprovalClientOptions = {
@@ -90,6 +92,37 @@ export class DraftApprovalClient {
       header: NO_HEADERS,
       param: { draftId },
     });
+    if (response.status === 200) {
+      return response.json();
+    }
+    throw await toApiError(response);
+  }
+
+  /**
+   * Revises a Draft: creates its next Revision, `UNSUBMITTED`, built on `baseRevisionId`. Throws
+   * {@link ApiError} with `REVISION_SUPERSEDED` when another revise came first, and with
+   * `DRAFT_APPROVED` when the Draft is approved.
+   */
+  async reviseDraft(draftId: string, reviseRequest: ReviseRequest): Promise<DraftSummaryResponse> {
+    const response = await this.#honoClient.api.v1.drafts[":draftId"].revisions.$post({
+      header: NO_HEADERS,
+      param: { draftId },
+      json: reviseRequest,
+    });
+    if (response.status === 201) {
+      return response.json();
+    }
+    throw await toApiError(response);
+  }
+
+  /** Reads any of a Draft's Revisions, including Superseded ones, with its body. */
+  async getRevision(draftId: string, revisionId: string): Promise<RevisionResponse> {
+    const response = await this.#honoClient.api.v1.drafts[":draftId"].revisions[":revisionId"].$get(
+      {
+        header: NO_HEADERS,
+        param: { draftId, revisionId },
+      },
+    );
     if (response.status === 200) {
       return response.json();
     }

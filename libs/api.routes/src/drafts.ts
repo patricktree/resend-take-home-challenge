@@ -6,6 +6,10 @@ export type DraftSummaryResponse = z.infer<typeof draftSummarySchema>;
 
 export type DraftResponse = z.infer<typeof draftSchema>;
 
+export type ReviseRequest = z.input<typeof reviseRequestSchema>;
+
+export type RevisionResponse = z.infer<typeof revisionSchema>;
+
 /** Resend's maximum number of recipients per email. */
 const MAX_RECIPIENTS = 50;
 
@@ -72,25 +76,44 @@ const plainTextSchema = z
     `At most ${MAX_BODY_UTF8_BYTES} bytes in UTF-8.`,
   );
 
+const draftDataFields = {
+  to: recipientsSchema.openapi({
+    description: `1–${MAX_RECIPIENTS} recipient addresses, without duplicates`,
+  }),
+  subject: subjectSchema.openapi({
+    description: `1–${MAX_SUBJECT_LENGTH} characters, without line breaks`,
+  }),
+  body: z.strictObject({
+    plainText: plainTextSchema.openapi({
+      description: `The plain-text body, 1 character to ${MAX_BODY_UTF8_BYTES} bytes in UTF-8`,
+    }),
+  }),
+};
+
 /** Draft data in requests: the `to` recipients, subject and body of an email. */
-export const draftDataRequestSchema = z
+export const draftDataRequestSchema = z.strictObject(draftDataFields).openapi("DraftData");
+
+/**
+ * Draft data of the next Revision and the Revision it builds on. It repeats the Draft data fields
+ * rather than extending `DraftData`: OpenAPI would render the extension as an `allOf` of two
+ * objects that each forbid the other's properties, which no request satisfies.
+ */
+export const reviseRequestSchema = z
   .strictObject({
-    to: recipientsSchema.openapi({
-      description: `1–${MAX_RECIPIENTS} recipient addresses, without duplicates`,
-    }),
-    subject: subjectSchema.openapi({
-      description: `1–${MAX_SUBJECT_LENGTH} characters, without line breaks`,
-    }),
-    body: z.strictObject({
-      plainText: plainTextSchema.openapi({
-        description: `The plain-text body, 1 character to ${MAX_BODY_UTF8_BYTES} bytes in UTF-8`,
-      }),
+    ...draftDataFields,
+    baseRevisionId: revisionIdSchema.openapi({
+      description:
+        "The Revision this change builds on: the Draft's latest Revision as you last read it",
     }),
   })
-  .openapi("DraftData");
+  .openapi("ReviseRequest");
 
 export const draftParamsSchema = z.object({
   draftId: draftIdSchema.openapi({ param: { name: "draftId", in: "path" } }),
+});
+
+export const revisionParamsSchema = draftParamsSchema.extend({
+  revisionId: revisionIdSchema.openapi({ param: { name: "revisionId", in: "path" } }),
 });
 
 const revisionBodySchema = z.object({ plainText: z.string() }).openapi("RevisionBody");
@@ -120,7 +143,8 @@ const revisionSummarySchema = z
   })
   .openapi("RevisionSummary");
 
-const revisionSchema = revisionSummarySchema
+/** A Revision with its body; Get Revision returns it for any of the Draft's Revisions. */
+export const revisionSchema = revisionSummarySchema
   .extend({ body: revisionBodySchema })
   .openapi("Revision");
 

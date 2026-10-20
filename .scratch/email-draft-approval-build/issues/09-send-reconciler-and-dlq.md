@@ -4,9 +4,9 @@
 
 **Blocked by:** 08 (Send through Resend)
 
-**Status:** ready-for-agent
+**Status:** done (<https://github.com/patricktree/resend-take-home-challenge/pull/12>)
 
-- [ ] `scheduled` runs both jobs, each at most 100 rows per tick, oldest first, via the partial indexes: re-enqueue `QUEUED` Sends without `enqueued_at` older than 1 min (one `sendBatch`, stop at the first failure); `FAILED` / `OUTCOME_UNKNOWN` at `deadline + 1 h`
-- [ ] DLQ consumer records `FAILED` / `OUTCOME_UNKNOWN`, `console.error`s, acks; test-only `/__test/dlq` route
-- [ ] A late `SENT` overrides `OUTCOME_UNKNOWN` and clears the failure fields; nothing else leaves a final status
-- [ ] Tests backdate rows and call `worker.scheduled()`: lost hand-off, 1 min threshold, backstop, reconciler re-enqueue ‖ consumer (one ledger email), late `SENT` ‖ deadline or DLQ failure (`SENT` wins), enqueue-failure stop
+- [x] `scheduled` runs both jobs, each at most 100 rows per tick, oldest first, via the partial indexes: re-enqueue `QUEUED` Sends without `enqueued_at` older than 1 min (one `sendBatch`, stop at the first failure); `FAILED` / `OUTCOME_UNKNOWN` at `deadline + 1 h`
+- [x] DLQ consumer records `FAILED` / `OUTCOME_UNKNOWN`, `console.error`s, acks; test-only `/__test/dlq` route
+- [x] A late `SENT` overrides `OUTCOME_UNKNOWN` and clears the failure fields; nothing else leaves a final status
+- [x] Tests backdate rows and call `worker.scheduled()`: lost hand-off, 1 min threshold, backstop, reconciler re-enqueue ‖ consumer (one ledger email), late `SENT` ‖ deadline or DLQ failure (`SENT` wins), enqueue-failure stop

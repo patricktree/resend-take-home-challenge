@@ -24,6 +24,7 @@ export { rejectRevision, type RejectRevisionResult } from "#src/reject-revision.
 export { reviseDraft } from "#src/revise-draft.ts";
 export type { SendPipelineEnvironment } from "#src/send-consumer.ts";
 export {
+  SEND_DLQ_NAME,
   SEND_QUEUE_NAME,
   sendQueueMessageSchema,
   type OutgoingEmail,

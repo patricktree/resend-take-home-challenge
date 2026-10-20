@@ -14,10 +14,14 @@ export type OutgoingEmail = z.infer<typeof outgoingEmailSchema>;
 export type SendQueueMessage = z.infer<typeof sendQueueMessageSchema>;
 
 /**
- * The producer side of the Send Queue, which the Approval hands its Send intent to. The
- * `SEND_QUEUE` binding satisfies it; tests pass recording or failing doubles.
+ * The producer side of the Send Queue: the Approval hands its Send intent to it with `send()`, the
+ * Send reconciler re-enqueues lost hand-offs with `sendBatch()`. The `SEND_QUEUE` binding satisfies
+ * it; tests pass recording or failing doubles.
  */
-export type SendQueue = { send(message: SendQueueMessage): Promise<unknown> };
+export type SendQueue = {
+  send(message: SendQueueMessage): Promise<unknown>;
+  sendBatch(messages: Iterable<MessageSendRequest<SendQueueMessage>>): Promise<unknown>;
+};
 
 /** The Send Queue, as named in wrangler.jsonc. */
 export const SEND_QUEUE_NAME = "draft-approval-send";

@@ -106,7 +106,9 @@ pnpm seed
 
 It calls <http://localhost:5173> by default; pass `--base-url <url>` or set `DRAFT_APPROVAL_BASE_URL` for another local address. Each run adds new Drafts. Only the Reviewer token can approve or reject a Revision, for example with `POST /api/v1/drafts/<draft-id>/revisions/<revision-id>/approval` and `Authorization: Bearer reviewer_local-development-only`.
 
-The cron trigger does not fire locally. Run the Send reconciler by calling the scheduled handler, which answers `200` with `ok`:
+The Send reconciler makes sure no Send stays `QUEUED` forever. Each tick handles at most 100 Drafts per job, oldest first: it re-enqueues approved Drafts whose hand-off to the Send Queue was not recorded within 1 minute of the Approval, and it records `FAILED` with `OUTCOME_UNKNOWN` for Drafts still `QUEUED` 1 hour after their 23 h deadline. When re-enqueueing fails, the tick logs the error and leaves the backlog to later ticks. A message that the Send Queue gives up on goes to the Send DLQ, whose consumer records `FAILED` with `OUTCOME_UNKNOWN` at once. A late `SENT` still overrides `OUTCOME_UNKNOWN`.
+
+The cron trigger does not fire locally. Run one tick of the Send reconciler by calling the scheduled handler, which answers `200` with `ok`:
 
 ```sh
 curl -sS 'http://localhost:5173/cdn-cgi/handler/scheduled?cron=*+*+*+*+*'

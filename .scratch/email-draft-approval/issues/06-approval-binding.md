@@ -28,13 +28,13 @@ Resolved by grilling with Patrick on 2026-10-20.
 
 Each case has its own error code. The envelope and OpenAPI description are ticket 09's.
 
-| Case | Code | HTTP |
-| --- | --- | --- |
-| Revision was superseded since the Reviewer loaded it | `REVISION_SUPERSEDED` | 409 |
-| Revision already has a verdict (same or opposite) | `REVISION_ALREADY_DECIDED`, body carries `existingVerdict` (`APPROVED` \| `REJECTED`) | 409 |
-| Revision was never submitted | `REVISION_NOT_SUBMITTED` | 409 |
-| Unknown Draft or Revision, or Revision of another Draft | (not found) | 404 |
-| Agent revises an approved Draft | `DRAFT_APPROVED` | 409 |
+| Case                                                    | Code                                                                                  | HTTP |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---- |
+| Revision was superseded since the Reviewer loaded it    | `REVISION_SUPERSEDED`                                                                 | 409  |
+| Revision already has a verdict (same or opposite)       | `REVISION_ALREADY_DECIDED`, body carries `existingVerdict` (`APPROVED` \| `REJECTED`) | 409  |
+| Revision was never submitted                            | `REVISION_NOT_SUBMITTED`                                                              | 409  |
+| Unknown Draft or Revision, or Revision of another Draft | (not found)                                                                           | 404  |
+| Agent revises an approved Draft                         | `DRAFT_APPROVED`                                                                      | 409  |
 
 - A repeated identical verdict is an error, not an idempotent success (unlike a repeated Submission). It never records a second verdict or triggers a second Send.
 - `REVISION_SUPERSEDED` carries only code and message, not the latest Revision: the Reviewer reloads the Draft to see it.

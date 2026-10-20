@@ -28,7 +28,7 @@ Resolved by grilling with Patrick on 2026-10-20. The spec is [spec.md](../spec.m
 - Glossary: linked once in the Overview, terms used capitalised and never redefined; implementation terms (Draft summary, Send reconciler, outbox columns, read bookmark) are defined in the spec and stay out of `GLOSSARY.md`. No glossary changes.
 - A Requirements coverage table maps every line of [spec-input.md](../spec-input.md) to its mechanism and section.
 - Two Mermaid diagrams (architecture, Approval to Send); state machines as tables.
-- Demo simplifications: bold title, *Demo:* and *Real deployment:*, grouped under Identity and access / Operations and deployment / Data. Known limitations: stale CLI/MCP reads, non-idempotent create, Resend outages beyond 23 h end in `OUTCOME_UNKNOWN`, replica lag for readers without the writer's bookmark. Future increments: bulleted, HTML body first.
+- Demo simplifications: bold title, _Demo:_ and _Real deployment:_, grouped under Identity and access / Operations and deployment / Data. Known limitations: stale CLI/MCP reads, non-idempotent create, Resend outages beyond 23 h end in `OUTCOME_UNKNOWN`, replica lag for readers without the writer's bookmark. Future increments: bulleted, HTML body first.
 - No implementation plan or task breakdown in the spec.
 
 ### Decisions made while assembling

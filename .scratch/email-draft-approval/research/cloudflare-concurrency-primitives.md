@@ -8,7 +8,7 @@ Sources: developers.cloudflare.com (pages fetched 2026-10-20 as Markdown via `<p
 
 No Cloudflare primitive can make an outbound HTTP call happen exactly once.
 Every retrying primitive (Queues, Durable Object alarms, Workflow steps) is documented as at-least-once, and the plain Worker `fetch` handler is not retried at all.
-What the platform *can* give is an atomic, durable **claim**: a compare-and-set on a per-key row so that, among concurrent or retried actors, only one ever proceeds to call Resend.
+What the platform _can_ give is an atomic, durable **claim**: a compare-and-set on a per-key row so that, among concurrent or retried actors, only one ever proceeds to call Resend.
 The remaining gap is the crash window between "claim committed" and "Resend response recorded".
 The platform cannot close that window; Resend's idempotency key has to (retry the same call with the same key), or the design accepts at-most-once and may lose a Send.
 
@@ -69,7 +69,7 @@ Documented guarantees:
 
 For "Send at most once per Draft":
 
-- Can: guarantee the Send is eventually *attempted* (durable hand-off, retries, DLQ for human follow-up).
+- Can: guarantee the Send is eventually _attempted_ (durable hand-off, retries, DLQ for human follow-up).
 - Cannot: deduplicate. There is no documented dedup ID or exactly-once mode. Duplicates must be absorbed by a durable claim (D1 or DO) plus the Resend idempotency key.
 - Note: `queue.send()` failing in the producer does not say whether the message was enqueued (inference; not documented either way).
 

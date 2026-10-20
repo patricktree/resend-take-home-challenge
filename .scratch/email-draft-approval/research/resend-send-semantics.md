@@ -42,21 +42,21 @@ Primary source: [Idempotency Keys](https://resend.com/docs/dashboard/emails/idem
 
 From the [Errors reference](https://resend.com/docs/api-reference/errors) and [Usage Limits](https://resend.com/docs/api-reference/rate-limit). The "Retry?" column is Resend's own suggested action.
 
-| Status | Code | Resend's suggested action |
-| - | - | - |
-| 400 | `invalid_idempotency_key` | fix the key (or omit it) |
-| 400 | `validation_error` | fix the field named in the message |
-| 401 | `missing_api_key`, `restricted_api_key`, `validation_error` (invalid key on sending endpoints) | fix the credentials |
-| 403 | `validation_error`: sandbox sender to a foreign recipient; unverified `from` domain; API key not active or suspended | fix the configuration |
-| 404 / 405 | `not_found`, `method_not_allowed` | fix the request |
-| 409 | `concurrent_idempotent_requests` | "Try the request again later" |
-| 409 | `invalid_idempotent_request` | do not retry unchanged |
-| 409 | `resource_locked` | "Retry the request after a short delay" (resource updates, not sends) |
-| 422 | `invalid_attachment`, `invalid_parameter`, `missing_required_field`, `missing_required_parameter` | fix the request |
-| 429 | `rate_limit_exceeded` | back off (see `retry-after`) |
-| 429 | `daily_quota_exceeded`, `monthly_quota_exceeded` | wait for the reset or upgrade; a short retry will not succeed |
-| 500 | `application_error` | "Try the request again later" |
-| 503 | `service_unavailable` | "Try the request again later" |
+| Status    | Code                                                                                                                 | Resend's suggested action                                             |
+| --------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 400       | `invalid_idempotency_key`                                                                                            | fix the key (or omit it)                                              |
+| 400       | `validation_error`                                                                                                   | fix the field named in the message                                    |
+| 401       | `missing_api_key`, `restricted_api_key`, `validation_error` (invalid key on sending endpoints)                       | fix the credentials                                                   |
+| 403       | `validation_error`: sandbox sender to a foreign recipient; unverified `from` domain; API key not active or suspended | fix the configuration                                                 |
+| 404 / 405 | `not_found`, `method_not_allowed`                                                                                    | fix the request                                                       |
+| 409       | `concurrent_idempotent_requests`                                                                                     | "Try the request again later"                                         |
+| 409       | `invalid_idempotent_request`                                                                                         | do not retry unchanged                                                |
+| 409       | `resource_locked`                                                                                                    | "Retry the request after a short delay" (resource updates, not sends) |
+| 422       | `invalid_attachment`, `invalid_parameter`, `missing_required_field`, `missing_required_parameter`                    | fix the request                                                       |
+| 429       | `rate_limit_exceeded`                                                                                                | back off (see `retry-after`)                                          |
+| 429       | `daily_quota_exceeded`, `monthly_quota_exceeded`                                                                     | wait for the reset or upgrade; a short retry will not succeed         |
+| 500       | `application_error`                                                                                                  | "Try the request again later"                                         |
+| 503       | `service_unavailable`                                                                                                | "Try the request again later"                                         |
 
 - The SDK's error-name union also lists `invalid_from_address`, `invalid_access`, `invalid_region`, `security_error` and `internal_server_error`, which the docs page does not cover. [interfaces.ts](https://github.com/resend/resend-node/blob/main/src/interfaces.ts)
 - A 5xx or a network failure leaves the send outcome unknown. Retrying with the same key and the same body is the documented safe path, within 24 h.

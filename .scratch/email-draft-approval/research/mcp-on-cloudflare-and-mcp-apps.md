@@ -102,7 +102,7 @@ Claude Code (CLI) and MCP Inspector are not listed for MCP Apps.
   - a separate Reviewer web UI with its own session, outside the Agent's credentials;
   - MCP **URL-mode elicitation**, which sends the user to a server-hosted URL "that must not pass through the MCP client". The [elicitation spec](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/specification/2026-07-28/client/elicitation.mdx) says servers MUST bind elicitations to user identity and "MUST NOT rely on client-provided user identification without server verification".
 
-  An MCP App can still serve as a convenience *view* (show the Revision, link out to the review page), not as the authority for verdicts.
+  An MCP App can still serve as a convenience _view_ (show the Revision, link out to the review page), not as the authority for verdicts.
 
 ## Unknowns
 

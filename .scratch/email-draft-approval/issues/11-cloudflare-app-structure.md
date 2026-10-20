@@ -33,13 +33,13 @@ Resolved by grilling with Patrick on 2026-10-20. Earlier tickets fixed storage (
 
 `assets.run_worker_first: true`, `html_handling: "none"`, `not_found_handling: "none"` (cup's setup): every request goes through Hono first.
 
-| Path | Handling |
-| --- | --- |
-| `/api/*` | API routes; an unknown `/api/...` path → JSON 404 `NOT_FOUND` |
-| `/mcp` | MCP server ([10](10-agent-reviewer-separation.md): Agent token only) |
+| Path             | Handling                                                                                |
+| ---------------- | --------------------------------------------------------------------------------------- |
+| `/api/*`         | API routes; an unknown `/api/...` path → JSON 404 `NOT_FOUND`                           |
+| `/mcp`           | MCP server ([10](10-agent-reviewer-separation.md): Agent token only)                    |
 | `/app`, `/app/*` | `env.ASSETS`; no matching file → `/app/index.html` with 200, so client routes deep-link |
-| `/` | 302 to `/app/` |
-| anything else | JSON 404 `NOT_FOUND` |
+| `/`              | 302 to `/app/`                                                                          |
+| anything else    | JSON 404 `NOT_FOUND`                                                                    |
 
 - The Review UI lives under `/app`. Vite builds it with `base: "/app/"`, TanStack Router uses `basepath: "/app"`, and the build output lands in an `app/` subfolder of the Worker's assets, so a request path maps to the asset path without rewriting.
 - One Hono middleware sets 10's CSP, `Referrer-Policy: no-referrer` and `X-Content-Type-Options: nosniff` on every `/app` response. Hashed files under `/app/assets/` are cached as immutable; `index.html` gets `no-cache`. An integration test asserts these headers. A `_headers` file plus the platform's SPA fallback was rejected because headers would then live in a second place that integration tests do not exercise the same way.
@@ -57,18 +57,18 @@ Resolved by grilling with Patrick on 2026-10-20. Earlier tickets fixed storage (
 
 ### Packages (cup's layout, `@draft-approval/*`)
 
-| Folder | Role |
-| --- | --- |
-| `apps/cloudflare-worker` | Thin: `wrangler.jsonc`, Vite build with `@cloudflare/vite-plugin`, exports `fetch` (`api.server`), `queue` and `scheduled` (both delegate to `drafts`) |
-| `apps/review-ui` | React 19 SPA (TanStack Router + Query), served under `/app` |
-| `apps/cli` | `draft-approval` CLI |
-| `libs/api.routes` | `@hono/zod-openapi` contract, Zod schemas, `LOCAL_AGENT_TOKEN` / `LOCAL_REVIEWER_TOKEN` |
-| `libs/api.client` | Typed client (`hc` wrapped in a class), OpenAPI export |
-| `libs/api.server` | Hono app: routing, auth, error envelope, `/app` serving; calls into `drafts` |
-| `libs/drafts` | The Draft domain: Drizzle schema and migrations, R2 body storage, use cases (create, revise, submit, approve, reject, list, get), the Queue consumer, the DLQ consumer, the Send reconciler, and an internal Resend adapter (plain `fetch` against `RESEND_BASE_URL`, as cup does) |
-| `libs/mcp-server` | Six MCP tools on the typed client |
-| `qa/e2e` | Playwright |
-| `terraform/` | Infrastructure |
+| Folder                   | Role                                                                                                                                                                                                                                                                               |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/cloudflare-worker` | Thin: `wrangler.jsonc`, Vite build with `@cloudflare/vite-plugin`, exports `fetch` (`api.server`), `queue` and `scheduled` (both delegate to `drafts`)                                                                                                                             |
+| `apps/review-ui`         | React 19 SPA (TanStack Router + Query), served under `/app`                                                                                                                                                                                                                        |
+| `apps/cli`               | `draft-approval` CLI                                                                                                                                                                                                                                                               |
+| `libs/api.routes`        | `@hono/zod-openapi` contract, Zod schemas, `LOCAL_AGENT_TOKEN` / `LOCAL_REVIEWER_TOKEN`                                                                                                                                                                                            |
+| `libs/api.client`        | Typed client (`hc` wrapped in a class), OpenAPI export                                                                                                                                                                                                                             |
+| `libs/api.server`        | Hono app: routing, auth, error envelope, `/app` serving; calls into `drafts`                                                                                                                                                                                                       |
+| `libs/drafts`            | The Draft domain: Drizzle schema and migrations, R2 body storage, use cases (create, revise, submit, approve, reject, list, get), the Queue consumer, the DLQ consumer, the Send reconciler, and an internal Resend adapter (plain `fetch` against `RESEND_BASE_URL`, as cup does) |
+| `libs/mcp-server`        | Six MCP tools on the typed client                                                                                                                                                                                                                                                  |
+| `qa/e2e`                 | Playwright                                                                                                                                                                                                                                                                         |
+| `terraform/`             | Infrastructure                                                                                                                                                                                                                                                                     |
 
 - Storage and the Send pipeline are one package because the outbox columns live on the Draft row: the Draft's invariants and the Send's conditional writes belong to one module, like cup's domain libraries (`accounts`, `registry`).
 
@@ -114,6 +114,6 @@ Resolved by grilling with Patrick on 2026-10-20. Earlier tickets fixed storage (
 ### For the spec
 
 - Demo simplifications:
-  - **Public Agent token**: the Agent token is committed to the repo and shown in the README, so anyone can create, revise and submit Drafts (and fill the Pending list). Nothing is sent without the Reviewer token, which is never committed. *Real deployment:* per-Agent credentials issued and rotated through an authorization server (see 10's entries), never in source control.
-  - **Single production environment, manual deploys**: no staging, `terraform apply` and `wrangler deploy` run by hand. *Real deployment:* a staging environment and CI-driven deploys with migrations gated on review.
+  - **Public Agent token**: the Agent token is committed to the repo and shown in the README, so anyone can create, revise and submit Drafts (and fill the Pending list). Nothing is sent without the Reviewer token, which is never committed. _Real deployment:_ per-Agent credentials issued and rotated through an authorization server (see 10's entries), never in source control.
+  - **Single production environment, manual deploys**: no staging, `terraform apply` and `wrangler deploy` run by hand. _Real deployment:_ a staging environment and CI-driven deploys with migrations gated on review.
 - Revises: [10](10-agent-reviewer-separation.md) (`AGENT_TOKEN` is a committed var, not a secret; the local flag also requires a local host); [09](09-api-surface.md) (`reviewUrl` is under `/app`); [07](07-exactly-once-sending.md) (the consumer is not a separate Worker).

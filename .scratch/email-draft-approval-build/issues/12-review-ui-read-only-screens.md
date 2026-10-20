@@ -11,6 +11,6 @@
 - [x] Pending and Decided tables with the spec's columns, "Load more" paging, empty states, refetch on focus only
 - [x] Draft page: loading, "Draft not found.", other errors with `requestId`; recipients, revision, review status, escaped `pre-wrap` body, earlier-Rejection line; Unsubmitted shows "Not submitted for review yet."; Decided shows the verdict line
 - [x] Integration test for `/app` headers and SPA fallback
-- [ ] e2e setup: Playwright in cup's Docker image, own `wrangler dev` per test with OS-assigned port and temporary persistence, Resend stub in the fixture, Agent moves through the typed client; role-based locators, no retries
-  - Done except the Resend stub, which ticket 13 wires into the fixture (it needs ticket 08's `qa/resend-stub`); until then `RESEND_BASE_URL` points at an unreachable port and no test approves a Draft.
+- [x] e2e setup: Playwright in cup's Docker image, own `wrangler dev` per test with OS-assigned port and temporary persistence, Resend stub in the fixture, Agent moves through the typed client; role-based locators, no retries
+  - Ticket 13 wired the Resend stub (ticket 08's `qa/resend-stub`) into the fixture.
 - [x] e2e: token-screen cases, deep link, Sign out, lists and paging, Unsubmitted and unknown Draft, no CSP violation on `/app/`

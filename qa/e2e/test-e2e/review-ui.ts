@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 import type { DraftApprovalClient } from "@draft-approval/api.client";
 import {
@@ -17,6 +17,15 @@ export async function enterToken(page: Page, token: string = LOCAL_REVIEWER_TOKE
 export async function openReviewUi(page: Page): Promise<void> {
   await page.goto("/app/");
   await enterToken(page);
+}
+
+/** Opens a Draft's page, enters the Reviewer token and waits until the Draft shows. */
+export async function openDraftPage(page: Page, draft: DraftSummaryResponse): Promise<void> {
+  await page.goto(`/app/drafts/${draft.id}`);
+  await enterToken(page);
+  await expect(
+    page.getByRole("heading", { level: 1, name: draft.latestRevision.subject }),
+  ).toBeVisible();
 }
 
 export function createDraftData(subject: string, overrides: Partial<DraftDataRequest> = {}) {

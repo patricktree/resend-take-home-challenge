@@ -116,7 +116,7 @@ curl -sS 'http://localhost:5173/cdn-cgi/handler/scheduled?cron=*+*+*+*+*'
 
 ## Validation
 
-Run `pnpm validate:fast` for the format check, markdownlint, Knip, build and typecheck, lint, and the unit, integration and CLI process tests, and `pnpm validate:extended` for the e2e tests, which run the Review UI in a browser in Docker. [AGENTS.md](AGENTS.md#validation) describes both.
+Run `pnpm validate:fast` for the format check, markdownlint, Knip, build and typecheck, lint, and the unit, integration and CLI process tests, and `pnpm validate:extended` for the e2e tests, which run the Review UI in a browser in Docker and compare its screenshot baselines. `pnpm validate:update-snapshots` rewrites the baselines after an intended visual change. [AGENTS.md](AGENTS.md#validation) describes all three.
 
 ## Infrastructure
 

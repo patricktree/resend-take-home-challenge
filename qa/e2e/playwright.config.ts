@@ -13,6 +13,8 @@ export default defineConfig(createPlaywrightDockerConfig(), {
   // Each test starts its own `wrangler dev`, which takes a few seconds.
   timeout: 60_000,
   outputDir: path.join(OUTPUT_DIRECTORY, "test-results"),
+  // The browsers run in Docker, so a baseline must match pixel for pixel.
+  expect: { toHaveScreenshot: { threshold: 0, maxDiffPixels: 0 } },
   reporter: [
     ["list"],
     ["html", { open: "never", outputFolder: path.join(OUTPUT_DIRECTORY, "html-report") }],

@@ -12,6 +12,8 @@ export default defineConfig({
     "**/worker-configuration.d.ts",
     /* written by the snapshot test, which compares it byte for byte */
     "apps/cloudflare-worker/test/__snapshots__/openapi.json",
+    /* written by `drizzle-kit generate` */
+    "libs/drafts/migrations/**",
   ],
   sortImports: {
     customGroups: [

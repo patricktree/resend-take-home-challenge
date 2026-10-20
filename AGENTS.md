@@ -39,6 +39,7 @@ Run `pnpm validate:fast` before every commit and both before opening a pull requ
 - "Harness" means an agent harness only; call a test setup a test runtime, fixture or test setup.
 - Tests start their own servers on OS-assigned ports and never attach to a running server. Vitest runs with `retry: 0`.
 - Mark every new kind of committed generated file `linguist-generated=true` in `.gitattributes`, so pull request diffs and agent reviews (`git diff -- . ':(exclude,attr:linguist-generated=true)'`) leave it out. The OpenAPI snapshot (`apps/cloudflare-worker/test/__snapshots__/openapi.json`) is one; regenerate it with `pnpm --filter '@draft-approval/cloudflare-worker' test -u` rather than editing it.
-- D1 migrations live in `libs/drafts/migrations/`; every Wrangler config points `migrations_dir` there.
-- `apps/review-ui`, `apps/cli`, `libs/api.client`, `libs/mcp-server` and `qa/e2e` are placeholders (a `package.json` only) until their tickets fill them.
+- D1 migrations live in `libs/drafts/migrations/`; every Wrangler config points `migrations_dir` there. They are generated from the Drizzle schema in `libs/drafts/src/schema.ts`: after changing it, run `pnpm --filter '@draft-approval/drafts' migrations:generate --name <change>` and commit the new SQL file with the updated `meta/` files; never edit a generated migration.
+- Clients of the API use the typed client `DraftApprovalClient` from `libs/api.client`; it keeps and resends the read bookmark and throws `ApiError` for error responses.
+- `apps/review-ui`, `apps/cli`, `libs/mcp-server` and `qa/e2e` are placeholders (a `package.json` only) until their tickets fill them.
 - Never deploy or touch real Cloudflare or Resend resources (`wrangler deploy`, `wrangler login`, `wrangler secret put`, `terraform apply`) unless Patrick asks.

@@ -5,14 +5,21 @@ import type { ErrorCode, ErrorResponse } from "@draft-approval/api.routes";
 
 import type { ApiServerHonoEnvironment } from "#src/api-server-environment.ts";
 
-/** Answers with the error envelope, carrying the request's id. */
-export function jsonError(
+type ErrorExtras = Omit<ErrorResponse["error"], "code" | "message" | "requestId">;
+
+/**
+ * Answers with the error envelope, carrying the request's id. The response is typed with its
+ * status, so route handlers can return it for the error responses their route declares.
+ */
+export function jsonError<Status extends ContentfulStatusCode>(
   context: Context<ApiServerHonoEnvironment>,
-  status: ContentfulStatusCode,
+  status: Status,
   code: ErrorCode,
   message: string,
-  headers?: Record<string, string>,
-): Response {
-  const body: ErrorResponse = { error: { code, message, requestId: context.get("requestId") } };
+  { headers, extras }: { headers?: Record<string, string>; extras?: ErrorExtras } = {},
+) {
+  const body: ErrorResponse = {
+    error: { code, message, requestId: context.get("requestId"), ...extras },
+  };
   return context.json(body, status, headers);
 }

@@ -3,7 +3,7 @@
   "info": {
     "title": "Email Draft Approval API",
     "version": "1.0.0",
-    "description": "Agents create, revise and submit email Drafts; a human Reviewer approves or rejects the submitted Revision in the Review UI, and an Approval sends the email through Resend. Every route except this document requires a bearer token. Errors use the `ErrorResponse` envelope."
+    "description": "Agents create, revise and submit email Drafts; a human Reviewer approves or rejects the submitted Revision in the Review UI, and an Approval sends the email through Resend. Every route except this document requires a bearer token. Errors use the `ErrorResponse` envelope. Send the latest `X-Read-Bookmark` you received on every request to read your own writes."
   },
   "components": {
     "securitySchemes": {
@@ -28,8 +28,11 @@
               "code": {
                 "type": "string",
                 "enum": [
+                  "INVALID_REQUEST",
                   "UNAUTHENTICATED",
                   "NOT_FOUND",
+                  "DRAFT_NOT_FOUND",
+                  "PAYLOAD_TOO_LARGE",
                   "INTERNAL_ERROR"
                 ],
                 "description": "Machine-readable error code"
@@ -41,6 +44,13 @@
               "requestId": {
                 "type": "string",
                 "description": "The request's id, also sent as the `X-Request-Id` header"
+              },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ValidationIssue"
+                },
+                "description": "With `INVALID_REQUEST`: every violation of the request's schema"
               }
             },
             "required": [
@@ -53,10 +63,696 @@
         "required": [
           "error"
         ]
+      },
+      "ValidationIssue": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "description": "Where the issue is, for example `[\"to\", 0]`; empty for the whole request part"
+          },
+          "message": {
+            "type": "string",
+            "description": "What is wrong"
+          }
+        },
+        "required": [
+          "path",
+          "message"
+        ]
+      },
+      "DraftSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^drf_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "description": "A Draft id: `drf_` followed by a UUIDv7",
+            "example": "drf_019a0b7e-5c3d-7f2a-9b1e-4d6c8a2f0e13"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 UTC timestamp"
+          },
+          "lastActionAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The last create, revise, submit or verdict; never a Send outcome"
+          },
+          "reviewStatus": {
+            "$ref": "#/components/schemas/DraftReviewStatus"
+          },
+          "lastVerdict": {
+            "$ref": "#/components/schemas/LastVerdict"
+          },
+          "sending": {
+            "$ref": "#/components/schemas/Sending"
+          },
+          "reviewUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "The Draft's page in the Review UI; it grants nothing without the Reviewer token"
+          },
+          "latestRevision": {
+            "$ref": "#/components/schemas/RevisionSummary"
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "lastActionAt",
+          "reviewStatus",
+          "sending",
+          "reviewUrl",
+          "latestRevision"
+        ]
+      },
+      "DraftReviewStatus": {
+        "type": "string",
+        "enum": [
+          "UNSUBMITTED",
+          "PENDING",
+          "APPROVED",
+          "REJECTED"
+        ]
+      },
+      "LastVerdict": {
+        "type": "object",
+        "properties": {
+          "revisionId": {
+            "type": "string",
+            "pattern": "^rev_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "description": "A Revision id: `rev_` followed by a UUIDv7",
+            "example": "rev_019a0b7e-5c3d-7f2a-9b1e-4d6c8a2f0e14"
+          },
+          "revisionNumber": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "description": "The reason of a Rejection, when given"
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 UTC timestamp"
+          }
+        },
+        "required": [
+          "revisionId",
+          "revisionNumber",
+          "verdict",
+          "decidedAt"
+        ],
+        "description": "The newest verdict on any of the Draft's Revisions; absent while there is none"
+      },
+      "Sending": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "NOT_SENT"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ],
+            "description": "No Approval yet"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "QUEUED"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ],
+            "description": "Approved; Resend has not accepted the email yet"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "SENT"
+                ]
+              },
+              "emailId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "status",
+              "emailId"
+            ],
+            "description": "Resend accepted the email"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "FAILED"
+                ]
+              },
+              "failure": {
+                "$ref": "#/components/schemas/SendingFailure"
+              }
+            },
+            "required": [
+              "status",
+              "failure"
+            ],
+            "description": "The Send ended without acceptance"
+          }
+        ]
+      },
+      "SendingFailure": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "enum": [
+              "REJECTED_BY_RESEND",
+              "OUTCOME_UNKNOWN"
+            ],
+            "description": "`REJECTED_BY_RESEND`: the email was definitely not sent. `OUTCOME_UNKNOWN`: it may have been sent; check the Resend dashboard before creating a new Draft."
+          },
+          "resendErrorName": {
+            "type": "string",
+            "description": "With `REJECTED_BY_RESEND`"
+          },
+          "resendErrorMessage": {
+            "type": "string",
+            "description": "With `REJECTED_BY_RESEND`"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "RevisionSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^rev_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "description": "A Revision id: `rev_` followed by a UUIDv7",
+            "example": "rev_019a0b7e-5c3d-7f2a-9b1e-4d6c8a2f0e14"
+          },
+          "revisionNumber": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1-based number of the Revision within its Draft"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 UTC timestamp"
+          },
+          "to": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subject": {
+            "type": "string"
+          },
+          "reviewStatus": {
+            "$ref": "#/components/schemas/RevisionReviewStatus"
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the Revision was submitted"
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the Revision got its verdict"
+          },
+          "rejectionReason": {
+            "type": "string",
+            "description": "The reason of a Rejection, when given"
+          }
+        },
+        "required": [
+          "id",
+          "revisionNumber",
+          "createdAt",
+          "to",
+          "subject",
+          "reviewStatus"
+        ]
+      },
+      "RevisionReviewStatus": {
+        "type": "string",
+        "enum": [
+          "UNSUBMITTED",
+          "PENDING",
+          "APPROVED",
+          "REJECTED",
+          "SUPERSEDED"
+        ]
+      },
+      "DraftData": {
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "email"
+            },
+            "minItems": 1,
+            "maxItems": 50,
+            "description": "1–50 recipient addresses, without duplicates"
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 998,
+            "description": "1–998 characters, without line breaks"
+          },
+          "body": {
+            "type": "object",
+            "properties": {
+              "plainText": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The plain-text body, 1 character to 102400 bytes in UTF-8"
+              }
+            },
+            "required": [
+              "plainText"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "to",
+          "subject",
+          "body"
+        ],
+        "additionalProperties": false
+      },
+      "Draft": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^drf_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "description": "A Draft id: `drf_` followed by a UUIDv7",
+            "example": "drf_019a0b7e-5c3d-7f2a-9b1e-4d6c8a2f0e13"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 UTC timestamp"
+          },
+          "lastActionAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The last create, revise, submit or verdict; never a Send outcome"
+          },
+          "reviewStatus": {
+            "$ref": "#/components/schemas/DraftReviewStatus"
+          },
+          "lastVerdict": {
+            "$ref": "#/components/schemas/LastVerdict"
+          },
+          "sending": {
+            "$ref": "#/components/schemas/Sending"
+          },
+          "reviewUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "The Draft's page in the Review UI; it grants nothing without the Reviewer token"
+          },
+          "latestRevision": {
+            "$ref": "#/components/schemas/Revision"
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "lastActionAt",
+          "reviewStatus",
+          "sending",
+          "reviewUrl",
+          "latestRevision"
+        ]
+      },
+      "Revision": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/RevisionSummary"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "body": {
+                "$ref": "#/components/schemas/RevisionBody"
+              }
+            },
+            "required": [
+              "body"
+            ]
+          }
+        ]
+      },
+      "RevisionBody": {
+        "type": "object",
+        "properties": {
+          "plainText": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "plainText"
+        ]
       }
     },
     "parameters": {}
   },
-  "paths": {},
+  "paths": {
+    "/api/v1/drafts": {
+      "post": {
+        "operationId": "createDraft",
+        "tags": [
+          "Drafts"
+        ],
+        "summary": "Create a Draft",
+        "description": "Creates a Draft whose first Revision holds the given Draft data, `UNSUBMITTED`. Creating never submits: submit the Revision for review separately. Not idempotent: a retried create may create a second Draft.",
+        "security": [
+          {
+            "agentAuth": []
+          },
+          {
+            "reviewerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+            },
+            "required": false,
+            "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one.",
+            "name": "x-read-bookmark",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftData"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created Draft, without the body.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": true,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`INVALID_REQUEST`: the request violates the schema or a limit; see `issues`.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": false,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`UNAUTHENTICATED`: a valid bearer token is required.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": false,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "`PAYLOAD_TOO_LARGE`: the request body exceeds 128 KB.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": false,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`: an unexpected error occurred.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": false,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/drafts/{draftId}": {
+      "get": {
+        "operationId": "getDraft",
+        "tags": [
+          "Drafts"
+        ],
+        "summary": "Get a Draft",
+        "description": "Returns the Draft with its latest Revision, including the body, its review status, its sending status and the newest verdict.",
+        "security": [
+          {
+            "agentAuth": []
+          },
+          {
+            "reviewerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^drf_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "description": "A Draft id: `drf_` followed by a UUIDv7",
+              "example": "drf_019a0b7e-5c3d-7f2a-9b1e-4d6c8a2f0e13"
+            },
+            "required": true,
+            "description": "A Draft id: `drf_` followed by a UUIDv7",
+            "name": "draftId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+            },
+            "required": false,
+            "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one.",
+            "name": "x-read-bookmark",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The Draft, with the latest Revision's body.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": true,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Draft"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`INVALID_REQUEST`: the Draft id or a header is malformed; see `issues`.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": false,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`UNAUTHENTICATED`: a valid bearer token is required.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": false,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`DRAFT_NOT_FOUND`: no Draft has this id.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": false,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`: an unexpected error occurred.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": false,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "webhooks": {}
 }

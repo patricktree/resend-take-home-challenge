@@ -6,5 +6,6 @@
     "turbo:build": { "dependsOn": ["$TURBO_EXTENDS$", "turbo:cf-typegen"] },
     "turbo:lint": { "dependsOn": ["$TURBO_EXTENDS$", "turbo:cf-typegen"] },
     "turbo:lint:fix": { "dependsOn": ["$TURBO_EXTENDS$", "turbo:cf-typegen"] },
+    "turbo:test": { "dependsOn": ["$TURBO_EXTENDS$", "turbo:cf-typegen"] },
   },
 }

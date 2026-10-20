@@ -39,6 +39,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "catalog:web-app",
+    "@draft-approval/api.client": "workspace:*",
     "@draft-approval/api.routes": "workspace:*",
     "@draft-approval/config-oxlint": "workspace:*",
     "@draft-approval/prepare-declaration-build": "workspace:*",
@@ -48,6 +49,7 @@
     "@typescript/native": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
+    "temporal-polyfill": "^1.0.6",
     "typescript": "catalog:",
     "vite": "catalog:web-app",
     "vitest": "catalog:",

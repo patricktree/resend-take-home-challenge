@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@draft-approval/api.routes": "workspace:*",
+    "@draft-approval/drafts": "workspace:*",
     "hono": "catalog:hono"
   },
   "devDependencies": {

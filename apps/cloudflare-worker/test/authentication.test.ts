@@ -4,9 +4,9 @@ import { LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN } from "@draft-approval/api.rou
 
 import { TEST_AGENT_TOKEN, TEST_REVIEWER_TOKEN, useWorker } from "#test/use-worker.ts";
 
-// No API route exists yet, so an authenticated request reaches the 404 of an unknown API path,
-// while a refused one stops at the 401.
-const PROTECTED_PATH = "/api/v1/drafts";
+// An authenticated request reaches the 404 DRAFT_NOT_FOUND of this unknown Draft, while a refused
+// one stops at the 401.
+const PROTECTED_PATH = "/api/v1/drafts/drf_00000000-0000-7000-8000-000000000000";
 const PRODUCTION_URL = `https://resend-challenge.patricktree.me${PROTECTED_PATH}`;
 
 test("a request without a token answers with 401 UNAUTHENTICATED", async ({

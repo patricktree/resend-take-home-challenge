@@ -1,22 +1,144 @@
-import { OpenAPIHono } from "@hono/zod-openapi";
-import type { Env } from "hono";
+import { createRoute, OpenAPIHono, z, type RouteHandler } from "@hono/zod-openapi";
 
-import { errorResponseSchema } from "#src/errors.ts";
+import {
+  draftDataRequestSchema,
+  draftParamsSchema,
+  draftSchema,
+  draftSummarySchema,
+} from "#src/drafts.ts";
+import { ERROR_CODE, errorResponseSchema, type ErrorResponse } from "#src/errors.ts";
+
+/** What the contract needs from the app's environment: the request id of every error envelope. */
+export type ApiContractEnvironment = { Variables: { requestId: string } };
+
+/** The handlers of every API route, which the API server provides. */
+export type ApiHandlers<E extends ApiContractEnvironment> = {
+  createDraft: RouteHandler<typeof createDraftRoute, E>;
+  getDraft: RouteHandler<typeof getDraftRoute, E>;
+};
+
+/** The contract app's type, from which the typed client infers every route. */
+export type ApiContractApp = ReturnType<typeof createApiContractApp<ApiContractEnvironment>>;
 
 /** The published OpenAPI document; the only API path served without authentication. */
 export const OPENAPI_DOCUMENT_PATH = "/api/openapi.json";
+
+/** The read bookmark header, on requests and responses of every API operation. */
+export const READ_BOOKMARK_HEADER = "X-Read-Bookmark";
 
 const SECURITY_SCHEME = {
   AGENT: "agentAuth",
   REVIEWER: "reviewerAuth",
 } as const;
 
+/** Both the Agent token and the Reviewer token may call the route. */
+const AGENT_OR_REVIEWER_SECURITY = [
+  { [SECURITY_SCHEME.AGENT]: [] },
+  { [SECURITY_SCHEME.REVIEWER]: [] },
+];
+
+const READ_BOOKMARK_DESCRIPTION =
+  "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one.";
+
+const readBookmarkRequestHeadersSchema = z.object({
+  // Lowercase: Hono validates request headers by their lowercased names.
+  "x-read-bookmark": z.string().optional().openapi({ description: READ_BOOKMARK_DESCRIPTION }),
+});
+
+const readBookmarkResponseHeadersSchema = z.object({
+  [READ_BOOKMARK_HEADER]: z.string().openapi({ description: READ_BOOKMARK_DESCRIPTION }),
+});
+
+/** Error responses carry the read bookmark only when the request got as far as the database. */
+const errorResponseHeadersSchema = z.object({
+  [READ_BOOKMARK_HEADER]: z.string().optional().openapi({ description: READ_BOOKMARK_DESCRIPTION }),
+});
+
+const createDraftRoute = createRoute({
+  method: "post",
+  path: "/api/v1/drafts",
+  operationId: "createDraft",
+  tags: ["Drafts"],
+  summary: "Create a Draft",
+  description:
+    "Creates a Draft whose first Revision holds the given Draft data, `UNSUBMITTED`. Creating never submits: submit the Revision for review separately. Not idempotent: a retried create may create a second Draft.",
+  security: AGENT_OR_REVIEWER_SECURITY,
+  request: {
+    headers: readBookmarkRequestHeadersSchema,
+    body: {
+      required: true,
+      content: { "application/json": { schema: draftDataRequestSchema } },
+    },
+  },
+  responses: {
+    201: {
+      description: "The created Draft, without the body.",
+      headers: readBookmarkResponseHeadersSchema,
+      content: { "application/json": { schema: draftSummarySchema } },
+    },
+    400: errorResponse(
+      "`INVALID_REQUEST`: the request violates the schema or a limit; see `issues`.",
+    ),
+    401: errorResponse("`UNAUTHENTICATED`: a valid bearer token is required."),
+    413: errorResponse("`PAYLOAD_TOO_LARGE`: the request body exceeds 128 KB."),
+    500: errorResponse("`INTERNAL_ERROR`: an unexpected error occurred."),
+  },
+});
+
+const getDraftRoute = createRoute({
+  method: "get",
+  path: "/api/v1/drafts/{draftId}",
+  operationId: "getDraft",
+  tags: ["Drafts"],
+  summary: "Get a Draft",
+  description:
+    "Returns the Draft with its latest Revision, including the body, its review status, its sending status and the newest verdict.",
+  security: AGENT_OR_REVIEWER_SECURITY,
+  request: {
+    params: draftParamsSchema,
+    headers: readBookmarkRequestHeadersSchema,
+  },
+  responses: {
+    200: {
+      description: "The Draft, with the latest Revision's body.",
+      headers: readBookmarkResponseHeadersSchema,
+      content: { "application/json": { schema: draftSchema } },
+    },
+    400: errorResponse("`INVALID_REQUEST`: the Draft id or a header is malformed; see `issues`."),
+    401: errorResponse("`UNAUTHENTICATED`: a valid bearer token is required."),
+    404: errorResponse("`DRAFT_NOT_FOUND`: no Draft has this id."),
+    500: errorResponse("`INTERNAL_ERROR`: an unexpected error occurred."),
+  },
+});
+
 /**
- * Creates the OpenAPI app that carries the API contract and serves its OpenAPI 3.1 document at
- * {@link OPENAPI_DOCUMENT_PATH}.
+ * Creates the OpenAPI app that carries the API contract with the given route handlers and serves
+ * its OpenAPI 3.1 document at {@link OPENAPI_DOCUMENT_PATH}. Requests that violate a route's schema
+ * get 400 `INVALID_REQUEST` with the violations as `issues`.
  */
-export function createApiContractApp<E extends Env>(): OpenAPIHono<E> {
-  const app = new OpenAPIHono<E>();
+export function createApiContractApp<E extends ApiContractEnvironment>(handlers: ApiHandlers<E>) {
+  const app = new OpenAPIHono<E>({
+    defaultHook: (result, context) => {
+      if (result.success) {
+        return undefined;
+      }
+
+      const body: ErrorResponse = {
+        error: {
+          code: ERROR_CODE.INVALID_REQUEST,
+          message: "The request is invalid; see `issues`.",
+          requestId: context.get("requestId"),
+          issues: result.error.issues.map((issue) => ({
+            path: issue.path.map((segment) =>
+              typeof segment === "number" ? segment : String(segment),
+            ),
+            message: issue.message,
+          })),
+        },
+      };
+      return context.json(body, 400);
+    },
+  });
 
   app.openAPIRegistry.registerComponent("securitySchemes", SECURITY_SCHEME.AGENT, {
     type: "http",
@@ -36,9 +158,19 @@ export function createApiContractApp<E extends Env>(): OpenAPIHono<E> {
       title: "Email Draft Approval API",
       version: "1.0.0",
       description:
-        "Agents create, revise and submit email Drafts; a human Reviewer approves or rejects the submitted Revision in the Review UI, and an Approval sends the email through Resend. Every route except this document requires a bearer token. Errors use the `ErrorResponse` envelope.",
+        "Agents create, revise and submit email Drafts; a human Reviewer approves or rejects the submitted Revision in the Review UI, and an Approval sends the email through Resend. Every route except this document requires a bearer token. Errors use the `ErrorResponse` envelope. Send the latest `X-Read-Bookmark` you received on every request to read your own writes.",
     },
   });
 
-  return app;
+  return app
+    .openapi(createDraftRoute, handlers.createDraft)
+    .openapi(getDraftRoute, handlers.getDraft);
+}
+
+function errorResponse(description: string) {
+  return {
+    description,
+    headers: errorResponseHeadersSchema,
+    content: { "application/json": { schema: errorResponseSchema } },
+  };
 }

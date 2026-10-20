@@ -1,3 +1,5 @@
+import type { DraftsStorage } from "@draft-approval/drafts";
+
 import type { Role } from "#src/authentication.ts";
 
 /** The Worker bindings and vars the API server reads. */
@@ -8,6 +10,10 @@ export type ApiServerEnvironment = {
   REVIEWER_TOKEN?: string;
   /** `"true"` enables the local tokens on local hosts. */
   LOCAL_DEVELOPMENT: string;
+  /** The origin of the deployed Worker; `reviewUrl`s point below it. */
+  PUBLIC_BASE_URL: string;
+  DB: D1Database;
+  REVISION_BODIES: R2Bucket;
 };
 
 export type ApiServerHonoEnvironment = {
@@ -16,5 +22,7 @@ export type ApiServerHonoEnvironment = {
     requestId: string;
     /** Set by the authentication middleware on every authenticated request. */
     role: Role;
+    /** Set by the database session middleware on every `/api/v1` request. */
+    draftsStorage: DraftsStorage;
   };
 };

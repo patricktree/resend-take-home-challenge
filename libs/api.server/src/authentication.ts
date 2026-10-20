@@ -58,9 +58,7 @@ export const authenticate = createMiddleware<ApiServerHonoEnvironment>(async (co
       401,
       ERROR_CODE.UNAUTHENTICATED,
       "A valid bearer token is required.",
-      {
-        "WWW-Authenticate": "Bearer",
-      },
+      { headers: { "WWW-Authenticate": "Bearer" } },
     );
   }
 

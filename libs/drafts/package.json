@@ -13,8 +13,8 @@
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "types": "./dist/types/worker-handlers.d.ts",
-      "default": "./src/worker-handlers.ts"
+      "types": "./dist/types/index.d.ts",
+      "default": "./src/index.ts"
     }
   },
   "scripts": {
@@ -23,20 +23,35 @@
     "clean": "del-cli --dot=true \"dist\" \"*.tsbuildinfo\"",
     "lint": "turbo run turbo:lint",
     "lint:fix": "turbo run turbo:lint:fix",
+    "migrations:generate": "drizzle-kit generate",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
     "turbo:build": "prepare-declaration-build --declaration-output-dir ./dist/types --build-info-file ./dist/tsconfig.build.tsbuildinfo --source-package-json ./src/package.json && tsc --build ./tsconfig.json",
     "turbo:cf-typegen": "pnpm run cf-typegen",
     "turbo:lint": "oxlint --type-aware --max-warnings 0 .",
-    "turbo:lint:fix": "pnpm run turbo:lint --fix"
+    "turbo:lint:fix": "pnpm run turbo:lint --fix",
+    "turbo:test": "pnpm run test"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.4",
+    "temporal-polyfill": "^1.0.6",
+    "uuid": "^14.0.3"
   },
   "devDependencies": {
     "@draft-approval/config-oxlint": "workspace:*",
     "@draft-approval/prepare-declaration-build": "workspace:*",
     "@patricktree-stack/config-typescript": "workspace:*",
+    "@patricktree-stack/config-vitest": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "drizzle-kit": "0.31.11",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
     "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
     "wrangler": "catalog:"
   }
 }

@@ -1,13 +1,20 @@
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
+import { HTTPException } from "hono/http-exception";
 import crypto from "node:crypto";
 
 import { createApiContractApp, ERROR_CODE } from "@draft-approval/api.routes";
 
 import type { ApiServerHonoEnvironment } from "#src/api-server-environment.ts";
 import { authenticate } from "#src/authentication.ts";
+import { runOnDatabaseSession } from "#src/database-session.ts";
+import { DRAFT_HANDLERS } from "#src/draft-handlers.ts";
 import { jsonError } from "#src/http-errors.ts";
 
 export type { ApiServerEnvironment } from "#src/api-server-environment.ts";
+
+/** Requests are buffered and validated as a whole, so their size is capped. */
+const MAX_REQUEST_BODY_BYTES = 128 * 1024;
 
 /** Creates the Hono app that answers every `fetch` of the Worker. */
 export function createApiServer(): Hono<ApiServerHonoEnvironment> {
@@ -20,6 +27,17 @@ export function createApiServer(): Hono<ApiServerHonoEnvironment> {
   });
 
   app.onError((error, context) => {
+    const requestIssue = describeUnreadableRequestBody(error);
+    if (requestIssue !== undefined) {
+      return jsonError(
+        context,
+        400,
+        ERROR_CODE.INVALID_REQUEST,
+        "The request is invalid; see `issues`.",
+        { extras: { issues: [{ path: [], message: requestIssue }] } },
+      );
+    }
+
     console.error(findRootCause(error));
     return jsonError(context, 500, ERROR_CODE.INTERNAL_ERROR, "An internal error occurred.");
   });
@@ -31,9 +49,46 @@ export function createApiServer(): Hono<ApiServerHonoEnvironment> {
   app.get("/", (context) => context.redirect("/app/", 302));
 
   app.use("/api/*", authenticate);
-  app.route("/", createApiContractApp<ApiServerHonoEnvironment>());
+  app.use(
+    "/api/*",
+    bodyLimit({
+      maxSize: MAX_REQUEST_BODY_BYTES,
+      onError: (context) =>
+        jsonError(
+          context,
+          413,
+          ERROR_CODE.PAYLOAD_TOO_LARGE,
+          `The request body exceeds ${MAX_REQUEST_BODY_BYTES} bytes.`,
+        ),
+    }),
+  );
+  app.use("/api/v1/*", runOnDatabaseSession);
+  app.route("/", createApiContractApp<ApiServerHonoEnvironment>(DRAFT_HANDLERS));
 
   return app;
+}
+
+/**
+ * Describes the errors that the contract's validators throw before any schema check: Hono's JSON
+ * validator throws 400 for a body that does not parse, and `@hono/zod-openapi` throws 415 for a
+ * body that is not declared JSON. The API answers both with 400 `INVALID_REQUEST`.
+ */
+function describeUnreadableRequestBody(error: Error): string | undefined {
+  if (!(error instanceof HTTPException)) {
+    return undefined;
+  }
+
+  switch (error.status) {
+    case 400: {
+      return error.message;
+    }
+    case 415: {
+      return "The request body must be JSON, sent with `Content-Type: application/json`.";
+    }
+    default: {
+      return undefined;
+    }
+  }
 }
 
 /**

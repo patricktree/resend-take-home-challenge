@@ -4,11 +4,11 @@
 
 **Blocked by:** 05 (List Drafts)
 
-**Status:** ready-for-agent
+**Status:** done (https://github.com/patricktree/resend-take-home-challenge/pull/7)
 
-- [ ] Stateless `createMcpHandler` (MCP TypeScript SDK v2, Streamable HTTP, no Durable Object, no OAuth) mounted at `/mcp`
-- [ ] Six hand-written tools on the typed client (`create_draft`, `get_draft`, `list_drafts`, `revise_draft`, `submit_draft`, `get_revision`) with Zod input schemas from the contract, `outputSchema`, `structuredContent`, `readOnlyHint` on reads
-- [ ] The typed client calls the Hono app in-process with the caller's token; API errors become `isError` results with code, message and extras
-- [ ] Reviewer token on `/mcp` → 403 `AGENT_ONLY`
-- [ ] Server instructions describe the lifecycle, state that Agents cannot approve or send, and link the OpenAPI document
-- [ ] Integration tests with the official MCP SDK client: `tools/list` returns exactly six tools; one happy path per tool; a 409 as a tool error; `revise_draft` without `baseRevisionId` refused by its schema
+- [x] Stateless `createMcpHandler` (MCP TypeScript SDK v2, Streamable HTTP, no Durable Object, no OAuth) mounted at `/mcp`
+- [x] Six hand-written tools on the typed client (`create_draft`, `get_draft`, `list_drafts`, `revise_draft`, `submit_draft`, `get_revision`) with Zod input schemas from the contract, `outputSchema`, `structuredContent`, `readOnlyHint` on reads
+- [x] The typed client calls the Hono app in-process with the caller's token; API errors become `isError` results with code, message and extras
+- [x] Reviewer token on `/mcp` → 403 `AGENT_ONLY`
+- [x] Server instructions describe the lifecycle, state that Agents cannot approve or send, and link the OpenAPI document
+- [x] Integration tests with the official MCP SDK client: `tools/list` returns exactly six tools; one happy path per tool; a 409 as a tool error; `revise_draft` without `baseRevisionId` refused by its schema

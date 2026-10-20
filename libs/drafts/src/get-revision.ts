@@ -13,7 +13,8 @@ export type GetRevisionResult =
 
 /**
  * Reads any of a Draft's Revisions with its body, including Superseded ones. A Revision of another
- * Draft counts as not found, so a Revision id is only ever read through its own Draft.
+ * Draft counts as not found, so a Revision id is only ever read through its own Draft. A malformed
+ * id counts as not found and is refused before anything is read.
  */
 export async function getRevision(
   { database, revisionBodies }: DraftsStorage,

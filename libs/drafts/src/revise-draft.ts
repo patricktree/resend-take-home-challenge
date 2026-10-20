@@ -4,19 +4,26 @@ import { Temporal } from "temporal-polyfill";
 import type { DraftsStorage } from "#src/database.ts";
 import type { DraftData, DraftSummary } from "#src/draft.ts";
 import { toDraftSummary } from "#src/draft.ts";
-import { createRevisionId, isDraftId, isRevisionId } from "#src/ids.ts";
+import {
+  createRevisionId,
+  isDraftId,
+  isRevisionId,
+  type DraftId,
+  type RevisionId,
+} from "#src/ids.ts";
 import { putRevisionBody } from "#src/revision-bodies.ts";
 import { drafts, revisions } from "#src/schema.ts";
 
 /** The Draft data of the new Revision and the Revision it builds on. */
-export type Revise = DraftData & { baseRevisionId: string };
+type ReviseDraftInput = DraftData & { baseRevisionId: string };
 
 export type ReviseDraftResult =
   | { outcome: "REVISED"; draft: DraftSummary }
   | { outcome: ReviseDraftRefusal };
 
 /**
- * Why a revise changed nothing, in order of precedence:
+ * Why a revise changed nothing, in order of precedence (a malformed id counts as not found and is
+ * refused before anything is read):
  *
  * - `DRAFT_NOT_FOUND`: no Draft has this id;
  * - `DRAFT_APPROVED`: the Draft is approved and accepts no further Revisions;
@@ -43,7 +50,7 @@ type ReviseDraftRefusal =
 export async function reviseDraft(
   { database, revisionBodies }: DraftsStorage,
   draftId: string,
-  { baseRevisionId, ...draftData }: Revise,
+  { baseRevisionId, ...draftData }: ReviseDraftInput,
 ): Promise<ReviseDraftResult> {
   if (!isDraftId(draftId)) {
     return { outcome: "DRAFT_NOT_FOUND" };
@@ -125,8 +132,8 @@ export async function reviseDraft(
  */
 async function explainRefusal(
   database: DraftsStorage["database"],
-  draftId: (typeof drafts.$inferSelect)["id"],
-  baseRevisionId: (typeof revisions.$inferSelect)["id"],
+  draftId: DraftId,
+  baseRevisionId: RevisionId,
 ): Promise<ReviseDraftRefusal> {
   const [row] = await database
     .select({

@@ -405,7 +405,8 @@ test("10 concurrent revises on the same base: one 201, nine 409 REVISION_SUPERSE
   );
   const winner = responses.find((response) => response.status === 201);
   const revised = draftSummarySchema.parse(await winner?.json());
-  const { revisions } = await readRows(worker);
+  const { drafts, revisions } = await readRows(worker);
+  expect(drafts).toMatchObject([{ id: created.id, latest_revision_id: revised.latestRevision.id }]);
   expect(revisions).toMatchObject([
     { id: created.latestRevision.id, revision_number: 1, review_status: "SUPERSEDED" },
     { id: revised.latestRevision.id, revision_number: 2, review_status: "UNSUBMITTED" },

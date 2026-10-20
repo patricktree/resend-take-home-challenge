@@ -103,11 +103,11 @@ export class DraftApprovalClient {
    * {@link ApiError} with `REVISION_SUPERSEDED` when another revise came first, and with
    * `DRAFT_APPROVED` when the Draft is approved.
    */
-  async reviseDraft(draftId: string, revise: ReviseRequest): Promise<DraftSummaryResponse> {
+  async reviseDraft(draftId: string, reviseRequest: ReviseRequest): Promise<DraftSummaryResponse> {
     const response = await this.#honoClient.api.v1.drafts[":draftId"].revisions.$post({
       header: NO_HEADERS,
       param: { draftId },
-      json: revise,
+      json: reviseRequest,
     });
     if (response.status === 201) {
       return response.json();

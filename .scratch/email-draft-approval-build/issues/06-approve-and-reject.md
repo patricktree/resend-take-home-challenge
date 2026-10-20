@@ -4,7 +4,7 @@
 
 **Blocked by:** 04 (Submit a Revision)
 
-**Status:** done (https://github.com/patricktree/resend-take-home-challenge/pull/9)
+**Status:** done (<https://github.com/patricktree/resend-take-home-challenge/pull/9>)
 
 - [x] `POST …/approval` (empty body) and `POST …/rejection` (optional `reason`, 1–2000 chars after trimming, empty = absent), both behind `requireReviewer` before any database access → 403 `REVIEWER_ONLY` for the Agent token
 - [x] Guarded verdict batches on "latest and `PENDING`"; errors `REVISION_SUPERSEDED`, `REVISION_ALREADY_DECIDED` (with `existingVerdict`, also for a repeated identical verdict), `REVISION_NOT_SUBMITTED`

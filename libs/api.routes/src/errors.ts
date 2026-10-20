@@ -1,5 +1,7 @@
 import { z } from "@hono/zod-openapi";
 
+import { verdictSchema } from "#src/drafts.ts";
+
 export type ErrorCode = (typeof ERROR_CODE)[keyof typeof ERROR_CODE];
 
 export type ErrorResponse = z.infer<typeof errorResponseSchema>;
@@ -42,7 +44,7 @@ export const errorResponseSchema = z
       issues: z.array(validationIssueSchema).optional().openapi({
         description: "With `INVALID_REQUEST`: every violation of the request's schema",
       }),
-      existingVerdict: z.enum(["APPROVED", "REJECTED"]).optional().openapi({
+      existingVerdict: verdictSchema.optional().openapi({
         description: "With `REVISION_ALREADY_DECIDED`: the verdict the Revision already has",
       }),
     }),

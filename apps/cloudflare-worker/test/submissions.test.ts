@@ -171,7 +171,7 @@ test.for([
   // DRAFT_APPROVED takes precedence over REVISION_ALREADY_DECIDED.
   { name: "its approved Revision", isApprovedRevisionSubmitted: true },
   // DRAFT_APPROVED takes precedence over REVISION_SUPERSEDED.
-  { name: "a superseded Revision", isApprovedRevisionSubmitted: false },
+  { name: "a Superseded Revision", isApprovedRevisionSubmitted: false },
 ])(
   "submitting $name of an approved Draft answers with 409 DRAFT_APPROVED and changes nothing",
   async ({ isApprovedRevisionSubmitted }, { expect, onTestFinished }) => {

@@ -5,7 +5,7 @@ import type { DraftsStorage } from "#src/database.ts";
 import type { DraftSummary } from "#src/draft.ts";
 import { toDraftSummary } from "#src/draft.ts";
 import { isDraftId, isRevisionId, type DraftId, type RevisionId } from "#src/ids.ts";
-import { drafts, revisions } from "#src/schema.ts";
+import { drafts, revisions, type ReviewStatus } from "#src/schema.ts";
 
 export type SubmitRevisionResult =
   | { outcome: "SUBMITTED"; draft: DraftSummary }
@@ -13,7 +13,7 @@ export type SubmitRevisionResult =
   | { outcome: SubmitRevisionRefusal };
 
 /** The verdict a decided Revision has. */
-type Verdict = "APPROVED" | "REJECTED";
+type Verdict = Extract<ReviewStatus, "APPROVED" | "REJECTED">;
 
 /**
  * Why a Submission changed nothing, besides `REVISION_ALREADY_DECIDED`, which carries the existing

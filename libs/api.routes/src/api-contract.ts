@@ -2,9 +2,11 @@ import { createRoute, OpenAPIHono, z, type RouteHandler } from "@hono/zod-openap
 
 import {
   draftDataRequestSchema,
+  draftListSchema,
   draftParamsSchema,
   draftSchema,
   draftSummarySchema,
+  listDraftsQuerySchema,
   reviseRequestSchema,
   revisionParamsSchema,
   revisionSchema,
@@ -21,6 +23,7 @@ export type ApiHandlers<E extends ApiContractEnvironment> = {
   reviseDraft: RouteHandler<typeof reviseDraftRoute, E>;
   getRevision: RouteHandler<typeof getRevisionRoute, E>;
   submitRevision: RouteHandler<typeof submitRevisionRoute, E>;
+  listDrafts: RouteHandler<typeof listDraftsRoute, E>;
 };
 
 /** The contract app's type, from which the typed client infers every route. */
@@ -214,6 +217,33 @@ const submitRevisionRoute = createRoute({
   },
 });
 
+const listDraftsRoute = createRoute({
+  method: "get",
+  path: "/api/v1/drafts",
+  operationId: "listDrafts",
+  tags: ["Drafts"],
+  summary: "List Drafts",
+  description:
+    "Returns one page of Draft summaries, without bodies, filtered by review status and sending status and ordered by `orderBy` and `order`, ties broken by the Draft id. Repeating a filter parameter matches any of its values; different filters must all match. Read further pages by passing `nextCursor` as `cursor` with the same filters and ordering. The Review UI's Pending list is `reviewStatus=PENDING&order=asc` (longest-waiting first); its Decided list is `reviewStatus=APPROVED&reviewStatus=REJECTED` (newest verdict first).",
+  security: AGENT_OR_REVIEWER_SECURITY,
+  request: {
+    query: listDraftsQuerySchema,
+    headers: readBookmarkRequestHeadersSchema,
+  },
+  responses: {
+    200: {
+      description: "One page of Draft summaries.",
+      headers: readBookmarkResponseHeadersSchema,
+      content: { "application/json": { schema: draftListSchema } },
+    },
+    400: errorResponse(
+      "`INVALID_REQUEST`: a parameter is invalid, or `cursor` is malformed or belongs to other filters or another ordering; see `issues`.",
+    ),
+    401: errorResponse("`UNAUTHENTICATED`: a valid bearer token is required."),
+    500: errorResponse("`INTERNAL_ERROR`: an unexpected error occurred."),
+  },
+});
+
 /**
  * Creates the OpenAPI app that carries the API contract with the given route handlers and serves
  * its OpenAPI 3.1 document at {@link OPENAPI_DOCUMENT_PATH}. Requests that violate a route's schema
@@ -270,7 +300,8 @@ export function createApiContractApp<E extends ApiContractEnvironment>(handlers:
     .openapi(getDraftRoute, handlers.getDraft)
     .openapi(reviseDraftRoute, handlers.reviseDraft)
     .openapi(getRevisionRoute, handlers.getRevision)
-    .openapi(submitRevisionRoute, handlers.submitRevision);
+    .openapi(submitRevisionRoute, handlers.submitRevision)
+    .openapi(listDraftsRoute, handlers.listDrafts);
 }
 
 function errorResponse(description: string) {

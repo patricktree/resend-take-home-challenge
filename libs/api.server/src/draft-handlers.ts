@@ -1,5 +1,6 @@
 import type {
   ApiHandlers,
+  DraftListResponse,
   DraftResponse,
   DraftSummaryResponse,
   RevisionResponse,
@@ -9,6 +10,7 @@ import {
   createDraft,
   getDraft,
   getRevision,
+  listDrafts,
   reviseDraft,
   submitRevision,
   type Draft,
@@ -155,6 +157,53 @@ export const DRAFT_HANDLERS: ApiHandlers<ApiServerHonoEnvironment> = {
           409,
           ERROR_CODE.REVISION_ALREADY_SUBMITTED,
           "The Revision is already submitted and awaits the Reviewer's verdict.",
+        );
+      }
+      default: {
+        return assertUnreachable(result);
+      }
+    }
+  },
+
+  listDrafts: async (context) => {
+    const { reviewStatus, sendingStatus, orderBy, order, limit, cursor } =
+      context.req.valid("query");
+    const result = await listDrafts(context.get("draftsStorage"), {
+      reviewStatuses: reviewStatus ?? [],
+      sendingStatuses: sendingStatus ?? [],
+      orderBy,
+      order,
+      limit,
+      ...(cursor === undefined ? {} : { cursor }),
+    });
+
+    switch (result.outcome) {
+      case "LISTED": {
+        const page: DraftListResponse = {
+          items: result.drafts.map((draft) =>
+            toDraftSummaryResponse(draft, context.env.PUBLIC_BASE_URL),
+          ),
+          ...(result.nextCursor === undefined ? {} : { nextCursor: result.nextCursor }),
+        };
+        return context.json(page, 200);
+      }
+      case "INVALID_CURSOR": {
+        return jsonError(
+          context,
+          400,
+          ERROR_CODE.INVALID_REQUEST,
+          "The request is invalid; see `issues`.",
+          {
+            extras: {
+              issues: [
+                {
+                  path: ["cursor"],
+                  message:
+                    "Not a cursor of this list: pass a `nextCursor` back with the same filters and ordering it came with.",
+                },
+              ],
+            },
+          },
         );
       }
       default: {

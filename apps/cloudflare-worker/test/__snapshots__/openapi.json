@@ -523,6 +523,33 @@
           "baseRevisionId"
         ],
         "additionalProperties": false
+      },
+      "DraftList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DraftSummary"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Pass it as `cursor` to read the next page; absent on the last page"
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "SendingStatus": {
+        "type": "string",
+        "enum": [
+          "NOT_SENT",
+          "QUEUED",
+          "SENT",
+          "FAILED"
+        ]
       }
     },
     "parameters": {}
@@ -629,6 +656,195 @@
           },
           "413": {
             "description": "`PAYLOAD_TOO_LARGE`: the request body exceeds 128 KB.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": false,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`: an unexpected error occurred.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": false,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listDrafts",
+        "tags": [
+          "Drafts"
+        ],
+        "summary": "List Drafts",
+        "description": "Returns one page of Draft summaries, without bodies, filtered by review status and sending status and ordered by `orderBy` and `order`, ties broken by the Draft id. Repeating a filter parameter matches any of its values; different filters must all match. Read further pages by passing `nextCursor` as `cursor` with the same filters and ordering. The Review UI's Pending list is `reviewStatus=PENDING&order=asc` (longest-waiting first); its Decided list is `reviewStatus=APPROVED&reviewStatus=REJECTED` (newest verdict first).",
+        "security": [
+          {
+            "agentAuth": []
+          },
+          {
+            "reviewerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/DraftReviewStatus"
+              },
+              "description": "Only Drafts with one of these review statuses, the latest Revision's; repeat the parameter for several. A Draft's review status is never `SUPERSEDED`."
+            },
+            "required": false,
+            "description": "Only Drafts with one of these review statuses, the latest Revision's; repeat the parameter for several. A Draft's review status is never `SUPERSEDED`.",
+            "name": "reviewStatus",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/SendingStatus"
+              },
+              "description": "Only Drafts with one of these sending statuses; repeat the parameter for several."
+            },
+            "required": false,
+            "description": "Only Drafts with one of these sending statuses; repeat the parameter for several.",
+            "name": "sendingStatus",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "createdAt",
+                "lastActionAt"
+              ],
+              "default": "lastActionAt",
+              "description": "The timestamp to order by; ties are broken by the Draft id."
+            },
+            "required": false,
+            "description": "The timestamp to order by; ties are broken by the Draft id.",
+            "name": "orderBy",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc",
+              "description": "The direction of the order."
+            },
+            "required": false,
+            "description": "The direction of the order.",
+            "name": "order",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50,
+              "description": "The page size."
+            },
+            "required": false,
+            "description": "The page size.",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "The `nextCursor` of the previous page, to read the next one. It is opaque and valid only with the same filters and ordering; `limit` may change."
+            },
+            "required": false,
+            "description": "The `nextCursor` of the previous page, to read the next one. It is opaque and valid only with the same filters and ordering; `limit` may change.",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+            },
+            "required": false,
+            "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one.",
+            "name": "x-read-bookmark",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of Draft summaries.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": true,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`INVALID_REQUEST`: a parameter is invalid, or `cursor` is malformed or belongs to other filters or another ordering; see `issues`.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": false,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`UNAUTHENTICATED`: a valid bearer token is required.",
             "headers": {
               "X-Read-Bookmark": {
                 "schema": {

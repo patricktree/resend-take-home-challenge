@@ -36,11 +36,14 @@ const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "host.docker.int
 
 /**
  * Requires a bearer token that resolves to a role and sets `role`; a missing or unknown token gets
- * 401 with no hint about which kind was expected. The OpenAPI document is the only public API
- * path.
+ * 401 with no hint about which kind was expected. Reading the OpenAPI document is the only public
+ * API request.
  */
 export const authenticate = createMiddleware<ApiServerHonoEnvironment>(async (context, next) => {
-  if (context.req.path === OPENAPI_DOCUMENT_PATH) {
+  const isReadingOpenApiDocument =
+    (context.req.method === "GET" || context.req.method === "HEAD") &&
+    context.req.path === OPENAPI_DOCUMENT_PATH;
+  if (isReadingOpenApiDocument) {
     return next();
   }
 
@@ -119,6 +122,10 @@ function readTokenConfiguration(
   }
   if (reviewerToken === undefined && !isLocalDevelopment) {
     throw new Error("REVIEWER_TOKEN is not configured; only local development may omit it.");
+  }
+  // Equal tokens would let every Agent act as the Reviewer.
+  if (reviewerToken === agentToken) {
+    throw new Error("AGENT_TOKEN and REVIEWER_TOKEN must differ.");
   }
 
   return {

@@ -4,6 +4,14 @@ import { createTestHarness, type WorkerHandle } from "wrangler";
 
 export type TestWorker = WorkerHandle<TestWorkerEnvironment>;
 
+/** The configured Agent token (`AGENT_TOKEN`) of every test Worker. */
+export const TEST_AGENT_TOKEN = "agent_test-configured-agent-token";
+
+/** A Reviewer token for tests that configure `REVIEWER_TOKEN` through `secrets`. */
+export const TEST_REVIEWER_TOKEN = "reviewer_test-configured-reviewer-token";
+
+const PACKAGE_DIRECTORY = nodeUrl.fileURLToPath(new URL("..", import.meta.url));
+
 type TestWorkerEnvironment = {
   DB: D1Database;
   REVISION_BODIES: R2Bucket;
@@ -17,14 +25,6 @@ type UseWorkerOptions = {
   secrets?: Record<string, string>;
 };
 
-/** The configured Agent token (`AGENT_TOKEN`) of every test Worker. */
-export const TEST_AGENT_TOKEN = "agent_test-configured-agent-token";
-
-/** A Reviewer token for tests that configure `REVIEWER_TOKEN` through `secrets`. */
-export const TEST_REVIEWER_TOKEN = "reviewer_test-configured-reviewer-token";
-
-const PACKAGE_DIRECTORY = nodeUrl.fileURLToPath(new URL("..", import.meta.url));
-
 /**
  * Starts a fresh instance of the whole Worker in Wrangler's local test runtime, with the D1
  * migrations applied and empty D1, R2 and Queue storage, and closes it when the test finishes.
@@ -36,20 +36,20 @@ export async function useWorker(
   { onTestFinished }: Pick<TestContext, "onTestFinished">,
   options: UseWorkerOptions = {},
 ): Promise<TestWorker> {
-  const harness = createTestHarness({
+  const testRuntime = createTestHarness({
     root: PACKAGE_DIRECTORY,
     workers: [
       {
         configPath: "./test/wrangler.test.jsonc",
         vars: { AGENT_TOKEN: TEST_AGENT_TOKEN, ...options.vars },
-        ...(options.secrets === undefined ? {} : { secrets: options.secrets }),
+        secrets: options.secrets ?? {},
       },
     ],
   });
-  onTestFinished(() => harness.close());
+  onTestFinished(() => testRuntime.close());
 
-  await harness.listen();
-  const worker = harness.getWorker<TestWorkerEnvironment>();
+  await testRuntime.listen();
+  const worker = testRuntime.getWorker<TestWorkerEnvironment>();
   await worker.applyD1Migrations("DB");
 
   return worker;

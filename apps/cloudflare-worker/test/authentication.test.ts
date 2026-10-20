@@ -158,3 +158,28 @@ test("the OpenAPI document is public", async ({ expect, onTestFinished }) => {
 
   expect(response.status).toBe(200);
 });
+
+test("only GET of the OpenAPI document is public", async ({ expect, onTestFinished }) => {
+  const worker = await useWorker({ onTestFinished });
+
+  const response = await worker.fetch("/api/openapi.json", { method: "POST" });
+
+  expect(response.status).toBe(401);
+});
+
+test("a Worker whose Agent and Reviewer tokens are equal refuses to authenticate", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const worker = await useWorker(
+    { onTestFinished },
+    { vars: { LOCAL_DEVELOPMENT: "false" }, secrets: { REVIEWER_TOKEN: TEST_AGENT_TOKEN } },
+  );
+
+  const response = await worker.fetch(PRODUCTION_URL, {
+    headers: { Authorization: `Bearer ${TEST_AGENT_TOKEN}` },
+  });
+
+  expect(response.status).toBe(500);
+  expect(await response.json()).toMatchObject({ error: { code: "INTERNAL_ERROR" } });
+});

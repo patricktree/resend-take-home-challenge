@@ -4,6 +4,8 @@
   "main": "src/index.ts",
   "compatibility_flags": ["nodejs_compat"],
   "compatibility_date": "2026-08-18",
+  "workers_dev": false,
+  "preview_urls": false,
   "assets": {
     "binding": "ASSETS",
     "not_found_handling": "none",
@@ -38,7 +40,7 @@
     "RESEND_FROM": "drafts@resend-challenge.patricktree.me",
     "RESEND_BASE_URL": "https://api.resend.com",
     "LOCAL_DEVELOPMENT": "false",
-    // Placeholder; `pnpm secrets:generate` writes the real, public Agent token here.
+    // Placeholder until the real, public Agent token is generated (`pnpm secrets:generate`, spec section 12, not built yet).
     "AGENT_TOKEN": "agent_placeholder-run-pnpm-secrets-generate",
   },
 }

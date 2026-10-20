@@ -36,7 +36,11 @@ export function createApiServer(): Hono<ApiServerHonoEnvironment> {
   return app;
 }
 
-/** Error reporting logs the innermost cause, the error that actually went wrong. */
+/**
+ * Error reporting logs only the innermost cause, the error that actually went wrong: wrapping
+ * errors add no diagnosis, and some (such as Drizzle's) carry SQL parameters, which must not be
+ * logged.
+ */
 function findRootCause(error: Error): unknown {
   let cause: unknown = error;
   while (cause instanceof Error && cause.cause !== undefined) {

@@ -8,7 +8,7 @@ import {
   type DraftSummaryResponse,
 } from "@draft-approval/api.routes";
 import type { SendQueueMessage } from "@draft-approval/drafts";
-import { resendError, startResendStub, type ResendStub } from "@draft-approval/resend-stub";
+import { resendError, type ResendStub } from "@draft-approval/resend-stub";
 
 import {
   expectExactlyOneEmailPerSentDraft,
@@ -38,6 +38,9 @@ const DRAFT_DATA = {
 const RESEND_FROM = "drafts@resend-challenge.patricktree.me";
 
 const HOUR_MILLISECONDS = 60 * 60 * 1000;
+
+/** The discard port, where nothing listens. */
+const UNREACHABLE_RESEND_BASE_URL = "http://127.0.0.1:9";
 
 /** The first delivery's backoff: 1 s, plus up to 1 s of jitter, in whole seconds. */
 const FIRST_RETRY_DELAY = { min: 1, max: 2 };
@@ -84,7 +87,7 @@ test("an Approval's message reaches the Send Queue consumer through real Queue d
   const resendStub = await useResendStub({ onTestFinished });
   const worker = await useWorker(
     { onTestFinished },
-    { ...resendStubWorkerOptions(resendStub.url), deliversSendQueue: true },
+    { ...resendStubWorkerOptions(resendStub.url), shouldConsumeSendQueue: true },
   );
 
   const { draft } = await createApprovedDraft(worker);
@@ -313,12 +316,12 @@ test("the retry delay is clamped so that the next delivery is no later than the 
 });
 
 test("a network error is retryable", async ({ expect, onTestFinished }) => {
-  // A stub that is closed again leaves an origin where nothing listens.
-  const unreachableResend = await startResendStub();
-  await unreachableResend.close();
+  // Nothing listens on the discard port, so no other test's stub can take the call. A closed stub's
+  // port would not do: a stub of a concurrent test may get the same port from the OS.
+  const unusedResendStub = await useResendStub({ onTestFinished });
   const worker = await useWorker(
     { onTestFinished },
-    resendStubWorkerOptions(unreachableResend.url),
+    resendStubWorkerOptions(UNREACHABLE_RESEND_BASE_URL),
   );
   const { draft, message } = await createApprovedDraft(worker);
 
@@ -329,7 +332,8 @@ test("a network error is retryable", async ({ expect, onTestFinished }) => {
   ]);
   expectWithin(expect, handlings[0]?.delaySeconds, FIRST_RETRY_DELAY);
   expect(await getSending(worker, draft.id)).toStrictEqual({ status: "QUEUED" });
-  await expectExactlyOneEmailPerSentDraft(worker, unreachableResend);
+  expect(unusedResendStub.requests).toStrictEqual([]);
+  await expectExactlyOneEmailPerSentDraft(worker, unusedResendStub);
 });
 
 test("a Resend call that hangs past the 10 s timeout is retryable", async ({
@@ -467,7 +471,7 @@ test.for([
     }),
   },
   {
-    name: "a rejection by Resend",
+    name: "Resend refusing the request",
     setUp: (stub: ResendStub, message: SendQueueMessage) => {
       stub.respondNext(resendError(422, "validation_error", "Invalid."));
       return message;
@@ -492,7 +496,7 @@ test.for([
   },
 );
 
-test("a rejection by Resend never overrides FAILED / OUTCOME_UNKNOWN", async ({
+test("Resend refusing the request never overrides FAILED / OUTCOME_UNKNOWN", async ({
   expect,
   onTestFinished,
 }) => {

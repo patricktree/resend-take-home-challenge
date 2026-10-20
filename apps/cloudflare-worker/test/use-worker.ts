@@ -15,15 +15,6 @@ export const TEST_AGENT_TOKEN = "agent_test-configured-agent-token";
 /** A Reviewer token for tests that configure `REVIEWER_TOKEN` through `secrets`. */
 export const TEST_REVIEWER_TOKEN = "reviewer_test-configured-reviewer-token";
 
-/** The answer of `POST /__test/queue` (test/worker.ts). */
-const messageHandlingsSchema = z.array(
-  z.strictObject({
-    id: z.string(),
-    outcome: z.enum(["ACK", "RETRY", "NONE"]),
-    delaySeconds: z.number().optional(),
-  }),
-);
-
 const PACKAGE_DIRECTORY = nodeUrl.fileURLToPath(new URL("..", import.meta.url));
 
 type TestWorkerEnvironment = {
@@ -54,8 +45,17 @@ type UseWorkerOptions = {
    * environment of wrangler.test.jsonc). Off by default: consumer scenarios deliver their batches
    * through `deliverSendQueueBatch()`, which a real consumer would race.
    */
-  deliversSendQueue?: boolean;
+  shouldConsumeSendQueue?: boolean;
 };
+
+/** The answer of `POST /__test/queue` (test/worker.ts). */
+const messageHandlingsSchema = z.array(
+  z.strictObject({
+    id: z.string(),
+    outcome: z.enum(["ACK", "RETRY", "NONE"]),
+    delaySeconds: z.number().optional(),
+  }),
+);
 
 /**
  * Starts a fresh instance of the whole Worker in Wrangler's local test runtime, with the D1
@@ -73,7 +73,7 @@ export async function useWorker(
     workers: [
       {
         configPath: "./test/wrangler.test.jsonc",
-        ...(options.deliversSendQueue === true ? { env: "send-queue-delivery" } : {}),
+        ...(options.shouldConsumeSendQueue === true ? { env: "send-queue-delivery" } : {}),
         vars: { AGENT_TOKEN: TEST_AGENT_TOKEN, ...options.vars },
         secrets: options.secrets ?? {},
       },

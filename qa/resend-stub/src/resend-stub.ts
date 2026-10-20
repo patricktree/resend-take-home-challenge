@@ -58,17 +58,17 @@ export type ResendStub = {
   close(): Promise<void>;
 };
 
+/** A response in Resend's error shape. */
+export function resendError(status: number, name: string, message: string): ScriptedResponse {
+  return { status, body: { statusCode: status, name, message } };
+}
+
 type Override =
   | { kind: "RESPOND"; response: ScriptedResponse }
   | { kind: "HANG" }
   | { kind: "HOLD"; markReceived(): void; released: Promise<void> };
 
 type LedgerEntry = { email: unknown } & ({ state: "IN_FLIGHT" } | { state: "SENT"; id: string });
-
-/** A response in Resend's error shape. */
-export function resendError(status: number, name: string, message: string): ScriptedResponse {
-  return { status, body: { statusCode: status, name, message } };
-}
 
 /** Starts a stub on 127.0.0.1 on a port the OS assigns; the caller closes it. */
 export async function startResendStub(): Promise<ResendStub> {

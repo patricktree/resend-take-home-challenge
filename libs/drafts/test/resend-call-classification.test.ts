@@ -10,6 +10,12 @@ test("a 200 with an id is final: SENT with that email id", () => {
   ).toStrictEqual({ classification: "SENT", emailId: EMAIL_ID });
 });
 
+test("another 2xx with an id is also SENT: Resend accepted the email under the key", () => {
+  expect(
+    classifyResendCall({ kind: "RESPONSE", status: 201, body: { id: EMAIL_ID } }),
+  ).toStrictEqual({ classification: "SENT", emailId: EMAIL_ID });
+});
+
 test.for([400, 401, 403, 404, 405, 422])(
   "a %i is final: REJECTED with Resend's error name and message",
   (status) => {

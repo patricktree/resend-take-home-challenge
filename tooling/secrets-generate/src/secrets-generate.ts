@@ -5,7 +5,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 export type GenerateSecretsOptions = {
-  /** The repository whose `wrangler.jsonc` and `README.md` receive the Agent token. */
+  /** The repository whose `wrangler.jsonc`, `README.md` and CLI receive the Agent token. */
   repositoryRoot: string;
   /** The `wrangler` binary that sets the Reviewer token as a Worker secret. */
   wranglerExecutable: string;
@@ -14,6 +14,9 @@ export type GenerateSecretsOptions = {
 };
 
 const AGENT_TOKEN_PATH = ["vars", "AGENT_TOKEN"];
+
+/** The CLI's production defaults; their `PUBLIC_AGENT_TOKEN` is the CLI's fallback token. */
+const CLI_PRODUCTION_DEFAULTS_PATH = "apps/cli/src/production.ts";
 
 /**
  * Creates a new Agent token and a new Reviewer token (spec section 7, "Credentials"). The Agent
@@ -29,7 +32,9 @@ export async function generateSecrets({
   const reviewerToken = generateToken("reviewer");
 
   await writeAgentToken(repositoryRoot, agentToken);
-  print("Wrote the new Agent token into apps/cloudflare-worker/wrangler.jsonc and README.md.");
+  print(
+    `Wrote the new Agent token into apps/cloudflare-worker/wrangler.jsonc, README.md and ${CLI_PRODUCTION_DEFAULTS_PATH}.`,
+  );
 
   try {
     await putWorkerSecret({
@@ -40,7 +45,7 @@ export async function generateSecrets({
     });
   } catch (error) {
     throw new Error(
-      `${error instanceof Error ? error.message : "Setting REVIEWER_TOKEN failed."} wrangler.jsonc and README.md already hold the new Agent token; fix the cause and run the script again, or revert them.`,
+      `${error instanceof Error ? error.message : "Setting REVIEWER_TOKEN failed."} wrangler.jsonc, README.md and ${CLI_PRODUCTION_DEFAULTS_PATH} already hold the new Agent token; fix the cause and run the script again, or revert them.`,
       { cause: error },
     );
   }
@@ -57,13 +62,17 @@ function generateToken(prefix: "agent" | "reviewer"): string {
 
 /**
  * Replaces the Agent token everywhere it is committed: the `AGENT_TOKEN` var of `wrangler.jsonc`
- * (edited in place, so comments and formatting survive) and every occurrence in `README.md`.
+ * (edited in place, so comments and formatting survive), every occurrence in `README.md`, and the
+ * CLI's `PUBLIC_AGENT_TOKEN`. It checks every file before writing any, so a refusal changes
+ * nothing.
  */
 async function writeAgentToken(repositoryRoot: string, agentToken: string): Promise<void> {
   const wranglerConfigPath = path.join(getWorkerDirectory(repositoryRoot), "wrangler.jsonc");
   const readmePath = path.join(repositoryRoot, "README.md");
+  const cliProductionDefaultsPath = path.join(repositoryRoot, CLI_PRODUCTION_DEFAULTS_PATH);
   const wranglerConfig = await fs.readFile(wranglerConfigPath, "utf8");
   const readme = await fs.readFile(readmePath, "utf8");
+  const cliProductionDefaults = await fs.readFile(cliProductionDefaultsPath, "utf8");
 
   const configTree = jsonc.parseTree(wranglerConfig);
   const previousAgentToken: unknown =
@@ -77,9 +86,23 @@ async function writeAgentToken(repositoryRoot: string, agentToken: string): Prom
     );
   }
 
+  const previousCliTokenDeclaration = `PUBLIC_AGENT_TOKEN = "${previousAgentToken}";`;
+  if (!cliProductionDefaults.includes(previousCliTokenDeclaration)) {
+    throw new Error(
+      `${CLI_PRODUCTION_DEFAULTS_PATH} does not hold the configured Agent token as PUBLIC_AGENT_TOKEN; restore it before generating new tokens.`,
+    );
+  }
+
   const edits = jsonc.modify(wranglerConfig, AGENT_TOKEN_PATH, agentToken, {});
   await fs.writeFile(wranglerConfigPath, jsonc.applyEdits(wranglerConfig, edits));
   await fs.writeFile(readmePath, readme.replaceAll(previousAgentToken, agentToken));
+  await fs.writeFile(
+    cliProductionDefaultsPath,
+    cliProductionDefaults.replace(
+      previousCliTokenDeclaration,
+      `PUBLIC_AGENT_TOKEN = "${agentToken}";`,
+    ),
+  );
 }
 
 type PutWorkerSecretOptions = {

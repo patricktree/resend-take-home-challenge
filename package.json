@@ -19,6 +19,7 @@
     "declutter": "knip",
     "dev": "pnpm --filter '@draft-approval/cloudflare-worker' run dev",
     "docs:check": "markdownlint-cli2",
+    "draft-approval": "node apps/cli/src/cli.ts",
     "fix": "pnpm run format && pnpm run lint:fix",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",

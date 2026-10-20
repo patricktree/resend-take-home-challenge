@@ -10,6 +10,11 @@ export type ReviseRequest = z.input<typeof reviseRequestSchema>;
 
 export type RevisionResponse = z.infer<typeof revisionSchema>;
 
+/** The parameters of a list; every one is optional. */
+export type ListDraftsQuery = Partial<z.output<typeof listDraftsQuerySchema>>;
+
+export type DraftListResponse = z.infer<typeof draftListSchema>;
+
 /** Resend's maximum number of recipients per email. */
 const MAX_RECIPIENTS = 50;
 
@@ -20,6 +25,9 @@ const MAX_SUBJECT_LENGTH = 998;
 const MAX_BODY_UTF8_BYTES = 100 * 1024;
 
 const DRAFT_ID_PATTERN = /^drf_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** The page size of a list when `limit` is absent, and its maximum. */
+const LIST_LIMIT = { DEFAULT: 50, MAX: 100 } as const;
 
 const REVISION_ID_PATTERN = /^rev_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -174,6 +182,10 @@ const sendingFailureSchema = z
   })
   .openapi("SendingFailure");
 
+const sendingStatusSchema = z
+  .enum(["NOT_SENT", "QUEUED", "SENT", "FAILED"])
+  .openapi("SendingStatus");
+
 const sendingSchema = z
   .discriminatedUnion("status", [
     z.object({ status: z.literal("NOT_SENT") }).openapi({ description: "No Approval yet" }),
@@ -212,6 +224,71 @@ export const draftSummarySchema = z
 export const draftSchema = z
   .object({ ...draftSummaryFields, latestRevision: revisionSchema })
   .openapi("Draft");
+
+/** The parameters of a list: filters, ordering and paging. */
+export const listDraftsQuerySchema = z.object({
+  reviewStatus: repeatableQueryParameter(draftReviewStatusSchema)
+    .optional()
+    .openapi({
+      param: { name: "reviewStatus", in: "query" },
+      description:
+        "Only Drafts with one of these review statuses, the latest Revision's; repeat the parameter for several. A Draft's review status is never `SUPERSEDED`.",
+    }),
+  sendingStatus: repeatableQueryParameter(sendingStatusSchema)
+    .optional()
+    .openapi({
+      param: { name: "sendingStatus", in: "query" },
+      description:
+        "Only Drafts with one of these sending statuses; repeat the parameter for several.",
+    }),
+  orderBy: z
+    .enum(["createdAt", "lastActionAt"])
+    .default("lastActionAt")
+    .openapi({
+      param: { name: "orderBy", in: "query" },
+      description: "The timestamp to order by; ties are broken by the Draft id.",
+    }),
+  order: z
+    .enum(["asc", "desc"])
+    .default("desc")
+    .openapi({ param: { name: "order", in: "query" }, description: "The direction of the order." }),
+  limit: z.coerce
+    .number<string>()
+    .int()
+    .min(1)
+    .max(LIST_LIMIT.MAX)
+    .default(LIST_LIMIT.DEFAULT)
+    .openapi({ param: { name: "limit", in: "query" }, description: "The page size." }),
+  cursor: z
+    .string()
+    .optional()
+    .openapi({
+      param: { name: "cursor", in: "query" },
+      description:
+        "The `nextCursor` of the previous page, to read the next one. It is opaque and valid only with the same filters and ordering; `limit` may change.",
+    }),
+});
+
+/** A page of a list; `nextCursor` is present only while another page follows. */
+export const draftListSchema = z
+  .object({
+    items: z.array(draftSummarySchema),
+    nextCursor: z.string().optional().openapi({
+      description: "Pass it as `cursor` to read the next page; absent on the last page",
+    }),
+  })
+  .openapi("DraftList");
+
+/**
+ * Hono hands a query parameter that occurs once to the schema as a string and one that repeats as
+ * an array, so a repeatable parameter wraps a single value in an array first.
+ */
+function repeatableQueryParameter<T extends z.ZodType>(itemSchema: T) {
+  return z.preprocess(
+    (value) => (typeof value === "string" ? [value] : value),
+    z.array(itemSchema),
+  );
+}
 
 function countCodePoints(text: string): number {
   return text.match(/./gsu)?.length ?? 0;

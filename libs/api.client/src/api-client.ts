@@ -3,11 +3,13 @@ import { hc } from "hono/client";
 import type {
   ApiContractApp,
   DraftDataRequest,
+  DraftListResponse,
   DraftResponse,
   DraftSummaryResponse,
   ErrorCode,
   ErrorExtras,
   ErrorResponse,
+  ListDraftsQuery,
   ReviseRequest,
   RevisionResponse,
 } from "@draft-approval/api.routes";
@@ -142,6 +144,23 @@ export class DraftApprovalClient {
     ].submission.$post({
       header: NO_HEADERS,
       param: { draftId, revisionId },
+    });
+    if (response.status === 200) {
+      return response.json();
+    }
+    throw await toApiError(response);
+  }
+
+  /**
+   * Reads one page of Draft summaries, filtered and ordered by `query`. Pass the page's
+   * `nextCursor` as `cursor`, with the same filters and ordering, to read the next page; a cursor
+   * used with other filters or another ordering throws {@link ApiError} with `INVALID_REQUEST`.
+   */
+  async listDrafts({ limit, ...query }: ListDraftsQuery = {}): Promise<DraftListResponse> {
+    const response = await this.#honoClient.api.v1.drafts.$get({
+      header: NO_HEADERS,
+      // Hono RPC repeats array values as query parameters; numbers travel as strings.
+      query: { ...query, ...(limit === undefined ? {} : { limit: String(limit) }) },
     });
     if (response.status === 200) {
       return response.json();

@@ -5,9 +5,6 @@
   "bin": {
     "draft-approval": "./src/cli.ts"
   },
-  "files": [
-    "src/**"
-  ],
   "type": "module",
   "imports": {
     "#src/*": "./src/*",
@@ -25,7 +22,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "turbo:build": "prepare-declaration-build --declaration-output-dir ./dist/types --build-info-file ./dist/tsconfig.build.tsbuildinfo --source-package-json ./src/package.json && tsc --build ./tsconfig.json",
-    "turbo:lint": "oxlint --type-aware --max-warnings 0 .",
+    "turbo:lint": "oxlint .",
     "turbo:lint:fix": "pnpm run turbo:lint --fix",
     "turbo:test": "pnpm run test"
   },

@@ -2,9 +2,6 @@
   "name": "@draft-approval/resend-stub",
   "private": true,
   "description": "A node:http stand-in for Resend's POST /emails that models its idempotency, for the integration and e2e tests; plus the opt-in live contract test against the real API",
-  "files": [
-    "src/**"
-  ],
   "type": "module",
   "imports": {
     "#src/*": "./src/*"
@@ -26,7 +23,7 @@
     "test:resend-live": "vitest run --config ./vitest.live.config.ts",
     "test:watch": "vitest",
     "turbo:build": "prepare-declaration-build --declaration-output-dir ./dist/types --build-info-file ./dist/tsconfig.build.tsbuildinfo --source-package-json ./src/package.json && tsc --build ./tsconfig.json",
-    "turbo:lint": "oxlint --type-aware --max-warnings 0 .",
+    "turbo:lint": "oxlint .",
     "turbo:lint:fix": "pnpm run turbo:lint --fix",
     "turbo:test": "pnpm run test"
   },

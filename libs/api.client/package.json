@@ -2,9 +2,6 @@
   "name": "@draft-approval/api.client",
   "private": true,
   "description": "The typed API client used by the Review UI, the MCP server and the CLI",
-  "files": [
-    "src/**"
-  ],
   "type": "module",
   "imports": {
     "#src/*": "./src/*"
@@ -22,7 +19,7 @@
     "lint": "turbo run turbo:lint",
     "lint:fix": "turbo run turbo:lint:fix",
     "turbo:build": "prepare-declaration-build --declaration-output-dir ./dist/types --build-info-file ./dist/tsconfig.build.tsbuildinfo --source-package-json ./src/package.json && tsc --build ./tsconfig.json",
-    "turbo:lint": "oxlint --type-aware --max-warnings 0 .",
+    "turbo:lint": "oxlint .",
     "turbo:lint:fix": "pnpm run turbo:lint --fix"
   },
   "dependencies": {

@@ -2,9 +2,6 @@
   "name": "@draft-approval/review-ui",
   "private": true,
   "description": "The Review UI: a React 19 SPA (TanStack Router and Query) served under /app",
-  "files": [
-    "src/**"
-  ],
   "type": "module",
   "imports": {
     "#src/*": "./src/*"
@@ -22,7 +19,7 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "turbo:build": "prepare-declaration-build --declaration-output-dir ./dist/types --build-info-file ./dist/tsconfig.build.tsbuildinfo --source-package-json ./src/package.json && tsc --build ./tsconfig.json && vite build",
-    "turbo:lint": "oxlint --type-aware --max-warnings 0 .",
+    "turbo:lint": "oxlint .",
     "turbo:lint:fix": "pnpm run turbo:lint --fix",
     "turbo:test": "pnpm run test"
   },

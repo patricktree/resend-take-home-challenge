@@ -3,7 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import React from "react";
 
-import { ApiError } from "@resend-challenge/api.client";
+import { ApiError, ERROR_CODE } from "@resend-challenge/api.client";
 import type { DraftResponse } from "@resend-challenge/api.routes";
 
 import { assertUnreachable } from "./assert-unreachable.ts";
@@ -80,7 +80,7 @@ function DraftView({ draftId }: DraftViewProps): React.ReactNode {
 
 /** The Draft page's error component, which also catches its query's errors. */
 function DraftPageError({ error }: ErrorComponentProps): React.ReactNode {
-  if (error instanceof ApiError && error.code === "DRAFT_NOT_FOUND") {
+  if (error instanceof ApiError && error.code === ERROR_CODE.DRAFT_NOT_FOUND) {
     return <p>Draft not found.</p>;
   }
   return <ErrorMessage error={error} />;

@@ -1,6 +1,6 @@
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
 
-import { ApiError } from "@resend-challenge/api.client";
+import { ApiError, ERROR_CODE } from "@resend-challenge/api.client";
 
 import { clearReviewerToken, rejectReviewerToken } from "./reviewer-session.ts";
 
@@ -24,9 +24,12 @@ export function signOut(): void {
   queryClient.clear();
 }
 
-/** Any 401 forgets the token and everything read with it; the app shows the token screen. */
+/**
+ * Any `UNAUTHENTICATED` error forgets the token and everything read with it; the app shows the
+ * token screen.
+ */
 function handleUnauthenticated(error: Error): void {
-  if (error instanceof ApiError && error.status === 401) {
+  if (error instanceof ApiError && error.code === ERROR_CODE.UNAUTHENTICATED) {
     rejectReviewerToken();
     queryClient.clear();
   }

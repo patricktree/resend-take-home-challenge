@@ -42,6 +42,6 @@ export async function createPendingDraft(
   agentClient: ApiClient,
   draftData: DraftDataRequest,
 ): Promise<DraftSummaryResponse> {
-  const draft = await agentClient.createDraft(draftData);
-  return agentClient.submitRevision(draft.id, draft.latestRevision.id);
+  const draft = await agentClient.drafts.create(draftData);
+  return agentClient.revisions.submit(draft.id, draft.latestRevision.id);
 }

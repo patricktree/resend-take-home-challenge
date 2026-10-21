@@ -39,7 +39,7 @@ test("a Send with an unknown outcome says the email may have been sent", async (
   for (let answer = 1; answer <= RETRYABLE_ANSWER_COUNT; answer++) {
     resendStub.respondNext({ status: 503 });
   }
-  await reviewerClient.approveRevision(draft.id, draft.latestRevision.id);
+  await reviewerClient.revisions.approve(draft.id, draft.latestRevision.id);
   // Every real path to `OUTCOME_UNKNOWN` takes the 23 h deadline (which travels in the Queue
   // message) or 100 failed attempts (the DLQ), so the test records the outcome as `recordFailed()`
   // in libs/drafts does.

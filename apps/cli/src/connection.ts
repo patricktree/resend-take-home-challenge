@@ -1,5 +1,5 @@
 import { ApiClient } from "@resend-challenge/api.client";
-import { ERROR_CODE } from "@resend-challenge/api.routes";
+import { ERROR_CODE } from "@resend-challenge/api.client";
 
 import { CLI_ERROR_CODE, CliError } from "./cli-error.ts";
 import { PRODUCTION_API_URL, PUBLIC_AGENT_TOKEN } from "./production.ts";

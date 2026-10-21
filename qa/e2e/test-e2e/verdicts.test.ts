@@ -90,7 +90,7 @@ test("the Reviewer rejects a Pending Draft with a reason", async ({ page, review
   await expect(page.getByText("Rejected: Mention the new office address.")).toBeVisible();
   await expect(page.getByText(/^Decided: \d/)).toBeVisible();
   await expect(page.getByRole("button")).toHaveText(["Sign out"]);
-  const storedDraft = await reviewerClient.getDraft(draft.id);
+  const storedDraft = await reviewerClient.drafts.get(draft.id);
   expect(storedDraft.latestRevision).toMatchObject({
     reviewStatus: "REJECTED",
     rejectionReason: "Mention the new office address.",
@@ -113,7 +113,7 @@ test("the Reviewer rejects a Pending Draft without a reason", async ({
 
   await expect(page.getByText("Rejected", { exact: true })).toBeVisible();
   await expect(page.getByText(/^Decided: \d/)).toBeVisible();
-  const storedDraft = await reviewerClient.getDraft(draft.id);
+  const storedDraft = await reviewerClient.drafts.get(draft.id);
   expect(storedDraft.latestRevision.reviewStatus).toBe("REJECTED");
   expect(storedDraft.latestRevision).not.toHaveProperty("rejectionReason");
 });

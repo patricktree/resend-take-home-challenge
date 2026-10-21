@@ -2,7 +2,7 @@ import { css, cx } from "@linaria/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import React from "react";
 
-import { ApiError } from "@resend-challenge/api.client";
+import { ApiError, ERROR_CODE } from "@resend-challenge/api.client";
 import type { DraftResponse } from "@resend-challenge/api.routes";
 
 import { getApiClient } from "./api-client.ts";
@@ -62,8 +62,8 @@ export function VerdictControls({
   const verdictMutation = useMutation({
     mutationFn: (verdict: Verdict) =>
       verdict.kind === "APPROVAL"
-        ? getApiClient().approveRevision(draftId, revisionId)
-        : getApiClient().rejectRevision(
+        ? getApiClient().revisions.approve(draftId, revisionId)
+        : getApiClient().revisions.reject(
             draftId,
             revisionId,
             verdict.reason === undefined ? {} : { reason: verdict.reason },
@@ -141,11 +141,11 @@ export function VerdictControls({
 }
 
 /**
- * A failed verdict, in a bordered box. A 401 shows nothing here: it clears the token, and the app
- * shows the token screen (query-client.ts).
+ * A failed verdict, in a bordered box. `UNAUTHENTICATED` shows nothing here: it clears the token,
+ * and the app shows the token screen (query-client.ts).
  */
 function VerdictError({ error, isBusy, onReloadDraft }: VerdictErrorProps): React.ReactNode {
-  if (error instanceof ApiError && error.status === 401) {
+  if (error instanceof ApiError && error.code === ERROR_CODE.UNAUTHENTICATED) {
     return null;
   }
 
@@ -181,13 +181,13 @@ function describeVerdictError(error: Error): DescribedVerdictError | undefined {
   }
 
   switch (error.code) {
-    case "REVISION_SUPERSEDED": {
+    case ERROR_CODE.REVISION_SUPERSEDED: {
       return {
         message: "The Agent changed this Draft after you opened it; your verdict was not recorded.",
         canReloadDraft: true,
       };
     }
-    case "REVISION_ALREADY_DECIDED": {
+    case ERROR_CODE.REVISION_ALREADY_DECIDED: {
       // Shown even when it is the verdict the Reviewer chose: it came from another tab or person.
       const { existingVerdict } = error.extras;
       // The API always names it (spec section 6); without it, the error shows like any other.
@@ -195,7 +195,7 @@ function describeVerdictError(error: Error): DescribedVerdictError | undefined {
         ? undefined
         : { message: ALREADY_DECIDED_MESSAGES[existingVerdict], canReloadDraft: true };
     }
-    case "REVIEWER_ONLY": {
+    case ERROR_CODE.REVIEWER_ONLY: {
       return {
         message:
           "The stored token is not the Reviewer token. Sign out and enter the Reviewer token.",

@@ -27,7 +27,7 @@ test("the Pending list shows the longest-waiting Draft first and its columns", a
   );
   await createPendingDraft(agentClient, createDraftData("Your invoice"));
   // Unsubmitted Drafts never appear in the lists.
-  await agentClient.createDraft(createDraftData("Not submitted yet"));
+  await agentClient.drafts.create(createDraftData("Not submitted yet"));
 
   await openReviewUi(page);
 
@@ -68,11 +68,11 @@ test("the Decided list shows the newest verdict first and its columns", async ({
 }) => {
   const { agentClient, reviewerClient } = reviewEnvironment;
   const first = await createPendingDraft(agentClient, createDraftData("Price increase"));
-  await reviewerClient.rejectRevision(first.id, first.latestRevision.id, {
+  await reviewerClient.revisions.reject(first.id, first.latestRevision.id, {
     reason: "Too abrupt.",
   });
   const second = await createPendingDraft(agentClient, createDraftData("Holiday greetings"));
-  await reviewerClient.rejectRevision(second.id, second.latestRevision.id);
+  await reviewerClient.revisions.reject(second.id, second.latestRevision.id);
 
   await openReviewUi(page);
   await page.getByRole("link", { name: "Decided" }).click();
@@ -103,7 +103,7 @@ test("the Decided list pages with Load more", async ({ page, reviewEnvironment }
   const { agentClient, reviewerClient } = reviewEnvironment;
   for (let draftNumber = 1; draftNumber <= PAGE_SIZE + 1; draftNumber++) {
     const draft = await createPendingDraft(agentClient, createDraftData(`Draft ${draftNumber}`));
-    await reviewerClient.rejectRevision(draft.id, draft.latestRevision.id);
+    await reviewerClient.revisions.reject(draft.id, draft.latestRevision.id);
   }
 
   await openReviewUi(page);

@@ -25,7 +25,7 @@ try {
 } catch (error) {
   const reason =
     error instanceof ApiError
-      ? `${error.status} ${error.code}: ${error.message}`
+      ? `${error.code}: ${error.message}`
       : error instanceof Error
         ? error.message
         : "Unknown error.";

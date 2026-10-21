@@ -537,6 +537,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: catalog:web-app
         version: 6.1.2(vite@8.3.4(@types/node@26.6.5))
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 4.1.11(vitest@4.1.11)
       '@wyw-in-js/vite':
         specifier: catalog:web-app
         version: 2.6.0(@typescript/typescript6@6.0.2)(vite@8.3.4(@types/node@26.6.5))
@@ -554,7 +557,7 @@ importers:
         version: 8.3.4(@types/node@26.6.5)
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@types/node@26.6.5)(vite@8.3.4(@types/node@26.6.5))
+        version: 4.1.11(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(vite@8.3.4(@types/node@26.6.5))
 
   libs/api.client:
     dependencies:
@@ -860,6 +863,9 @@ importers:
       '@typescript/native':
         specifier: 'catalog:'
         version: typescript@7.0.2
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 4.1.11(vitest@4.1.11)
       jsonc-parser:
         specifier: ^3.3.1
         version: 3.3.1
@@ -877,7 +883,7 @@ importers:
         version: 8.3.4(@types/node@26.6.5)
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@types/node@26.6.5)(vite@8.3.4(@types/node@26.6.5))
+        version: 4.1.11(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(vite@8.3.4(@types/node@26.6.5))
 
   tooling/config-oxlint:
     dependencies:
@@ -961,6 +967,9 @@ importers:
       '@typescript/native':
         specifier: 'catalog:'
         version: typescript@7.0.2
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 4.1.11(vitest@4.1.11)
       oxlint:
         specifier: 'catalog:'
         version: 1.89.0(oxlint-tsgolint@7.0.2004)
@@ -975,7 +984,7 @@ importers:
         version: 8.3.4(@types/node@26.6.5)
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@types/node@26.6.5)(vite@8.3.4(@types/node@26.6.5))
+        version: 4.1.11(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(vite@8.3.4(@types/node@26.6.5))
 
   tooling/seed:
     dependencies:

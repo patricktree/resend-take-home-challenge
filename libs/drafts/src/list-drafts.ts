@@ -74,11 +74,13 @@ export async function listDrafts(
   const ordering = ORDERINGS[query.orderBy];
   const orderDirection = query.order === "asc" ? asc : desc;
   const conditions: SQL[] = [];
+  // Each value is bound once, however often a client repeats it: D1 binds at most 100 parameters
+  // per query, and the statuses are only a few.
   if (query.reviewStatuses.length > 0) {
-    conditions.push(inArray(revisions.reviewStatus, [...query.reviewStatuses]));
+    conditions.push(inArray(revisions.reviewStatus, [...new Set(query.reviewStatuses)]));
   }
   if (query.sendingStatuses.length > 0) {
-    conditions.push(inArray(drafts.sendingStatus, [...query.sendingStatuses]));
+    conditions.push(inArray(drafts.sendingStatus, [...new Set(query.sendingStatuses)]));
   }
   if (position !== undefined) {
     // A row-value comparison, which SQLite answers with a range scan of the `(…, id)` index.

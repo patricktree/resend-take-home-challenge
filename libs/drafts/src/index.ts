@@ -18,10 +18,11 @@ export type {
 } from "#src/draft.ts";
 export { getDraft } from "#src/get-draft.ts";
 export { getRevision } from "#src/get-revision.ts";
-export type { DraftId, RevisionId } from "#src/ids.ts";
+export { isDraftId, isRevisionId, type DraftId, type RevisionId } from "#src/ids.ts";
 export { listDrafts } from "#src/list-drafts.ts";
 export { rejectRevision, type RejectRevisionResult } from "#src/reject-revision.ts";
 export { reviseDraft } from "#src/revise-draft.ts";
+export { findRootCause } from "#src/root-cause.ts";
 export type { SendPipelineEnvironment } from "#src/send-consumer.ts";
 export {
   SEND_DLQ_NAME,

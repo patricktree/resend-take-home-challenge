@@ -36,6 +36,27 @@ type ErrorBody = ErrorResponse["error"];
 const READ_BOOKMARK_HEADER = "X-Read-Bookmark";
 
 /**
+ * Every `ErrorCode` of the contract, as a value: only the contract's types are imported, and
+ * `satisfies` fails to compile when a code is missing here or not in the contract.
+ */
+const KNOWN_ERROR_CODES = {
+  INVALID_REQUEST: true,
+  UNAUTHENTICATED: true,
+  AGENT_ONLY: true,
+  REVIEWER_ONLY: true,
+  NOT_FOUND: true,
+  DRAFT_NOT_FOUND: true,
+  REVISION_NOT_FOUND: true,
+  REVISION_SUPERSEDED: true,
+  REVISION_ALREADY_DECIDED: true,
+  REVISION_ALREADY_SUBMITTED: true,
+  REVISION_NOT_SUBMITTED: true,
+  DRAFT_APPROVED: true,
+  PAYLOAD_TOO_LARGE: true,
+  INTERNAL_ERROR: true,
+} as const satisfies Record<ErrorCode, true>;
+
+/**
  * The routes declare the optional `X-Read-Bookmark` request header, so Hono RPC asks for a `header`
  * argument; `#send` adds the bookmark to every request instead.
  */
@@ -235,7 +256,9 @@ export class DraftApprovalClient {
 
 /**
  * Turns an error response into {@link ApiError}. A response without the error envelope, such as one
- * from a proxy in front of the API, throws a plain error naming its status.
+ * from a proxy in front of the API, or with a code this client does not know, such as one from a
+ * newer API, throws a plain error naming its status: an {@link ApiError}'s `code` is always one of
+ * the contract's.
  */
 async function toApiError(response: { status: number; text(): Promise<string> }): Promise<Error> {
   const text = await response.text();
@@ -264,9 +287,14 @@ function isErrorEnvelope(value: unknown): value is ErrorResponse {
     error !== null &&
     "code" in error &&
     typeof error.code === "string" &&
+    isKnownErrorCode(error.code) &&
     "message" in error &&
     typeof error.message === "string" &&
     "requestId" in error &&
     typeof error.requestId === "string"
   );
+}
+
+function isKnownErrorCode(code: string): code is ErrorCode {
+  return Object.hasOwn(KNOWN_ERROR_CODES, code);
 }

@@ -16,6 +16,19 @@ const MINUTE_MILLISECONDS = 60 * SECOND_MILLISECONDS;
 
 const HOUR_MILLISECONDS = 60 * MINUTE_MILLISECONDS;
 
+/**
+ * The Draft data whose Send Queue message is largest: 50 recipients of 254 characters and a subject
+ * of 998 emoji. Its message is about 17 KB, so 20 of them exceed the 256 KB of one `sendBatch()`.
+ */
+const LARGEST_DRAFT_DATA = {
+  to: Array.from(
+    { length: 50 },
+    (_, index) => `${String(index).padStart(64, "a")}@${"b".repeat(177)}.example.com`,
+  ),
+  subject: "📧".repeat(998),
+  body: { plainText: "Hello" },
+};
+
 test("a tick re-enqueues a lost hand-off with one sendBatch of its frozen Send intent and records the hand-off", async ({
   expect,
   onTestFinished,
@@ -40,6 +53,36 @@ test("a tick re-enqueues a lost hand-off with one sendBatch of its frozen Send i
   await deliverSendQueueBatch(worker, [{ body: message }]);
   expect(await getSending(worker, draft.id)).toMatchObject({ status: "SENT" });
   await expectExactlyOneEmailPerSentDraft(worker, resendStub);
+});
+
+test("a tick re-enqueues the lost hand-offs of the largest Drafts through the real Send Queue in several sendBatch calls, and records every hand-off", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const { worker } = await useSendPipeline({ onTestFinished });
+  const approved = [];
+  for (let index = 0; index < 20; index++) {
+    approved.push(await createApprovedDraft(worker, LARGEST_DRAFT_DATA));
+  }
+  for (const { draft } of approved) {
+    await loseHandOff(worker, draft.id, 61 * SECOND_MILLISECONDS);
+  }
+
+  await runCronTick(worker);
+
+  const reenqueueCalls = (await readSendQueueCalls(worker)).slice(approved.length);
+  expect(reenqueueCalls.length).toBeGreaterThan(1);
+  expect(reenqueueCalls.map(({ method }) => method)).toStrictEqual(
+    reenqueueCalls.map(() => "sendBatch"),
+  );
+  expect(reenqueueCalls.flatMap(({ messages }) => messages).toSorted(byDraftId)).toStrictEqual(
+    approved.map(({ message }) => message).toSorted(byDraftId),
+  );
+  for (const { draft } of approved) {
+    expect(await readSendColumns(worker, draft.id)).toMatchObject({
+      enqueued_at: expect.any(Number),
+    });
+  }
 });
 
 test("a lost hand-off approved 59 s ago is left to the Approval's request, one approved 61 s ago is re-enqueued, and a recorded hand-off never is", async ({
@@ -116,16 +159,20 @@ test("reconciler re-enqueue ‖ consumer: the re-enqueued message and the origin
   const sent = await getSending(worker, draft.id);
   expect(sent).toStrictEqual({ status: "SENT", emailId: resendStub.emails[0]?.id });
 
-  // The retried re-enqueued message replays the key and body; Resend sends nothing new.
+  // The retried re-enqueued message finds the Send ended and never reaches Resend.
   const retriedDelivery = await deliverSendQueueBatch(worker, [
     { id: "reenqueued", body: reenqueuedMessage, attempts: 2 },
   ]);
 
   expect(retriedDelivery).toStrictEqual([{ id: "reenqueued", outcome: "ACK" }]);
   expect(await getSending(worker, draft.id)).toStrictEqual(sent);
-  expect(resendStub.requests).toHaveLength(3);
+  expect(resendStub.requests).toHaveLength(2);
   await expectExactlyOneEmailPerSentDraft(worker, resendStub);
 });
+
+function byDraftId(first: { draftId: string }, second: { draftId: string }): number {
+  return first.draftId.localeCompare(second.draftId);
+}
 
 /**
  * Makes the Draft's Send a lost hand-off, approved `approvedAgoMilliseconds` ago: as if the

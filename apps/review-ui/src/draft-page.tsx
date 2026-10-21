@@ -13,8 +13,16 @@ import { ErrorMessage } from "#src/error-message.tsx";
 import { rootRoute } from "#src/root-route.tsx";
 import { VerdictControls } from "#src/verdict-controls.tsx";
 
+type DraftViewProps = {
+  draftId: string;
+};
+
 type DraftProps = {
   draft: DraftResponse;
+};
+
+type ReviewOutcomeProps = DraftProps & {
+  onVerdictErrorShownChange: (isShown: boolean) => void;
 };
 
 type RejectionLineProps = {
@@ -34,10 +42,22 @@ export const draftRoute = createRoute({
   errorComponent: DraftPageError,
 });
 
-/** The Draft's latest Revision, with what its review status allows. */
 function DraftPage(): React.ReactNode {
   const { draftId } = draftRoute.useParams();
-  const { data: draft } = useSuspenseQuery(draftQuery(draftId));
+  // Keyed, so another Draft starts without the state of the one before.
+  return <DraftView key={draftId} draftId={draftId} />;
+}
+
+/** The Draft's latest Revision, with what its review status allows. */
+function DraftView({ draftId }: DraftViewProps): React.ReactNode {
+  const [isVerdictErrorShown, setIsVerdictErrorShown] = React.useState(false);
+  const { data: draft } = useSuspenseQuery({
+    ...draftQuery(draftId),
+    // A shown verdict error stays until "Reload Draft" clears it (spec section 11, "Verdict
+    // errors"): no read on coming back to the tab or online may swap the Revision under it.
+    refetchOnWindowFocus: !isVerdictErrorShown,
+    refetchOnReconnect: !isVerdictErrorShown,
+  });
   const revision = draft.latestRevision;
 
   return (
@@ -53,7 +73,7 @@ function DraftPage(): React.ReactNode {
       </div>
       <EarlierRejection draft={draft} />
       <div className={bodyStyles}>{revision.body.plainText}</div>
-      <ReviewOutcome draft={draft} />
+      <ReviewOutcome draft={draft} onVerdictErrorShownChange={setIsVerdictErrorShown} />
     </article>
   );
 }
@@ -83,7 +103,7 @@ function EarlierRejection({ draft }: DraftProps): React.ReactNode {
   );
 }
 
-function ReviewOutcome({ draft }: DraftProps): React.ReactNode {
+function ReviewOutcome({ draft, onVerdictErrorShownChange }: ReviewOutcomeProps): React.ReactNode {
   const revision = draft.latestRevision;
 
   switch (draft.reviewStatus) {
@@ -92,7 +112,13 @@ function ReviewOutcome({ draft }: DraftProps): React.ReactNode {
     }
     case "PENDING": {
       // Keyed, so a newer Revision gets fresh controls: no reason or error carries over to it.
-      return <VerdictControls key={revision.id} draft={draft} />;
+      return (
+        <VerdictControls
+          key={revision.id}
+          draft={draft}
+          onVerdictErrorShownChange={onVerdictErrorShownChange}
+        />
+      );
     }
     case "APPROVED": {
       return (

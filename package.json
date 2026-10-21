@@ -2,9 +2,6 @@
   "name": "@draft-approval/monorepo-root",
   "private": true,
   "files": [
-    "./patches/**",
-    "./.pnpmfile.cjs",
-    "./.pnpmfile.mjs",
     "./pnpm-lock.yaml",
     "./pnpm-workspace.yaml",
     "./postinstall.sh",

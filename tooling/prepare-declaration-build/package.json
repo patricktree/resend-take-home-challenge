@@ -1,6 +1,7 @@
 {
   "name": "@draft-approval/prepare-declaration-build",
   "private": true,
+  "description": "CLI that clears stale declaration outputs and mirrors a package's source manifest into its declaration directory before tsc --build",
   "bin": {
     "prepare-declaration-build": "./src/cli.ts"
   },

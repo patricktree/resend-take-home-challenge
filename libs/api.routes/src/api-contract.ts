@@ -64,6 +64,12 @@ const readBookmarkResponseHeadersSchema = z.object({
   [READ_BOOKMARK_HEADER]: z.string().openapi({ description: READ_BOOKMARK_DESCRIPTION }),
 });
 
+const PAYLOAD_TOO_LARGE_DESCRIPTION = "`PAYLOAD_TOO_LARGE`: the request body exceeds 128 KB.";
+
+/** For the routes that take no request body: the body limit guards every request all the same. */
+const NO_BODY_PAYLOAD_TOO_LARGE_DESCRIPTION =
+  "`PAYLOAD_TOO_LARGE`: the request body exceeds 128 KB; this operation takes no body.";
+
 /** Error responses carry the read bookmark only when the request got as far as the database. */
 const errorResponseHeadersSchema = z.object({
   [READ_BOOKMARK_HEADER]: z.string().optional().openapi({ description: READ_BOOKMARK_DESCRIPTION }),
@@ -95,7 +101,7 @@ const createDraftRoute = createRoute({
       "`INVALID_REQUEST`: the request violates the schema or a limit; see `issues`.",
     ),
     401: errorResponse("`UNAUTHENTICATED`: a valid bearer token is required."),
-    413: errorResponse("`PAYLOAD_TOO_LARGE`: the request body exceeds 128 KB."),
+    413: errorResponse(PAYLOAD_TOO_LARGE_DESCRIPTION),
     500: errorResponse("`INTERNAL_ERROR`: an unexpected error occurred."),
   },
 });
@@ -154,12 +160,12 @@ const reviseDraftRoute = createRoute({
     ),
     401: errorResponse("`UNAUTHENTICATED`: a valid bearer token is required."),
     404: errorResponse(
-      "`DRAFT_NOT_FOUND`: no Draft has this id. `REVISION_NOT_FOUND`: `baseRevisionId` is not one of the Draft's Revisions.",
+      "`DRAFT_NOT_FOUND`: no Draft has this id. `REVISION_NOT_FOUND`: `baseRevisionId` is not one of the Draft's Revisions, also when the Draft is approved. Both come before every 409.",
     ),
     409: errorResponse(
-      "`DRAFT_APPROVED`: the Draft is approved and accepts no further Revisions (checked first). `REVISION_SUPERSEDED`: `baseRevisionId` is no longer the Draft's latest Revision; read the Draft again and build on its latest Revision.",
+      "In order of precedence: `DRAFT_APPROVED`: the Draft is approved and accepts no further Revisions. `REVISION_SUPERSEDED`: `baseRevisionId` is no longer the Draft's latest Revision; read the Draft again and build on its latest Revision.",
     ),
-    413: errorResponse("`PAYLOAD_TOO_LARGE`: the request body exceeds 128 KB."),
+    413: errorResponse(PAYLOAD_TOO_LARGE_DESCRIPTION),
     500: errorResponse("`INTERNAL_ERROR`: an unexpected error occurred."),
   },
 });
@@ -219,6 +225,7 @@ const submitRevisionRoute = createRoute({
     409: errorResponse(
       "In order of precedence: `DRAFT_APPROVED`: the Draft is approved and accepts no Submission, also of its approved Revision. `REVISION_SUPERSEDED`: the Revision is no longer the Draft's latest; read the Draft again and submit its latest Revision. `REVISION_ALREADY_DECIDED`: the Revision already has a verdict, named in `existingVerdict`; revise the Draft to submit a new Revision. `REVISION_ALREADY_SUBMITTED`: the Revision is already Pending, for example because an earlier attempt of this request went through.",
     ),
+    413: errorResponse(NO_BODY_PAYLOAD_TOO_LARGE_DESCRIPTION),
     500: errorResponse("`INTERNAL_ERROR`: an unexpected error occurred."),
   },
 });
@@ -282,6 +289,7 @@ const approveRevisionRoute = createRoute({
       "`DRAFT_NOT_FOUND`: no Draft has this id. `REVISION_NOT_FOUND`: the Draft has no Revision with this id, including when it is another Draft's Revision.",
     ),
     409: errorResponse(VERDICT_409_DESCRIPTION),
+    413: errorResponse(NO_BODY_PAYLOAD_TOO_LARGE_DESCRIPTION),
     500: errorResponse("`INTERNAL_ERROR`: an unexpected error occurred."),
   },
 });
@@ -318,7 +326,7 @@ const rejectRevisionRoute = createRoute({
       "`DRAFT_NOT_FOUND`: no Draft has this id. `REVISION_NOT_FOUND`: the Draft has no Revision with this id, including when it is another Draft's Revision.",
     ),
     409: errorResponse(VERDICT_409_DESCRIPTION),
-    413: errorResponse("`PAYLOAD_TOO_LARGE`: the request body exceeds 128 KB."),
+    413: errorResponse(PAYLOAD_TOO_LARGE_DESCRIPTION),
     500: errorResponse("`INTERNAL_ERROR`: an unexpected error occurred."),
   },
 });

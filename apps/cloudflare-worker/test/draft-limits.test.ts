@@ -1,8 +1,11 @@
 import { test } from "vitest";
 
-import { LOCAL_AGENT_TOKEN } from "@draft-approval/api.routes";
+import { LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN } from "@draft-approval/api.routes";
 
 import { useWorker } from "#test/use-worker.ts";
+
+const REVISION_PATH =
+  "/api/v1/drafts/drf_00000000-0000-7000-8000-000000000000/revisions/rev_00000000-0000-7000-8000-000000000000";
 
 const AGENT_HEADERS = {
   Authorization: `Bearer ${LOCAL_AGENT_TOKEN}`,
@@ -214,6 +217,25 @@ test("a request body of 128 KB plus 1 byte answers with 413 PAYLOAD_TOO_LARGE", 
     },
   });
 });
+
+test.for([
+  { name: "submit", path: `${REVISION_PATH}/submission`, token: LOCAL_AGENT_TOKEN },
+  { name: "approve", path: `${REVISION_PATH}/approval`, token: LOCAL_REVIEWER_TOKEN },
+])(
+  "a request body over 128 KB to $name, which takes no body, answers with 413 PAYLOAD_TOO_LARGE",
+  async ({ path, token }, { expect, onTestFinished }) => {
+    const worker = await useWorker({ onTestFinished });
+
+    const response = await worker.fetch(path, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: padJson({}, REQUEST_LIMIT_BYTES + 1),
+    });
+
+    expect(response.status).toBe(413);
+    expect(await response.json()).toMatchObject({ error: { code: "PAYLOAD_TOO_LARGE" } });
+  },
+);
 
 test("a request body over 128 KB without Content-Length answers with 413 PAYLOAD_TOO_LARGE", async ({
   expect,

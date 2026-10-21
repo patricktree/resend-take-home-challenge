@@ -145,6 +145,32 @@ test("scripted responses apply in order", async ({ expect, onTestFinished }) => 
   ]);
 });
 
+test("a held request with a scripted response gets that response once released, and sends nothing", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const stub = await useStub({ onTestFinished });
+  const held = stub.holdNext(resendError(422, "validation_error", "Invalid `to` field."));
+  const refused = postEmail(stub, "key-1", EMAIL);
+  await held.received;
+  const STILL_HELD = "still held";
+
+  const earlyAnswer = await Promise.race([
+    refused,
+    new Promise((resolve) => setTimeout(() => resolve(STILL_HELD), 50)),
+  ]);
+  expect(earlyAnswer).toBe(STILL_HELD);
+  held.release();
+  const response = await refused;
+
+  expect(response.status).toBe(422);
+  expect(await response.json()).toMatchObject({ name: "validation_error" });
+  expect(stub.emails).toStrictEqual([]);
+  // The key never reached the ledger, so the next request with it sends the email.
+  expect((await postEmail(stub, "key-1", EMAIL)).status).toBe(200);
+  expect(stub.emails).toHaveLength(1);
+});
+
 test("a hung request never gets an answer and sends nothing", async ({
   expect,
   onTestFinished,

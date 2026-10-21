@@ -9,6 +9,7 @@ import {
   draftSummarySchema,
   LOCAL_AGENT_TOKEN,
   LOCAL_REVIEWER_TOKEN,
+  type DraftDataRequest,
   type DraftSummaryResponse,
 } from "@draft-approval/api.routes";
 import type { SendQueueMessage } from "@draft-approval/drafts";
@@ -38,15 +39,19 @@ export async function useSendPipeline(
   return { resendStub, worker };
 }
 
-/** Creates, submits and approves a Draft; returns its summary and its Send Queue message. */
+/**
+ * Creates, submits and approves a Draft, with {@link DRAFT_DATA} unless given other Draft data;
+ * returns its summary and its Send Queue message.
+ */
 export async function createApprovedDraft(
   worker: TestWorker,
+  draftData: DraftDataRequest = DRAFT_DATA,
 ): Promise<{ draft: DraftSummaryResponse; message: SendQueueMessage }> {
   const created = await expectSummary(
     await worker.fetch("/api/v1/drafts", {
       method: "POST",
       headers: AGENT_HEADERS,
-      body: JSON.stringify(DRAFT_DATA),
+      body: JSON.stringify(draftData),
     }),
   );
   const revisionPath = `/api/v1/drafts/${created.id}/revisions/${created.latestRevision.id}`;

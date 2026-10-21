@@ -26,14 +26,16 @@ export type ReviseDraftResult =
  * refused before anything is read):
  *
  * - `DRAFT_NOT_FOUND`: no Draft has this id;
- * - `DRAFT_APPROVED`: the Draft is approved and accepts no further Revisions;
  * - `REVISION_NOT_FOUND`: the base is not one of the Draft's Revisions;
+ * - `DRAFT_APPROVED`: the Draft is approved and accepts no further Revisions;
  * - `REVISION_SUPERSEDED`: the base is not the Draft's latest Revision.
+ *
+ * Every 404 comes before every 409, as for Submissions and verdicts.
  */
 type ReviseDraftRefusal =
   | "DRAFT_NOT_FOUND"
-  | "DRAFT_APPROVED"
   | "REVISION_NOT_FOUND"
+  | "DRAFT_APPROVED"
   | "REVISION_SUPERSEDED";
 
 /**
@@ -153,11 +155,11 @@ async function explainRefusal(
   if (row === undefined) {
     return "DRAFT_NOT_FOUND";
   }
-  if (row.sendingStatus !== "NOT_SENT") {
-    return "DRAFT_APPROVED";
-  }
   if (row.baseRevisionId === null) {
     return "REVISION_NOT_FOUND";
+  }
+  if (row.sendingStatus !== "NOT_SENT") {
+    return "DRAFT_APPROVED";
   }
   if (row.latestRevisionId === baseRevisionId) {
     throw new Error(

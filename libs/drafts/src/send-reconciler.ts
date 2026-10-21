@@ -3,7 +3,8 @@
  * that no Send stays `QUEUED` forever. Each tick runs two bounded jobs, each on at most 100 rows,
  * oldest first, along its partial index of `drafts`:
  *
- * 1. Lost hand-off: re-enqueues the Sends whose Queue message was never recorded as sent.
+ * 1. Lost hand-off: re-enqueues the Sends whose Queue message was never recorded as sent, in as
+ *    many `sendBatch()` calls as the Queues batch limits require.
  * 2. Backstop: resolves the Sends still `QUEUED` an hour after their deadline.
  *
  * Duplicates (a request that died between `send()` and setting `enqueued_at`, overlapping ticks)
@@ -18,7 +19,7 @@ import { Temporal } from "temporal-polyfill";
 import { findRootCauseMessage } from "#src/root-cause.ts";
 import { drafts } from "#src/schema.ts";
 import { recordFailed } from "#src/send-outcomes.ts";
-import { toSendQueueMessage, type SendQueue } from "#src/send-queue.ts";
+import { toSendQueueMessage, type SendQueue, type SendQueueMessage } from "#src/send-queue.ts";
 
 /** Where the Send reconciler reads and records Sends, and where it re-enqueues them. */
 export type SendReconcilerDependencies = {
@@ -44,6 +45,19 @@ const LOST_HAND_OFF_AFTER_MILLISECONDS = 60 * 1000;
 const BACKSTOP_AFTER_DEADLINE_MILLISECONDS = 60 * 60 * 1000;
 
 /**
+ * Cloudflare Queues' limits of one `sendBatch()`
+ * (https://developers.cloudflare.com/queues/platform/limits/): 100 messages and 256 KB in total,
+ * with KB read as 1000 bytes, the stricter reading. Each message counts its body plus up to about
+ * 100 bytes of internal metadata, reserved here. A message of the largest Draft data is about 17
+ * KB, so 100 of them need several calls.
+ */
+const QUEUE_BATCH_LIMITS = {
+  MESSAGES: 100,
+  BYTES: 256 * 1000,
+  METADATA_BYTES_PER_MESSAGE: 100,
+} as const;
+
+/**
  * `sending_status = 'QUEUED'` with the value inlined: SQLite uses a partial index only when the
  * query's terms imply the index's `WHERE` as written, and `eq()` would bind the value as a
  * parameter, which implies nothing.
@@ -63,9 +77,10 @@ export async function reconcileSends({
 }
 
 /**
- * Re-enqueues the oldest lost hand-offs with one `sendBatch()` of their frozen Send intents, then
- * records their hand-off. A failed `sendBatch()` ends the job for this tick without recording
- * anything, so a Queues outage is not hammered; later ticks drain the backlog.
+ * Re-enqueues the oldest lost hand-offs: their frozen Send intents go out in chunks that each fit
+ * one `sendBatch()`, oldest first, and each chunk's hand-off is recorded once its `sendBatch()`
+ * succeeded. A failed `sendBatch()` ends the job for this tick, so a Queues outage is not hammered;
+ * its chunk and the later ones stay unrecorded, and later ticks drain the backlog.
  */
 async function reenqueueLostHandOffs(
   database: DrizzleD1Database,
@@ -84,34 +99,76 @@ async function reenqueueLostHandOffs(
     return;
   }
 
-  try {
-    await sendQueue.sendBatch(
-      lostHandOffs.map((draftRow) => ({ body: toSendQueueMessage(draftRow) })),
-    );
-  } catch (error) {
-    console.error(
-      `Re-enqueueing ${lostHandOffs.length} lost Send hand-offs failed; the next tick of the Send reconciler tries again. ${findRootCauseMessage(error)}`,
-    );
-    return;
-  }
+  const chunks = chunkWithinQueueBatchLimits(lostHandOffs.map(toSendQueueMessage));
+  for (const [index, chunk] of chunks.entries()) {
+    try {
+      // `json`, so that the size the limit counts is the size `measureBodyBytes()` measured.
+      await sendQueue.sendBatch(chunk.map((message) => ({ body: message, contentType: "json" })));
+    } catch (error) {
+      const unrecordedCount = chunks.slice(index).reduce((total, { length }) => total + length, 0);
+      console.error(
+        `Re-enqueueing ${unrecordedCount} of ${lostHandOffs.length} lost Send hand-offs failed; the next tick of the Send reconciler tries again. ${findRootCauseMessage(error)}`,
+      );
+      return;
+    }
 
-  // One statement per Draft: D1 binds at most 100 parameters per statement. Each one is conditional
-  // like the Approval's own, in case a Send ended in the meantime.
+    await recordHandOffs(database, chunk);
+  }
+}
+
+/**
+ * Records the hand-off of re-enqueued Sends. One statement per Draft: D1 binds at most 100
+ * parameters per statement. Each one is conditional like the Approval's own, in case a Send ended
+ * in the meantime.
+ */
+async function recordHandOffs(
+  database: DrizzleD1Database,
+  messages: SendQueueMessage[],
+): Promise<void> {
   const enqueuedAt = Temporal.Now.instant().epochMilliseconds;
-  const [firstUpdate, ...otherUpdates] = lostHandOffs.map((draftRow) =>
+  const [firstUpdate, ...otherUpdates] = messages.map(({ draftId }) =>
     database
       .update(drafts)
       .set({ enqueuedAt })
       .where(
-        and(
-          eq(drafts.id, draftRow.id),
-          eq(drafts.sendingStatus, "QUEUED"),
-          isNull(drafts.enqueuedAt),
-        ),
+        and(eq(drafts.id, draftId), eq(drafts.sendingStatus, "QUEUED"), isNull(drafts.enqueuedAt)),
       ),
   );
-  assert(firstUpdate !== undefined, "A re-enqueued batch has at least one Send.");
+  assert(firstUpdate !== undefined, "A re-enqueued chunk has at least one Send.");
   await database.batch([firstUpdate, ...otherUpdates]);
+}
+
+/**
+ * Splits messages, in order, into consecutive chunks that each stay within the Queues batch limits.
+ * A single message is far below them, since spec section 6 ("Limits and request format") bounds the
+ * Draft data.
+ */
+function chunkWithinQueueBatchLimits(messages: SendQueueMessage[]): SendQueueMessage[][] {
+  const chunks: SendQueueMessage[][] = [];
+  let chunk: SendQueueMessage[] = [];
+  let chunkBytes = 0;
+  for (const message of messages) {
+    const messageBytes = measureBodyBytes(message) + QUEUE_BATCH_LIMITS.METADATA_BYTES_PER_MESSAGE;
+    const isChunkFull =
+      chunk.length === QUEUE_BATCH_LIMITS.MESSAGES ||
+      chunkBytes + messageBytes > QUEUE_BATCH_LIMITS.BYTES;
+    if (chunk.length > 0 && isChunkFull) {
+      chunks.push(chunk);
+      chunk = [];
+      chunkBytes = 0;
+    }
+    chunk.push(message);
+    chunkBytes += messageBytes;
+  }
+  if (chunk.length > 0) {
+    chunks.push(chunk);
+  }
+  return chunks;
+}
+
+/** The size of a message's body as the Queue receives it with `contentType: "json"`. */
+function measureBodyBytes(message: SendQueueMessage): number {
+  return new TextEncoder().encode(JSON.stringify(message)).byteLength;
 }
 
 /**

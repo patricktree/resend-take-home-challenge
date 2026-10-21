@@ -3,10 +3,12 @@ import { Temporal } from "temporal-polyfill";
 
 import type { DraftSummary } from "../domain/draft.ts";
 import { isDraftId, isRevisionId } from "../domain/ids.ts";
+import { explainVerdictRefusal, type VerdictRefusal } from "../domain/refusals.ts";
 import type { DraftsStorage } from "../storage/database.ts";
 import { toDraftSummary } from "../storage/draft-rows.ts";
+import { readRefusalSnapshot } from "../storage/refusal-snapshot.ts";
 import { drafts, revisions } from "../storage/schema.ts";
-import { explainVerdictRefusal, isLatestAndPending, type VerdictRefusal } from "./verdicts.ts";
+import { isLatestAndPending } from "./verdict-guard.ts";
 
 type RejectRevisionInput = {
   /** Optional; trimmed, and an empty or whitespace-only reason counts as absent. */
@@ -58,7 +60,10 @@ export async function rejectRevision(
   const [draftRow] = updatedDrafts;
   const [revisionRow] = updatedRevisions;
   if (draftRow === undefined || revisionRow === undefined) {
-    return explainVerdictRefusal(database, draftId, revisionId);
+    return explainVerdictRefusal(
+      { draftId, revisionId },
+      await readRefusalSnapshot(database, draftId, revisionId),
+    );
   }
 
   // The rejected Revision is the latest one, so its verdict is the Draft's last verdict.

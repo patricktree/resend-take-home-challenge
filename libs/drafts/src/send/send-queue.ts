@@ -1,17 +1,13 @@
 /*
- * The Send Queue's messages (spec section 9). An Approval hands its Send intent to the Queue with one
- * message; the Queue consumer and the Send reconciler read the same shape.
+ * The Send Queue port (spec section 9): the producer side an Approval and the Send reconciler send
+ * to, and the limits of one `sendBatch()`.
  *
- * This module imports only `domain/`: `storage/send-outbox.ts` builds these messages from rows and
- * imports it, while the rest of `send/` imports `storage/`.
+ * The messages' shape and schema live in `domain/send-queue-message.ts`, so
+ * `storage/send-outbox.ts` builds messages from rows without importing `send/`, which itself
+ * imports `storage/`. This module imports only `domain/`.
  */
 
-import { z } from "zod";
-
-import type { OutgoingEmail } from "../domain/draft.ts";
-import { isDraftId, type DraftId } from "../domain/ids.ts";
-
-export type SendQueueMessage = z.infer<typeof sendQueueMessageSchema>;
+import type { SendQueueMessage } from "../domain/send-queue-message.ts";
 
 /**
  * The producer side of the Send Queue: the Approval hands its Send intent to it with `send()`, the
@@ -36,24 +32,3 @@ export const QUEUE_BATCH_LIMITS = {
   BYTES: 256 * 1000,
   METADATA_BYTES_PER_MESSAGE: 100,
 } as const;
-
-/** Validates a frozen outgoing email, which the domain type `OutgoingEmail` defines. */
-const outgoingEmailSchema = z.strictObject({
-  from: z.string().min(1),
-  to: z.array(z.string()).min(1),
-  subject: z.string(),
-  bodyKey: z.string().min(1),
-  tags: z.array(z.strictObject({ name: z.string(), value: z.string() })),
-}) satisfies z.ZodType<OutgoingEmail>;
-
-export const sendQueueMessageSchema = z.strictObject({
-  draftId: z.custom<DraftId>(
-    (value) => typeof value === "string" && isDraftId(value),
-    "Must be a Draft id (drf_…).",
-  ),
-  /** `draft-send/<draftId>`, sent to Resend as the `Idempotency-Key`. */
-  idempotencyKey: z.string().min(1),
-  outgoingEmail: outgoingEmailSchema,
-  /** No Resend call may be made after it: `approved_at + 23 h`, in milliseconds since the epoch. */
-  deadline: z.int().positive(),
-});

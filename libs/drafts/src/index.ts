@@ -24,11 +24,8 @@ export { listDrafts } from "./review/list-drafts.ts";
 export { rejectRevision, type RejectRevisionResult } from "./review/reject-revision.ts";
 export { reviseDraft } from "./review/revise-draft.ts";
 export { findRootCause } from "./root-cause.ts";
-export {
-  sendQueueMessageSchema,
-  type SendQueue,
-  type SendQueueMessage,
-} from "./send/send-queue.ts";
+export { sendQueueMessageSchema, type SendQueueMessage } from "./domain/send-queue-message.ts";
+export type { SendQueue } from "./send/send-queue.ts";
 export { submitRevision } from "./review/submit-revision.ts";
 export type { SendPipelineEnvironment } from "./worker/environment.ts";
 export { SEND_DLQ_NAME, SEND_QUEUE_NAME } from "./worker/queue-names.ts";

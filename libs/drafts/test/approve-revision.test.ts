@@ -1,12 +1,12 @@
 import { Temporal } from "temporal-polyfill";
 import { test, vi } from "vitest";
 
+import { sendQueueMessageSchema } from "../src/domain/send-queue-message.ts";
 import { approveRevision } from "../src/review/approve-revision.ts";
 import { createDraft } from "../src/review/create-draft.ts";
 import { rejectRevision } from "../src/review/reject-revision.ts";
 import { reviseDraft } from "../src/review/revise-draft.ts";
 import { submitRevision } from "../src/review/submit-revision.ts";
-import { sendQueueMessageSchema } from "../src/send/send-queue.ts";
 import { drizzleForSession, type DraftsStorage } from "../src/storage/database.ts";
 import { createHoldingD1Database } from "./holding-d1-database.ts";
 import { createFailingSendQueue, createRecordingSendQueue } from "./recording-send-queue.ts";

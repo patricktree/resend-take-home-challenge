@@ -10,12 +10,12 @@ import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 
 import { isPastSendDeadline } from "../domain/send-deadline.ts";
+import { sendQueueMessageSchema, type SendQueueMessage } from "../domain/send-queue-message.ts";
 import { classifyResendCall } from "../resend/classify-resend-call.ts";
 import { postEmail, type ResendConnection } from "../resend/post-email.ts";
 import { findRootCauseMessage } from "../root-cause.ts";
 import { getRevisionBodyAt } from "../storage/revision-bodies.ts";
 import { hasSendEnded, recordFailed, recordSent } from "../storage/send-outbox.ts";
-import { sendQueueMessageSchema, type SendQueueMessage } from "./send-queue.ts";
 import { computeRetryDelaySeconds } from "./send-retry-delay.ts";
 
 /** What the Send Queue consumer reads, records and calls; `worker/` builds it from the bindings. */

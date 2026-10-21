@@ -14,6 +14,7 @@
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { Temporal } from "temporal-polyfill";
 
+import type { SendQueueMessage } from "../domain/send-queue-message.ts";
 import { findRootCauseMessage } from "../root-cause.ts";
 import {
   findExpiredSends,
@@ -21,7 +22,7 @@ import {
   recordFailed,
   recordHandOff,
 } from "../storage/send-outbox.ts";
-import { QUEUE_BATCH_LIMITS, type SendQueue, type SendQueueMessage } from "./send-queue.ts";
+import { QUEUE_BATCH_LIMITS, type SendQueue } from "./send-queue.ts";
 
 /** Where the Send reconciler reads and records Sends, and where it re-enqueues them. */
 export type SendReconcilerDependencies = {

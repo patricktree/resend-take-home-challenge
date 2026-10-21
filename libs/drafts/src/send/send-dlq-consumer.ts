@@ -8,9 +8,9 @@
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { z } from "zod";
 
+import { sendQueueMessageSchema } from "../domain/send-queue-message.ts";
 import { findRootCauseMessage } from "../root-cause.ts";
 import { recordFailed } from "../storage/send-outbox.ts";
-import { sendQueueMessageSchema } from "./send-queue.ts";
 
 /**
  * Consumes one batch of the Send DLQ: records `FAILED` / `OUTCOME_UNKNOWN` for each message's Send,

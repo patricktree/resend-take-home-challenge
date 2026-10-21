@@ -1,8 +1,5 @@
-import {
-  QUEUE_BATCH_LIMITS,
-  type SendQueue,
-  type SendQueueMessage,
-} from "../src/send/send-queue.ts";
+import type { SendQueueMessage } from "../src/domain/send-queue-message.ts";
+import { QUEUE_BATCH_LIMITS, type SendQueue } from "../src/send/send-queue.ts";
 
 /** A Send Queue test double that records every message sent to it. */
 export type RecordingSendQueue = SendQueue & {

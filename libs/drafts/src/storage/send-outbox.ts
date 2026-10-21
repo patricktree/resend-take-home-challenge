@@ -14,7 +14,7 @@ import assert from "node:assert/strict";
 import { Temporal } from "temporal-polyfill";
 
 import type { DraftId } from "../domain/ids.ts";
-import { sendQueueMessageSchema, type SendQueueMessage } from "../send/send-queue.ts";
+import { sendQueueMessageSchema, type SendQueueMessage } from "../domain/send-queue-message.ts";
 import { drafts } from "./schema.ts";
 
 export type SendFailure =

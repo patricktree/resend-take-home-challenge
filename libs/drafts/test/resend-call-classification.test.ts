@@ -7,13 +7,13 @@ const EMAIL_ID = "4ef9a417-02e9-4d39-ad75-9611e0fcc33c";
 test("a 200 with an id is final: SENT with that email id", () => {
   expect(
     classifyResendCall({ kind: "RESPONSE", status: 200, body: { id: EMAIL_ID } }),
-  ).toStrictEqual({ classification: "SENT", emailId: EMAIL_ID });
+  ).toStrictEqual({ kind: "SENT", emailId: EMAIL_ID });
 });
 
 test("another 2xx with an id is also SENT: Resend accepted the email under the key", () => {
   expect(
     classifyResendCall({ kind: "RESPONSE", status: 201, body: { id: EMAIL_ID } }),
-  ).toStrictEqual({ classification: "SENT", emailId: EMAIL_ID });
+  ).toStrictEqual({ kind: "SENT", emailId: EMAIL_ID });
 });
 
 test.for([400, 401, 403, 404, 405, 422])(
@@ -30,7 +30,7 @@ test.for([400, 401, 403, 404, 405, 422])(
         },
       }),
     ).toStrictEqual({
-      classification: "REJECTED",
+      kind: "REJECTED",
       resendErrorName: "validation_error",
       resendErrorMessage: "The `to` field is invalid.",
     });
@@ -49,7 +49,7 @@ test("a 409 invalid_idempotent_request is final: REJECTED", () => {
       },
     }),
   ).toStrictEqual({
-    classification: "REJECTED",
+    kind: "REJECTED",
     resendErrorName: "invalid_idempotent_request",
     resendErrorMessage: "This idempotency key has been used with a different request body.",
   });
@@ -67,7 +67,7 @@ test("a 409 concurrent_idempotent_requests is retryable", () => {
       },
     }),
   ).toStrictEqual({
-    classification: "RETRYABLE",
+    kind: "RETRYABLE",
     cause: "Resend answered 409 concurrent_idempotent_requests.",
   });
 });
@@ -79,7 +79,7 @@ test.for([408, 429, 500, 502, 503, 504])("a %i is retryable", (status) => {
       status,
       body: { statusCode: status, name: "some_error", message: "Try again later." },
     }),
-  ).toStrictEqual({ classification: "RETRYABLE", cause: `Resend answered ${status} some_error.` });
+  ).toStrictEqual({ kind: "RETRYABLE", cause: `Resend answered ${status} some_error.` });
 });
 
 test("a retryable response keeps its Retry-After", () => {
@@ -91,7 +91,7 @@ test("a retryable response keeps its Retry-After", () => {
       retryAfterSeconds: 7,
     }),
   ).toStrictEqual({
-    classification: "RETRYABLE",
+    kind: "RETRYABLE",
     cause: "Resend answered 429 rate_limit_exceeded.",
     retryAfterSeconds: 7,
   });
@@ -101,14 +101,14 @@ test("a network error is retryable", () => {
   expect(
     classifyResendCall({ kind: "NETWORK_ERROR", message: "Network connection lost." }),
   ).toStrictEqual({
-    classification: "RETRYABLE",
+    kind: "RETRYABLE",
     cause: "Calling Resend failed: Network connection lost.",
   });
 });
 
 test("the 10 s timeout is retryable", () => {
   expect(classifyResendCall({ kind: "TIMEOUT" })).toStrictEqual({
-    classification: "RETRYABLE",
+    kind: "RETRYABLE",
     cause: "Resend did not answer within 10 s.",
   });
 });
@@ -125,7 +125,7 @@ test.for([
       body: { statusCode: status, name, message: "Refused." },
     }),
   ).toStrictEqual({
-    classification: "REJECTED",
+    kind: "REJECTED",
     resendErrorName: name,
     resendErrorMessage: "Refused.",
   });
@@ -133,7 +133,7 @@ test.for([
 
 test("a 4xx without Resend's error shape is REJECTED without an error name or message", () => {
   expect(classifyResendCall({ kind: "RESPONSE", status: 400, body: "Bad Request" })).toStrictEqual({
-    classification: "REJECTED",
+    kind: "REJECTED",
   });
 });
 
@@ -143,7 +143,7 @@ test.for([
   { status: 600, body: undefined },
 ])("any other status ($status) is retryable", ({ status, body }) => {
   expect(classifyResendCall({ kind: "RESPONSE", status, body })).toStrictEqual({
-    classification: "RETRYABLE",
+    kind: "RETRYABLE",
     cause: `Resend answered ${status}.`,
   });
 });
@@ -156,7 +156,7 @@ test.for([
   { status: 202, body: { object: "email" } },
 ])("a 2xx without an id ($status, $body) is retryable", ({ status, body }) => {
   expect(classifyResendCall({ kind: "RESPONSE", status, body })).toStrictEqual({
-    classification: "RETRYABLE",
+    kind: "RETRYABLE",
     cause: `Resend answered ${status} without an email id.`,
   });
 });

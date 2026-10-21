@@ -1,7 +1,8 @@
 /*
- * The Resend adapter: one `POST /emails` with plain `fetch`, no SDK, against `RESEND_BASE_URL`, so
- * that tests point it at a stub (spec section 9, "Queue consumer"). The Send Queue consumer is its
- * only caller. It also reads the `Retry-After` header, so the retry policy gets plain seconds.
+ * The Resend adapter's call: one `POST /emails` with plain `fetch`, no SDK, against
+ * `RESEND_BASE_URL`, so that tests point it at a stub (spec section 9, "Queue consumer").
+ * `send-email.ts`, the adapter's entry, is its only caller. It also reads the `Retry-After` header,
+ * so the retry policy gets plain seconds.
  */
 
 import { Temporal } from "temporal-polyfill";

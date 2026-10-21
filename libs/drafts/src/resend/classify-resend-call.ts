@@ -16,23 +16,23 @@ export type ResendCall =
   | { kind: "NETWORK_ERROR"; message: string }
   | { kind: "TIMEOUT" };
 
-export type ResendCallClassification =
+export type ResendOutcome =
   /** Final: Resend accepted the email, possibly earlier under the same idempotency key. */
-  | { classification: "SENT"; emailId: string }
+  | { kind: "SENT"; emailId: string }
   /** Final: Resend refused the request, so the email definitely did not go out. */
-  | { classification: "REJECTED"; resendErrorName?: string; resendErrorMessage?: string }
+  | { kind: "REJECTED"; resendErrorName?: string; resendErrorMessage?: string }
   /** The outcome is open; the Queue delivers the message again. */
-  | { classification: "RETRYABLE"; cause: string; retryAfterSeconds?: number };
+  | { kind: "RETRYABLE"; cause: string; retryAfterSeconds?: number };
 
 /** The 4xx statuses with which Resend says the request may succeed later. */
 const RETRYABLE_CLIENT_ERROR_STATUSES = new Set([408, 429]);
 
-export function classifyResendCall(call: ResendCall): ResendCallClassification {
+export function classifyResendCall(call: ResendCall): ResendOutcome {
   if (call.kind === "NETWORK_ERROR") {
-    return { classification: "RETRYABLE", cause: `Calling Resend failed: ${call.message}` };
+    return { kind: "RETRYABLE", cause: `Calling Resend failed: ${call.message}` };
   }
   if (call.kind === "TIMEOUT") {
-    return { classification: "RETRYABLE", cause: "Resend did not answer within 10 s." };
+    return { kind: "RETRYABLE", cause: "Resend did not answer within 10 s." };
   }
 
   const { status, body } = call;
@@ -41,7 +41,7 @@ export function classifyResendCall(call: ResendCall): ResendCallClassification {
     if (emailId === undefined) {
       return retryable(call, `Resend answered ${status} without an email id.`);
     }
-    return { classification: "SENT", emailId };
+    return { kind: "SENT", emailId };
   }
 
   const resendErrorName = readStringField(body, "name");
@@ -57,7 +57,7 @@ export function classifyResendCall(call: ResendCall): ResendCallClassification {
   if (isRejected) {
     const resendErrorMessage = readStringField(body, "message");
     return {
-      classification: "REJECTED",
+      kind: "REJECTED",
       ...(resendErrorName === undefined ? {} : { resendErrorName }),
       ...(resendErrorMessage === undefined ? {} : { resendErrorMessage }),
     };
@@ -68,12 +68,9 @@ export function classifyResendCall(call: ResendCall): ResendCallClassification {
   return retryable(call, `Resend answered ${describedStatus}.`);
 }
 
-function retryable(
-  call: Extract<ResendCall, { kind: "RESPONSE" }>,
-  cause: string,
-): ResendCallClassification {
+function retryable(call: Extract<ResendCall, { kind: "RESPONSE" }>, cause: string): ResendOutcome {
   return {
-    classification: "RETRYABLE",
+    kind: "RETRYABLE",
     cause,
     ...(call.retryAfterSeconds === undefined ? {} : { retryAfterSeconds: call.retryAfterSeconds }),
   };

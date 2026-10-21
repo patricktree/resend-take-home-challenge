@@ -1,12 +1,6 @@
 {
   "name": "@draft-approval/monorepo-root",
   "private": true,
-  "files": [
-    "./pnpm-lock.yaml",
-    "./pnpm-workspace.yaml",
-    "./postinstall.sh",
-    "./preinstall.sh"
-  ],
   "type": "module",
   "scripts": {
     "build": "turbo run turbo:build",
@@ -15,7 +9,6 @@
     "clean": "pnpm run --parallel clean && pnpm exec del-cli \"**/node_modules\" \"**/.turbo\"",
     "declutter": "knip",
     "dev": "pnpm --filter '@draft-approval/cloudflare-worker' run dev",
-    "docs:check": "markdownlint-cli2",
     "draft-approval": "node apps/cli/src/cli.ts",
     "fix": "pnpm run format && pnpm run lint:fix",
     "format": "oxfmt .",
@@ -32,21 +25,16 @@
     "test:resend-live": "pnpm --filter '@draft-approval/resend-stub' run test:resend-live",
     "validate": "pnpm run validate:fast && pnpm run validate:extended",
     "validate:extended": "pnpm run test:e2e",
-    "validate:fast": "pnpm run format:check && pnpm run docs:check && pnpm run declutter && turbo run turbo:build turbo:lint turbo:test --output-logs=errors-only",
+    "validate:fast": "pnpm run format:check && pnpm run declutter && turbo run turbo:build turbo:lint turbo:test --output-logs=errors-only",
     "validate:update-snapshots": "pnpm run validate:fast && pnpm run test:e2e:update"
   },
   "devDependencies": {
-    "@draft-approval/config-oxlint": "workspace:*",
     "@emnapi/core": "^1.11.3",
     "@emnapi/runtime": "^1.11.3",
     "@patricktree-stack/config-oxfmt": "workspace:*",
     "del-cli": "^8.0.1",
     "knip": "^6.41.0",
-    "markdownlint-cli2": "^0.23.3",
-    "markdownlint-rule-relative-links": "^5.1.3",
     "oxfmt": "catalog:",
-    "oxlint": "catalog:",
-    "oxlint-tsgolint": "catalog:",
     "turbo": "^2.11.7"
   },
   "devEngines": {

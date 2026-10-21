@@ -1,5 +1,5 @@
 {
-  "name": "@draft-approval/cloudflare-worker",
+  "name": "@resend-challenge/cloudflare-worker",
   "private": true,
   "description": "The Worker entry: fetch (API), queue and scheduled handlers, Wrangler and Vite configuration, integration tests",
   "type": "module",
@@ -33,20 +33,20 @@
     "turbo:test": "pnpm run test"
   },
   "dependencies": {
-    "@draft-approval/api.server": "workspace:*",
-    "@draft-approval/drafts": "workspace:*"
+    "@resend-challenge/api.server": "workspace:*",
+    "@resend-challenge/drafts": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "catalog:web-app",
-    "@draft-approval/api.client": "workspace:*",
-    "@draft-approval/api.routes": "workspace:*",
-    "@draft-approval/config-oxlint": "workspace:*",
-    "@draft-approval/prepare-declaration-build": "workspace:*",
-    "@draft-approval/resend-stub": "workspace:*",
-    "@draft-approval/review-ui": "workspace:*",
     "@modelcontextprotocol/client": "catalog:mcp",
     "@patricktree-stack/config-typescript": "workspace:*",
     "@patricktree-stack/config-vitest": "workspace:*",
+    "@resend-challenge/api.client": "workspace:*",
+    "@resend-challenge/api.routes": "workspace:*",
+    "@resend-challenge/config-oxlint": "workspace:*",
+    "@resend-challenge/prepare-declaration-build": "workspace:*",
+    "@resend-challenge/resend-stub": "workspace:*",
+    "@resend-challenge/review-ui": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "oxlint": "catalog:",

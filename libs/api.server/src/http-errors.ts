@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
-import type { ErrorCode, ErrorExtras, ErrorResponse } from "@draft-approval/api.routes";
+import type { ErrorCode, ErrorExtras, ErrorResponse } from "@resend-challenge/api.routes";
 
 import type { ApiServerHonoEnvironment } from "#src/api-server-environment.ts";
 

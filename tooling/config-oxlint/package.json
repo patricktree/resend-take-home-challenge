@@ -1,5 +1,5 @@
 {
-  "name": "@draft-approval/config-oxlint",
+  "name": "@resend-challenge/config-oxlint",
   "private": true,
   "type": "module",
   "dependencies": {

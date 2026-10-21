@@ -5,7 +5,7 @@ import {
   draftSummarySchema,
   LOCAL_AGENT_TOKEN,
   LOCAL_REVIEWER_TOKEN,
-} from "@draft-approval/api.routes";
+} from "@resend-challenge/api.routes";
 
 import { useWorker, type TestWorker } from "#test/use-worker.ts";
 

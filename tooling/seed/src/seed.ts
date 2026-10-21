@@ -1,11 +1,11 @@
-import type { DraftApprovalClient } from "@draft-approval/api.client";
-import type { DraftDataRequest, DraftSummaryResponse } from "@draft-approval/api.routes";
+import type { ApiClient } from "@resend-challenge/api.client";
+import type { DraftDataRequest, DraftSummaryResponse } from "@resend-challenge/api.routes";
 
 export type SeedDraftsOptions = {
   /** Plays the Agent's moves: create, revise, submit. */
-  agentClient: DraftApprovalClient;
+  agentClient: ApiClient;
   /** Renders the verdicts. */
-  reviewerClient: DraftApprovalClient;
+  reviewerClient: ApiClient;
   print: (line: string) => void;
 };
 
@@ -79,7 +79,7 @@ export async function seedDrafts({
 }
 
 async function createAndSubmit(
-  agentClient: DraftApprovalClient,
+  agentClient: ApiClient,
   draftData: DraftDataRequest,
 ): Promise<DraftSummaryResponse> {
   const created = await agentClient.createDraft(draftData);

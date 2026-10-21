@@ -22,7 +22,7 @@ cp apps/cloudflare-worker/.dev.vars.example apps/cloudflare-worker/.dev.vars
 
 The `.patricktree-stack` submodule holds the shared configs; if it is missing, `pnpm install` initializes it and fails once, so retry. `pnpm install` also generates the Worker types (`worker-configuration.d.ts`, not committed); run `pnpm cf-typegen` after changing a Wrangler config. `.dev.vars` (gitignored) is only needed for `pnpm dev`; tests never read it.
 
-`pnpm dev` applies the local D1 migrations and starts Vite with the Worker and the Review UI (<http://localhost:5173/app/>, hot reload). Locally, call the API with `LOCAL_AGENT_TOKEN` or `LOCAL_REVIEWER_TOKEN` from `libs/api.routes/src/local-tokens.ts`. With `pnpm dev` running, `pnpm seed` (`tooling/seed`) creates Pending, Rejected and Approved Drafts through the typed client; it calls `http://localhost:5173` unless given `--base-url` or `DRAFT_APPROVAL_BASE_URL`.
+`pnpm dev` applies the local D1 migrations and starts Vite with the Worker and the Review UI (<http://localhost:5173/app/>, hot reload). Locally, call the API with `LOCAL_AGENT_TOKEN` or `LOCAL_REVIEWER_TOKEN` from `libs/api.routes/src/local-tokens.ts`. With `pnpm dev` running, `pnpm seed` (`tooling/seed`) creates Pending, Rejected and Approved Drafts through the typed client; it calls `http://localhost:5173` unless given `--base-url` or `RESEND_CHALLENGE_BASE_URL`.
 
 ## Validation
 
@@ -39,12 +39,12 @@ Run `pnpm validate:fast` before every commit and both before opening a pull requ
 
 - Work test-first: a failing test, then the code that makes it pass. Integration tests come first, through the `useWorker()` fixture of `apps/cloudflare-worker`.
 - Fix the underlying cause of every lint, type or test failure; lint rules, type checks and tests stay enabled, with no disable comments, `@ts-expect-error`, skipped tests or Knip ignores for real findings.
-- Lint settings live in `tooling/config-oxlint/oxlint-base.js` (`@draft-approval/config-oxlint`), which every package's `oxlint.config.ts` extends: it turns on type-aware rules (`typeAware`) and fails on any warning (`maxWarnings: 0`). The oxlint VS Code extension runs the binary of `tooling/config-oxlint` (`.vscode/settings.json`) and applies these two options only from a config at the repository root, so in the editor they are off; `pnpm lint` applies them.
+- Lint settings live in `tooling/config-oxlint/oxlint-base.js` (`@resend-challenge/config-oxlint`), which every package's `oxlint.config.ts` extends: it turns on type-aware rules (`typeAware`) and fails on any warning (`maxWarnings: 0`). The oxlint VS Code extension runs the binary of `tooling/config-oxlint` (`.vscode/settings.json`) and applies these two options only from a config at the repository root, so in the editor they are off; `pnpm lint` applies them.
 - "Harness" means an agent harness only; call a test setup a test runtime, fixture or test setup.
 - Tests start their own servers on OS-assigned ports and never attach to a running server. Vitest runs with `retry: 0`.
 - Every package whose tests run its code in Vitest's own process has `test:coverage` (`vitest run --coverage`). `apps/cloudflare-worker` and `apps/cli` have none: the Worker's code runs inside workerd and the CLI's in spawned processes, where Vitest's V8 coverage sees nothing.
-- Mark every new kind of committed generated file `linguist-generated=true` in `.gitattributes`, so pull request diffs and agent reviews (`git diff -- . ':(exclude,attr:linguist-generated=true)'`) leave it out. The OpenAPI snapshot (`apps/cloudflare-worker/test/__snapshots__/openapi.json`) is one; regenerate it with `pnpm --filter '@draft-approval/cloudflare-worker' test -u` rather than editing it.
-- Clients of the API use the typed client `DraftApprovalClient` from `libs/api.client`; it keeps and resends the read bookmark and throws `ApiError` for error responses.
+- Mark every new kind of committed generated file `linguist-generated=true` in `.gitattributes`, so pull request diffs and agent reviews (`git diff -- . ':(exclude,attr:linguist-generated=true)'`) leave it out. The OpenAPI snapshot (`apps/cloudflare-worker/test/__snapshots__/openapi.json`) is one; regenerate it with `pnpm --filter '@resend-challenge/cloudflare-worker' test -u` rather than editing it.
+- Clients of the API use the typed client `ApiClient` from `libs/api.client`; it keeps and resends the read bookmark and throws `ApiError` for error responses.
 - The README's [Human steps](README.md#human-steps) are the deploy procedure; `pnpm secrets:generate` belongs to them, since it sets a production secret.
 - Never deploy or touch real Cloudflare or Resend resources (`wrangler deploy`, `wrangler login`, `wrangler secret put`, `wrangler d1 migrations apply --remote`, `pnpm secrets:generate`, `terraform init` with the real backend, `terraform apply`) unless the repository owner asks.
 

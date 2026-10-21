@@ -1,5 +1,5 @@
 {
-  "name": "@draft-approval/api.server",
+  "name": "@resend-challenge/api.server",
   "private": true,
   "description": "The Hono app behind the Worker's fetch handler: routing, authentication and the error envelope",
   "type": "module",
@@ -29,21 +29,21 @@
     "turbo:test": "pnpm run test"
   },
   "dependencies": {
-    "@draft-approval/api.client": "workspace:*",
-    "@draft-approval/api.routes": "workspace:*",
-    "@draft-approval/drafts": "workspace:*",
-    "@draft-approval/mcp-server": "workspace:*",
     "@modelcontextprotocol/client": "catalog:mcp",
     "@modelcontextprotocol/server": "catalog:mcp",
+    "@resend-challenge/api.client": "workspace:*",
+    "@resend-challenge/api.routes": "workspace:*",
+    "@resend-challenge/drafts": "workspace:*",
+    "@resend-challenge/mcp-server": "workspace:*",
     "agents": "catalog:mcp",
     "hono": "catalog:hono",
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@draft-approval/config-oxlint": "workspace:*",
-    "@draft-approval/prepare-declaration-build": "workspace:*",
     "@patricktree-stack/config-typescript": "workspace:*",
     "@patricktree-stack/config-vitest": "workspace:*",
+    "@resend-challenge/config-oxlint": "workspace:*",
+    "@resend-challenge/prepare-declaration-build": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "@vitest/coverage-v8": "catalog:",

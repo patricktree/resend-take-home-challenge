@@ -1,3 +1,3 @@
-import { createReviewUiViteConfig } from "@draft-approval/review-ui/vite";
+import { createReviewUiViteConfig } from "@resend-challenge/review-ui/vite";
 
 export default createReviewUiViteConfig();

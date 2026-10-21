@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-import { LOCAL_AGENT_TOKEN } from "@draft-approval/api.routes";
+import { LOCAL_AGENT_TOKEN } from "@resend-challenge/api.routes";
 
 import { expect, test } from "#test-e2e/fixtures.ts";
 import { createDraftData, createPendingDraft, openDraftPage } from "#test-e2e/review-ui.ts";
@@ -141,7 +141,7 @@ test("a verdict with a stored Agent token asks for the Reviewer token", async ({
   // The token screen refuses Agent tokens, so the test stores one directly, under the key of
   // apps/review-ui/src/reviewer-session.ts.
   await page.addInitScript((agentToken) => {
-    localStorage.setItem("draft-approval.reviewer-token", agentToken);
+    localStorage.setItem("resend-challenge.reviewer-token", agentToken);
   }, LOCAL_AGENT_TOKEN);
   await page.goto(`/app/drafts/${draft.id}`);
   // The Agent token reads Drafts.

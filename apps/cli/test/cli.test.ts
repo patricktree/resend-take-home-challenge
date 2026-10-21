@@ -76,7 +76,7 @@ test("the root help lists only the drafts commands, names the token variable and
   expect(result.exitCode).toBe(0);
   expect(listHelpCommands(result.stdout)).toStrictEqual(["drafts", "help"]);
   expect(result.stdout).not.toMatch(VERDICT_COMMAND_OR_OPTION_PATTERN);
-  expect(result.stdout).toContain("DRAFT_APPROVAL_TOKEN");
+  expect(result.stdout).toContain("RESEND_CHALLENGE_TOKEN");
   expect(result.stdout).toContain("https://resend-challenge.patricktree.me/api/openapi.json");
 });
 
@@ -93,7 +93,7 @@ test.for(DRAFTS_COMMANDS)(
     const result = await runCli(["drafts", command, "--help"]);
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain(`Usage: draft-approval drafts ${command}`);
+    expect(result.stdout).toContain(`Usage: resend-challenge drafts ${command}`);
     expect(result.stdout).toContain("--json");
     expect(result.stdout).toContain("--api-url");
     expect(result.stdout).not.toMatch(VERDICT_COMMAND_OR_OPTION_PATTERN);
@@ -112,7 +112,7 @@ test.for(["approve", "reject"])(
   },
 );
 
-test("`drafts create` sends the Draft data with DRAFT_APPROVAL_TOKEN, and --json prints the Draft summary", async ({
+test("`drafts create` sends the Draft data with RESEND_CHALLENGE_TOKEN, and --json prints the Draft summary", async ({
   expect,
   onTestFinished,
 }) => {
@@ -132,7 +132,7 @@ test("`drafts create` sends the Draft data with DRAFT_APPROVAL_TOKEN, and --json
       "Hello Ada and Grace,\n\nthe report is attached.",
       "--json",
     ],
-    { env: { DRAFT_APPROVAL_TOKEN: AGENT_TOKEN, DRAFT_APPROVAL_API_URL: api.url } },
+    { env: { RESEND_CHALLENGE_TOKEN: AGENT_TOKEN, RESEND_CHALLENGE_API_URL: api.url } },
   );
 
   expect(result.exitCode).toBe(0);
@@ -153,14 +153,14 @@ test("`drafts create` sends the Draft data with DRAFT_APPROVAL_TOKEN, and --json
   ]);
 });
 
-test("without DRAFT_APPROVAL_TOKEN the CLI sends the public Agent token that production accepts", async ({
+test("without RESEND_CHALLENGE_TOKEN the CLI sends the public Agent token that production accepts", async ({
   expect,
   onTestFinished,
 }) => {
   const api = await useApiStub(onTestFinished, () => ({ status: 200, body: DRAFT }));
 
   const result = await runCli(["drafts", "get", DRAFT_ID], {
-    env: { DRAFT_APPROVAL_API_URL: api.url },
+    env: { RESEND_CHALLENGE_API_URL: api.url },
   });
 
   expect(result.exitCode).toBe(0);
@@ -179,7 +179,7 @@ test("`drafts create` prints the ids, the statuses and the reviewUrl", async ({
 
   const result = await runCli(
     ["drafts", "create", "--to", "ada@example.com", "--subject", "Hi", "--body", "Hello"],
-    { env: { DRAFT_APPROVAL_API_URL: api.url } },
+    { env: { RESEND_CHALLENGE_API_URL: api.url } },
   );
 
   expect(result.exitCode).toBe(0);
@@ -200,14 +200,14 @@ test("`drafts create --body-file` reads the body from a file", async ({
   onTestFinished,
 }) => {
   const api = await useApiStub(onTestFinished, () => ({ status: 201, body: DRAFT_SUMMARY }));
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "draft-approval-cli-"));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "resend-challenge-cli-"));
   onTestFinished(() => fs.rm(directory, { recursive: true, force: true }));
   const bodyPath = path.join(directory, "body.txt");
   await fs.writeFile(bodyPath, "Hello from a file.\n");
 
   const result = await runCli(
     ["drafts", "create", "--to", "ada@example.com", "--subject", "Hi", "--body-file", bodyPath],
-    { env: { DRAFT_APPROVAL_API_URL: api.url } },
+    { env: { RESEND_CHALLENGE_API_URL: api.url } },
   );
 
   expect(result.exitCode).toBe(0);
@@ -218,19 +218,19 @@ test("`drafts create --body-file` reads the body from a file", async ({
   });
 });
 
-// `pnpm draft-approval` runs the CLI in the repository root and keeps the caller's directory in INIT_CWD.
+// `pnpm resend-challenge` runs the CLI in the repository root and keeps the caller's directory in INIT_CWD.
 test("`drafts create --body-file` resolves a relative path against the directory pnpm was called from", async ({
   expect,
   onTestFinished,
 }) => {
   const api = await useApiStub(onTestFinished, () => ({ status: 201, body: DRAFT_SUMMARY }));
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "draft-approval-cli-"));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "resend-challenge-cli-"));
   onTestFinished(() => fs.rm(directory, { recursive: true, force: true }));
   await fs.writeFile(path.join(directory, "body.txt"), "Hello from the caller's directory.\n");
 
   const result = await runCli(
     ["drafts", "create", "--to", "ada@example.com", "--subject", "Hi", "--body-file", "body.txt"],
-    { env: { DRAFT_APPROVAL_API_URL: api.url, INIT_CWD: directory } },
+    { env: { RESEND_CHALLENGE_API_URL: api.url, INIT_CWD: directory } },
   );
 
   expect(result.exitCode).toBe(0);
@@ -259,7 +259,7 @@ test("`drafts revise --body-file -` reads the body from stdin and sends the base
       "--body-file",
       "-",
     ],
-    { env: { DRAFT_APPROVAL_API_URL: api.url }, stdin: "Hello from stdin.\n" },
+    { env: { RESEND_CHALLENGE_API_URL: api.url }, stdin: "Hello from stdin.\n" },
   );
 
   expect(result.exitCode).toBe(0);
@@ -297,7 +297,7 @@ test("a 409 prints its code and message as JSON on stderr and exits with 1", asy
       "--body",
       "Hello",
     ],
-    { env: { DRAFT_APPROVAL_API_URL: api.url } },
+    { env: { RESEND_CHALLENGE_API_URL: api.url } },
   );
 
   expect(result.exitCode).toBe(1);
@@ -318,7 +318,7 @@ test("`drafts get` prints the recipients, the subject and the body", async ({
   const api = await useApiStub(onTestFinished, () => ({ status: 200, body: DRAFT }));
 
   const result = await runCli(["drafts", "get", DRAFT_ID], {
-    env: { DRAFT_APPROVAL_API_URL: api.url },
+    env: { RESEND_CHALLENGE_API_URL: api.url },
   });
 
   expect(result.exitCode).toBe(0);
@@ -370,7 +370,7 @@ test("`drafts list` sends every filter, the ordering and the paging, and prints 
       "--cursor",
       "cursor_1",
     ],
-    { env: { DRAFT_APPROVAL_API_URL: api.url } },
+    { env: { RESEND_CHALLENGE_API_URL: api.url } },
   );
 
   expect(result.exitCode).toBe(0);
@@ -395,7 +395,7 @@ test("`drafts list --json` prints the page", async ({ expect, onTestFinished }) 
   const api = await useApiStub(onTestFinished, () => ({ status: 200, body: page }));
 
   const result = await runCli(["--json", "drafts", "list"], {
-    env: { DRAFT_APPROVAL_API_URL: api.url },
+    env: { RESEND_CHALLENGE_API_URL: api.url },
   });
 
   expect(result.exitCode).toBe(0);
@@ -407,7 +407,7 @@ test("`drafts submit` submits the Revision", async ({ expect, onTestFinished }) 
   const api = await useApiStub(onTestFinished, () => ({ status: 200, body: submitted }));
 
   const result = await runCli(["drafts", "submit", DRAFT_ID, REVISION_ID, "--json"], {
-    env: { DRAFT_APPROVAL_API_URL: api.url },
+    env: { RESEND_CHALLENGE_API_URL: api.url },
   });
 
   expect(result.exitCode).toBe(0);
@@ -428,7 +428,7 @@ test("`drafts revision` prints the Revision with its rejection reason and body",
   const api = await useApiStub(onTestFinished, () => ({ status: 200, body: REJECTED_REVISION }));
 
   const result = await runCli(["drafts", "revision", DRAFT_ID, REVISION_ID], {
-    env: { DRAFT_APPROVAL_API_URL: api.url },
+    env: { RESEND_CHALLENGE_API_URL: api.url },
   });
 
   expect(result.exitCode).toBe(0);
@@ -470,7 +470,7 @@ test.for([
     const api = await useApiStub(onTestFinished, () => response);
 
     const result = await runCli([...args], {
-      env: { DRAFT_APPROVAL_TOKEN: AGENT_TOKEN, DRAFT_APPROVAL_API_URL: api.url },
+      env: { RESEND_CHALLENGE_TOKEN: AGENT_TOKEN, RESEND_CHALLENGE_API_URL: api.url },
     });
 
     expect(api.requests).toHaveLength(1);
@@ -532,7 +532,7 @@ test.for([
   async ([, args], { expect, onTestFinished }) => {
     const api = await useApiStub(onTestFinished);
 
-    const result = await runCli([...args], { env: { DRAFT_APPROVAL_API_URL: api.url } });
+    const result = await runCli([...args], { env: { RESEND_CHALLENGE_API_URL: api.url } });
 
     expect(result.exitCode).toBe(1);
     expect(result.stdout).toBe("");
@@ -567,8 +567,8 @@ test("an invalid recipient's error names the option and lists the schema's issue
 test.for([
   ["--api-url", { args: ["--api-url", "http://resend-challenge.patricktree.me"], env: {} }],
   [
-    "DRAFT_APPROVAL_API_URL",
-    { args: [], env: { DRAFT_APPROVAL_API_URL: "http://resend-challenge.patricktree.me" } },
+    "RESEND_CHALLENGE_API_URL",
+    { args: [], env: { RESEND_CHALLENGE_API_URL: "http://resend-challenge.patricktree.me" } },
   ],
 ] as const)(
   "a plain-HTTP API URL off loopback from %s is refused",
@@ -591,7 +591,7 @@ test.for(["localhost", "[::1]"])("plain HTTP on %s is allowed", async (hostname,
   const { port } = new URL(await getUnreachableUrl());
 
   const result = await runCli(["drafts", "get", DRAFT_ID], {
-    env: { DRAFT_APPROVAL_API_URL: `http://${hostname}:${port}` },
+    env: { RESEND_CHALLENGE_API_URL: `http://${hostname}:${port}` },
   });
 
   expect(result.exitCode).toBe(1);
@@ -617,14 +617,14 @@ test("an API URL with a path is refused rather than cut to its origin", async ({
   });
 });
 
-test("--api-url takes precedence over DRAFT_APPROVAL_API_URL", async ({
+test("--api-url takes precedence over RESEND_CHALLENGE_API_URL", async ({
   expect,
   onTestFinished,
 }) => {
   const api = await useApiStub(onTestFinished, () => ({ status: 200, body: DRAFT }));
 
   const result = await runCli(["drafts", "get", DRAFT_ID, "--api-url", api.url], {
-    env: { DRAFT_APPROVAL_API_URL: "http://resend-challenge.patricktree.me" },
+    env: { RESEND_CHALLENGE_API_URL: "http://resend-challenge.patricktree.me" },
   });
 
   expect(result.exitCode).toBe(0);
@@ -657,7 +657,7 @@ test("`drafts get` prints the last verdict and the sending outcome", async ({
   const api = await useApiStub(onTestFinished, () => ({ status: 200, body: decidedDraft }));
 
   const result = await runCli(["drafts", "get", DRAFT_ID], {
-    env: { DRAFT_APPROVAL_API_URL: api.url },
+    env: { RESEND_CHALLENGE_API_URL: api.url },
   });
 
   expect(result.exitCode).toBe(0);
@@ -679,7 +679,7 @@ test("a response without the API's error envelope fails with UNEXPECTED_ERROR", 
   const api = await useApiStub(onTestFinished, () => ({ status: 502, body: "Bad Gateway" }));
 
   const result = await runCli(["drafts", "get", DRAFT_ID], {
-    env: { DRAFT_APPROVAL_API_URL: api.url },
+    env: { RESEND_CHALLENGE_API_URL: api.url },
   });
 
   expect(result.exitCode).toBe(1);
@@ -695,7 +695,7 @@ test("an unreachable API fails with NETWORK_ERROR", async ({ expect }) => {
   const unreachableUrl = await getUnreachableUrl();
 
   const result = await runCli(["drafts", "get", DRAFT_ID], {
-    env: { DRAFT_APPROVAL_API_URL: unreachableUrl },
+    env: { RESEND_CHALLENGE_API_URL: unreachableUrl },
   });
 
   expect(result.exitCode).toBe(1);
@@ -715,7 +715,7 @@ type RunCliOptions = {
   stdin?: string;
 };
 
-/** Spawns the real `draft-approval` process, as `pnpm draft-approval` does. */
+/** Spawns the real `resend-challenge` process, as `pnpm resend-challenge` does. */
 async function runCli(args: string[], { env = {}, stdin = "" }: RunCliOptions = {}) {
   const cli = childProcess.spawn(process.execPath, [CLI_PATH, ...args], {
     env,

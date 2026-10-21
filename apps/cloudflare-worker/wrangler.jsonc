@@ -2,7 +2,7 @@
 // The resources come from terraform/; README.md, "Human steps", lists the deploy order.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "draft-approval",
+  "name": "resend-challenge",
   "main": "src/index.ts",
   "compatibility_flags": ["nodejs_compat"],
   "compatibility_date": "2026-08-18",
@@ -27,7 +27,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "draft-approval",
+      "database_name": "resend-challenge",
       // PLACEHOLDER until the first deploy: replace with `terraform -chdir=terraform output -raw d1_database_id`.
       "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "../../libs/drafts/migrations",
@@ -36,19 +36,19 @@
   "r2_buckets": [
     {
       "binding": "REVISION_BODIES",
-      "bucket_name": "draft-approval-revision-bodies",
+      "bucket_name": "resend-challenge-revision-bodies",
     },
   ],
   "queues": {
     "producers": [
       {
         "binding": "SEND_QUEUE",
-        "queue": "draft-approval-send",
+        "queue": "resend-challenge-send",
       },
     ],
     "consumers": [
       {
-        "queue": "draft-approval-send",
+        "queue": "resend-challenge-send",
         // One invocation at a time, 8 messages of at least 1.0 s each: about 8 Resend requests per
         // second, under Resend's 10 per second per team (spec section 9).
         "max_concurrency": 1,
@@ -56,10 +56,10 @@
         "max_batch_timeout": 1,
         // The Queue is the only retry clock; the 23 h deadline ends a Send long before 100 retries.
         "max_retries": 100,
-        "dead_letter_queue": "draft-approval-send-dlq",
+        "dead_letter_queue": "resend-challenge-send-dlq",
       },
       {
-        "queue": "draft-approval-send-dlq",
+        "queue": "resend-challenge-send-dlq",
       },
     ],
   },

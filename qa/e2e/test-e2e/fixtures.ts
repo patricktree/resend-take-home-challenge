@@ -6,9 +6,9 @@ import os from "node:os";
 import path from "node:path";
 import util from "node:util";
 
-import { DraftApprovalClient } from "@draft-approval/api.client";
-import { LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN } from "@draft-approval/api.routes";
-import { startResendStub, type ResendStub } from "@draft-approval/resend-stub";
+import { ApiClient } from "@resend-challenge/api.client";
+import { LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN } from "@resend-challenge/api.routes";
+import { startResendStub, type ResendStub } from "@resend-challenge/resend-stub";
 
 type ReviewEnvironment = {
   /**
@@ -17,9 +17,9 @@ type ReviewEnvironment = {
    */
   browserOrigin: string;
   /** Plays the Agent's moves, with the local Agent token. */
-  agentClient: DraftApprovalClient;
+  agentClient: ApiClient;
   /** Renders verdicts for test setup, with the local Reviewer token. */
-  reviewerClient: DraftApprovalClient;
+  reviewerClient: ApiClient;
   /** The test's own Resend stub, which the Worker's Queue consumer sends every email to. */
   resendStub: ResendStub;
   /**
@@ -59,8 +59,8 @@ export const test = base.extend<Fixtures>({
         const hostOrigin = `http://127.0.0.1:${worker.port}`;
         await use({
           browserOrigin: `http://host.docker.internal:${worker.port}`,
-          agentClient: new DraftApprovalClient({ baseUrl: hostOrigin, token: LOCAL_AGENT_TOKEN }),
-          reviewerClient: new DraftApprovalClient({
+          agentClient: new ApiClient({ baseUrl: hostOrigin, token: LOCAL_AGENT_TOKEN }),
+          reviewerClient: new ApiClient({
             baseUrl: hostOrigin,
             token: LOCAL_REVIEWER_TOKEN,
           }),
@@ -90,7 +90,7 @@ type RunningWorker = {
  * directory and the D1 migrations applied. It sends emails to the Resend stub at `resendBaseUrl`.
  */
 async function startWorker(resendBaseUrl: string): Promise<RunningWorker> {
-  const persistenceDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "draft-approval-e2e-"));
+  const persistenceDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "resend-challenge-e2e-"));
   const removePersistenceDirectory = () =>
     fs.rm(persistenceDirectory, { recursive: true, force: true });
 

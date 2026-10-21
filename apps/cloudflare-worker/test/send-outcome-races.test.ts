@@ -8,8 +8,8 @@
 import { Temporal } from "temporal-polyfill";
 import { test } from "vitest";
 
-import type { SendQueueMessage } from "@draft-approval/drafts";
-import { resendError } from "@draft-approval/resend-stub";
+import type { SendQueueMessage } from "@resend-challenge/drafts";
+import { resendError } from "@resend-challenge/resend-stub";
 
 import { expectExactlyOneEmailPerSentDraft } from "#test/use-resend-stub.ts";
 import {

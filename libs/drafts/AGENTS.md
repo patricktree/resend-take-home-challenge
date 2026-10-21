@@ -13,4 +13,4 @@
 
 ## Migrations
 
-D1 migrations live in `migrations/`; every Wrangler config points `migrations_dir` there. They are generated from the Drizzle schema in `src/schema.ts`: after changing it, run `pnpm --filter '@draft-approval/drafts' migrations:generate --name <change>` and commit the new SQL file with the updated `meta/` files; never edit a generated migration.
+D1 migrations live in `migrations/`; every Wrangler config points `migrations_dir` there. They are generated from the Drizzle schema in `src/schema.ts`: after changing it, run `pnpm --filter '@resend-challenge/drafts' migrations:generate --name <change>` and commit the new SQL file with the updated `meta/` files; never edit a generated migration.

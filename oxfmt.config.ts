@@ -17,10 +17,10 @@ export default defineConfig({
   ],
   sortImports: {
     customGroups: [
-      /* create a group for draft-approval packages to separate them from other external dependencies */
+      /* create a group for resend-challenge packages to separate them from other external dependencies */
       {
-        groupName: "draft-approval-packages",
-        elementNamePattern: ["@draft-approval/**"],
+        groupName: "resend-challenge-packages",
+        elementNamePattern: ["@resend-challenge/**"],
       },
       /* create a group for subpath imports = internal dependencies */
       {
@@ -42,7 +42,7 @@ export default defineConfig({
       ["value-builtin", "type-builtin", "value-external", "type-external"],
       ["value-external", "type-external"],
       ["value-internal", "type-internal"],
-      "draft-approval-packages",
+      "resend-challenge-packages",
       "subpath-imports",
       "subpath-imports-test-modules",
       "subpath-imports-test-modules-e2e",

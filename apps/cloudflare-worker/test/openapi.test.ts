@@ -21,7 +21,7 @@ test("the published OpenAPI document matches the committed snapshot", async ({
 
   expect(response.status).toBe(200);
   const document: unknown = await response.json();
-  // Update the snapshot with `pnpm --filter '@draft-approval/cloudflare-worker' test -u`.
+  // Update the snapshot with `pnpm --filter '@resend-challenge/cloudflare-worker' test -u`.
   await expect(`${JSON.stringify(document, undefined, 2)}\n`).toMatchFileSnapshot(
     "./__snapshots__/openapi.json",
   );

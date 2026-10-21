@@ -248,7 +248,7 @@ async function createPackage(
   `,
   files: Record<string, string> = { "src/package.json": "{}" },
 ) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "draft-approval-declaration-build-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "resend-challenge-declaration-build-"));
   directories.push(root);
   await writeDirectoryTree(root, tree, files);
   return root;

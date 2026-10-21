@@ -2,8 +2,8 @@ import { css, cx } from "@linaria/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import React from "react";
 
-import { ApiError } from "@draft-approval/api.client";
-import type { DraftResponse } from "@draft-approval/api.routes";
+import { ApiError } from "@resend-challenge/api.client";
+import type { DraftResponse } from "@resend-challenge/api.routes";
 
 import { getApiClient } from "#src/api-client.ts";
 import { DSButton } from "#src/design-system/button.tsx";

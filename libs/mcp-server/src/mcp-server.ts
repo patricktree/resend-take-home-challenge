@@ -1,7 +1,7 @@
 import { McpServer, type CallToolResult } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
-import { ApiError, type DraftApprovalClient } from "@draft-approval/api.client";
+import { ApiError, type ApiClient } from "@resend-challenge/api.client";
 import {
   draftDataRequestSchema,
   draftListSchema,
@@ -15,14 +15,14 @@ import {
   revisionParamsSchema,
   revisionSchema,
   sendingStatusSchema,
-} from "@draft-approval/api.routes";
+} from "@resend-challenge/api.routes";
 
-export type DraftApprovalMcpServerOptions = {
+export type ResendChallengeMcpServerOptions = {
   /**
    * The typed client every tool calls the API through. It carries the caller's own token, so a tool
    * call passes the same authentication, authorization and validation as an HTTP call.
    */
-  client: DraftApprovalClient;
+  client: ApiClient;
   /** The origin of the deployed Worker, which the instructions link the OpenAPI document under. */
   publicBaseUrl: string;
 };
@@ -59,12 +59,12 @@ const reviseDraftInputSchema = z.strictObject({
  *
  * `createMcpHandler` asks for a fresh server per request, so this is cheap and keeps no state.
  */
-export function createDraftApprovalMcpServer({
+export function createResendChallengeMcpServer({
   client,
   publicBaseUrl,
-}: DraftApprovalMcpServerOptions): McpServer {
+}: ResendChallengeMcpServerOptions): McpServer {
   const server = new McpServer(
-    { name: "draft-approval", version: "1.0.0" },
+    { name: "resend-challenge", version: "1.0.0" },
     { instructions: describeInstructions(publicBaseUrl) },
   );
 

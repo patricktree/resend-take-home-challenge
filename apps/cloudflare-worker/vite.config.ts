@@ -9,7 +9,7 @@ import {
   createReviewUiViteConfig,
   REVIEW_UI_BUILD_DIRECTORY,
   REVIEW_UI_DIRECTORY,
-} from "@draft-approval/review-ui/vite";
+} from "@resend-challenge/review-ui/vite";
 
 const WORKER_DIRECTORY = import.meta.dirname;
 
@@ -61,13 +61,13 @@ export default defineConfig(({ command }) => {
  */
 function requireReviewUiBuild(): Plugin {
   return {
-    name: "draft-approval:require-review-ui-build",
+    name: "resend-challenge:require-review-ui-build",
     apply: "build",
     buildStart() {
       const reviewUiIndexHtml = path.join(REVIEW_UI_BUILD_DIRECTORY, "app/index.html");
       if (!fs.existsSync(reviewUiIndexHtml)) {
         throw new Error(
-          `${reviewUiIndexHtml} is missing: build @draft-approval/review-ui first (\`pnpm build\` does).`,
+          `${reviewUiIndexHtml} is missing: build @resend-challenge/review-ui first (\`pnpm build\` does).`,
         );
       }
     },
@@ -87,7 +87,7 @@ function requireReviewUiBuild(): Plugin {
  */
 function reviewUiDevServer(): Plugin {
   return {
-    name: "draft-approval:review-ui-dev-server",
+    name: "resend-challenge:review-ui-dev-server",
     apply: "serve",
     // Its middleware must see each request before the Cloudflare plugin's, which answers it.
     enforce: "pre",

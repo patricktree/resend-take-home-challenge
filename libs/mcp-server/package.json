@@ -1,5 +1,5 @@
 {
-  "name": "@draft-approval/mcp-server",
+  "name": "@resend-challenge/mcp-server",
   "private": true,
   "description": "The MCP server: the six Agent tools on the typed client",
   "type": "module",
@@ -23,15 +23,15 @@
     "turbo:lint:fix": "pnpm run turbo:lint --fix"
   },
   "dependencies": {
-    "@draft-approval/api.client": "workspace:*",
-    "@draft-approval/api.routes": "workspace:*",
     "@modelcontextprotocol/server": "catalog:mcp",
+    "@resend-challenge/api.client": "workspace:*",
+    "@resend-challenge/api.routes": "workspace:*",
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@draft-approval/config-oxlint": "workspace:*",
-    "@draft-approval/prepare-declaration-build": "workspace:*",
     "@patricktree-stack/config-typescript": "workspace:*",
+    "@resend-challenge/config-oxlint": "workspace:*",
+    "@resend-challenge/prepare-declaration-build": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "oxlint": "catalog:",

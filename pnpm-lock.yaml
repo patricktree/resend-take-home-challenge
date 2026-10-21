@@ -339,10 +339,10 @@ importers:
       '@commander-js/extra-typings':
         specifier: ~15.0.0
         version: 15.0.0(commander@15.0.0)
-      '@draft-approval/api.client':
+      '@resend-challenge/api.client':
         specifier: workspace:*
         version: link:../../libs/api.client
-      '@draft-approval/api.routes':
+      '@resend-challenge/api.routes':
         specifier: workspace:*
         version: link:../../libs/api.routes
       commander:
@@ -352,18 +352,18 @@ importers:
         specifier: ^4.6.5
         version: 4.6.7
     devDependencies:
-      '@draft-approval/config-oxlint':
-        specifier: workspace:*
-        version: link:../../tooling/config-oxlint
-      '@draft-approval/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../../tooling/prepare-declaration-build
       '@patricktree-stack/config-typescript':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-typescript
       '@patricktree-stack/config-vitest':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-vitest
+      '@resend-challenge/config-oxlint':
+        specifier: workspace:*
+        version: link:../../tooling/config-oxlint
+      '@resend-challenge/prepare-declaration-build':
+        specifier: workspace:*
+        version: link:../../tooling/prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -391,34 +391,16 @@ importers:
 
   apps/cloudflare-worker:
     dependencies:
-      '@draft-approval/api.server':
+      '@resend-challenge/api.server':
         specifier: workspace:*
         version: link:../../libs/api.server
-      '@draft-approval/drafts':
+      '@resend-challenge/drafts':
         specifier: workspace:*
         version: link:../../libs/drafts
     devDependencies:
       '@cloudflare/vite-plugin':
         specifier: catalog:web-app
         version: 1.62.2(@types/node@26.6.5)(vite@8.3.4(@types/node@26.6.5))(wrangler@4.144.0(@types/node@26.6.5))
-      '@draft-approval/api.client':
-        specifier: workspace:*
-        version: link:../../libs/api.client
-      '@draft-approval/api.routes':
-        specifier: workspace:*
-        version: link:../../libs/api.routes
-      '@draft-approval/config-oxlint':
-        specifier: workspace:*
-        version: link:../../tooling/config-oxlint
-      '@draft-approval/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../../tooling/prepare-declaration-build
-      '@draft-approval/resend-stub':
-        specifier: workspace:*
-        version: link:../../qa/resend-stub
-      '@draft-approval/review-ui':
-        specifier: workspace:*
-        version: link:../review-ui
       '@modelcontextprotocol/client':
         specifier: catalog:mcp
         version: 2.3.1
@@ -428,6 +410,24 @@ importers:
       '@patricktree-stack/config-vitest':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-vitest
+      '@resend-challenge/api.client':
+        specifier: workspace:*
+        version: link:../../libs/api.client
+      '@resend-challenge/api.routes':
+        specifier: workspace:*
+        version: link:../../libs/api.routes
+      '@resend-challenge/config-oxlint':
+        specifier: workspace:*
+        version: link:../../tooling/config-oxlint
+      '@resend-challenge/prepare-declaration-build':
+        specifier: workspace:*
+        version: link:../../tooling/prepare-declaration-build
+      '@resend-challenge/resend-stub':
+        specifier: workspace:*
+        version: link:../../qa/resend-stub
+      '@resend-challenge/review-ui':
+        specifier: workspace:*
+        version: link:../review-ui
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -461,18 +461,18 @@ importers:
 
   apps/review-ui:
     dependencies:
-      '@draft-approval/api.client':
-        specifier: workspace:*
-        version: link:../../libs/api.client
-      '@draft-approval/api.routes':
-        specifier: workspace:*
-        version: link:../../libs/api.routes
       '@fontsource-variable/inter':
         specifier: ^5.3.0
         version: 5.3.0
       '@linaria/core':
         specifier: ^8.2.0
         version: 8.2.0
+      '@resend-challenge/api.client':
+        specifier: workspace:*
+        version: link:../../libs/api.client
+      '@resend-challenge/api.routes':
+        specifier: workspace:*
+        version: link:../../libs/api.routes
       '@tanstack/react-query':
         specifier: ^5.104.1
         version: 5.104.5(@types/react@19.3.0)(react@19.3.1)
@@ -489,12 +489,6 @@ importers:
         specifier: ^1.0.6
         version: 1.0.6
     devDependencies:
-      '@draft-approval/config-oxlint':
-        specifier: workspace:*
-        version: link:../../tooling/config-oxlint
-      '@draft-approval/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../../tooling/prepare-declaration-build
       '@patricktree-stack/config-typescript':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-typescript
@@ -504,6 +498,12 @@ importers:
       '@patricktree-stack/config-wyw-in-js':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-wyw-in-js
+      '@resend-challenge/config-oxlint':
+        specifier: workspace:*
+        version: link:../../tooling/config-oxlint
+      '@resend-challenge/prepare-declaration-build':
+        specifier: workspace:*
+        version: link:../../tooling/prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -543,22 +543,22 @@ importers:
 
   libs/api.client:
     dependencies:
-      '@draft-approval/api.routes':
+      '@resend-challenge/api.routes':
         specifier: workspace:*
         version: link:../api.routes
       hono:
         specifier: catalog:hono
         version: 4.13.13
     devDependencies:
-      '@draft-approval/config-oxlint':
-        specifier: workspace:*
-        version: link:../../tooling/config-oxlint
-      '@draft-approval/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../../tooling/prepare-declaration-build
       '@patricktree-stack/config-typescript':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-typescript
+      '@resend-challenge/config-oxlint':
+        specifier: workspace:*
+        version: link:../../tooling/config-oxlint
+      '@resend-challenge/prepare-declaration-build':
+        specifier: workspace:*
+        version: link:../../tooling/prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -587,15 +587,15 @@ importers:
         specifier: ^4.6.5
         version: 4.6.7
     devDependencies:
-      '@draft-approval/config-oxlint':
-        specifier: workspace:*
-        version: link:../../tooling/config-oxlint
-      '@draft-approval/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../../tooling/prepare-declaration-build
       '@patricktree-stack/config-typescript':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-typescript
+      '@resend-challenge/config-oxlint':
+        specifier: workspace:*
+        version: link:../../tooling/config-oxlint
+      '@resend-challenge/prepare-declaration-build':
+        specifier: workspace:*
+        version: link:../../tooling/prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -614,24 +614,24 @@ importers:
 
   libs/api.server:
     dependencies:
-      '@draft-approval/api.client':
-        specifier: workspace:*
-        version: link:../api.client
-      '@draft-approval/api.routes':
-        specifier: workspace:*
-        version: link:../api.routes
-      '@draft-approval/drafts':
-        specifier: workspace:*
-        version: link:../drafts
-      '@draft-approval/mcp-server':
-        specifier: workspace:*
-        version: link:../mcp-server
       '@modelcontextprotocol/client':
         specifier: catalog:mcp
         version: 2.3.1
       '@modelcontextprotocol/server':
         specifier: catalog:mcp
         version: 2.3.1
+      '@resend-challenge/api.client':
+        specifier: workspace:*
+        version: link:../api.client
+      '@resend-challenge/api.routes':
+        specifier: workspace:*
+        version: link:../api.routes
+      '@resend-challenge/drafts':
+        specifier: workspace:*
+        version: link:../drafts
+      '@resend-challenge/mcp-server':
+        specifier: workspace:*
+        version: link:../mcp-server
       agents:
         specifier: catalog:mcp
         version: 0.28.1(@modelcontextprotocol/client@2.3.1)(@modelcontextprotocol/server@2.3.1)(vite@8.3.4(@types/node@26.6.5))(zod@4.6.7)
@@ -642,18 +642,18 @@ importers:
         specifier: ^4.6.5
         version: 4.6.7
     devDependencies:
-      '@draft-approval/config-oxlint':
-        specifier: workspace:*
-        version: link:../../tooling/config-oxlint
-      '@draft-approval/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../../tooling/prepare-declaration-build
       '@patricktree-stack/config-typescript':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-typescript
       '@patricktree-stack/config-vitest':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-vitest
+      '@resend-challenge/config-oxlint':
+        specifier: workspace:*
+        version: link:../../tooling/config-oxlint
+      '@resend-challenge/prepare-declaration-build':
+        specifier: workspace:*
+        version: link:../../tooling/prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -697,18 +697,18 @@ importers:
         specifier: ^4.6.5
         version: 4.6.7
     devDependencies:
-      '@draft-approval/config-oxlint':
-        specifier: workspace:*
-        version: link:../../tooling/config-oxlint
-      '@draft-approval/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../../tooling/prepare-declaration-build
       '@patricktree-stack/config-typescript':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-typescript
       '@patricktree-stack/config-vitest':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-vitest
+      '@resend-challenge/config-oxlint':
+        specifier: workspace:*
+        version: link:../../tooling/config-oxlint
+      '@resend-challenge/prepare-declaration-build':
+        specifier: workspace:*
+        version: link:../../tooling/prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -742,28 +742,28 @@ importers:
 
   libs/mcp-server:
     dependencies:
-      '@draft-approval/api.client':
-        specifier: workspace:*
-        version: link:../api.client
-      '@draft-approval/api.routes':
-        specifier: workspace:*
-        version: link:../api.routes
       '@modelcontextprotocol/server':
         specifier: catalog:mcp
         version: 2.3.1
+      '@resend-challenge/api.client':
+        specifier: workspace:*
+        version: link:../api.client
+      '@resend-challenge/api.routes':
+        specifier: workspace:*
+        version: link:../api.routes
       zod:
         specifier: ^4.6.5
         version: 4.6.7
     devDependencies:
-      '@draft-approval/config-oxlint':
-        specifier: workspace:*
-        version: link:../../tooling/config-oxlint
-      '@draft-approval/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../../tooling/prepare-declaration-build
       '@patricktree-stack/config-typescript':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-typescript
+      '@resend-challenge/config-oxlint':
+        specifier: workspace:*
+        version: link:../../tooling/config-oxlint
+      '@resend-challenge/prepare-declaration-build':
+        specifier: workspace:*
+        version: link:../../tooling/prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -782,21 +782,6 @@ importers:
 
   qa/e2e:
     devDependencies:
-      '@draft-approval/api.client':
-        specifier: workspace:*
-        version: link:../../libs/api.client
-      '@draft-approval/api.routes':
-        specifier: workspace:*
-        version: link:../../libs/api.routes
-      '@draft-approval/cloudflare-worker':
-        specifier: workspace:*
-        version: link:../../apps/cloudflare-worker
-      '@draft-approval/config-oxlint':
-        specifier: workspace:*
-        version: link:../../tooling/config-oxlint
-      '@draft-approval/resend-stub':
-        specifier: workspace:*
-        version: link:../resend-stub
       '@patricktree-stack/config-playwright':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-playwright
@@ -806,6 +791,21 @@ importers:
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.64.0
+      '@resend-challenge/api.client':
+        specifier: workspace:*
+        version: link:../../libs/api.client
+      '@resend-challenge/api.routes':
+        specifier: workspace:*
+        version: link:../../libs/api.routes
+      '@resend-challenge/cloudflare-worker':
+        specifier: workspace:*
+        version: link:../../apps/cloudflare-worker
+      '@resend-challenge/config-oxlint':
+        specifier: workspace:*
+        version: link:../../tooling/config-oxlint
+      '@resend-challenge/resend-stub':
+        specifier: workspace:*
+        version: link:../resend-stub
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -827,18 +827,18 @@ importers:
 
   qa/resend-stub:
     devDependencies:
-      '@draft-approval/config-oxlint':
-        specifier: workspace:*
-        version: link:../../tooling/config-oxlint
-      '@draft-approval/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../../tooling/prepare-declaration-build
       '@patricktree-stack/config-typescript':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-typescript
       '@patricktree-stack/config-vitest':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-vitest
+      '@resend-challenge/config-oxlint':
+        specifier: workspace:*
+        version: link:../../tooling/config-oxlint
+      '@resend-challenge/prepare-declaration-build':
+        specifier: workspace:*
+        version: link:../../tooling/prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -888,9 +888,6 @@ importers:
         specifier: ^15.0.0
         version: 15.0.0
     devDependencies:
-      '@draft-approval/config-oxlint':
-        specifier: workspace:*
-        version: link:../config-oxlint
       '@patricktree-stack/config-typescript':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-typescript
@@ -900,6 +897,9 @@ importers:
       '@patricktree-stack/test-utils-node':
         specifier: workspace:*
         version: link:../../.patricktree-stack/qa-utils/test-utils-node
+      '@resend-challenge/config-oxlint':
+        specifier: workspace:*
+        version: link:../config-oxlint
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -931,18 +931,18 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
     devDependencies:
-      '@draft-approval/config-oxlint':
-        specifier: workspace:*
-        version: link:../config-oxlint
-      '@draft-approval/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../prepare-declaration-build
       '@patricktree-stack/config-typescript':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-typescript
       '@patricktree-stack/config-vitest':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-vitest
+      '@resend-challenge/config-oxlint':
+        specifier: workspace:*
+        version: link:../config-oxlint
+      '@resend-challenge/prepare-declaration-build':
+        specifier: workspace:*
+        version: link:../prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -970,22 +970,22 @@ importers:
 
   tooling/seed:
     dependencies:
-      '@draft-approval/api.client':
+      '@resend-challenge/api.client':
         specifier: workspace:*
         version: link:../../libs/api.client
-      '@draft-approval/api.routes':
+      '@resend-challenge/api.routes':
         specifier: workspace:*
         version: link:../../libs/api.routes
     devDependencies:
-      '@draft-approval/config-oxlint':
-        specifier: workspace:*
-        version: link:../config-oxlint
-      '@draft-approval/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../prepare-declaration-build
       '@patricktree-stack/config-typescript':
         specifier: workspace:*
         version: link:../../.patricktree-stack/tooling/config-typescript
+      '@resend-challenge/config-oxlint':
+        specifier: workspace:*
+        version: link:../config-oxlint
+      '@resend-challenge/prepare-declaration-build':
+        specifier: workspace:*
+        version: link:../prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5

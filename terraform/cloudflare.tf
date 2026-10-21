@@ -9,7 +9,7 @@ locals {
 
 resource "cloudflare_d1_database" "drafts" {
   account_id = var.cloudflare_account_id
-  name       = "draft-approval"
+  name       = "resend-challenge"
 
   read_replication = {
     mode = "auto"
@@ -18,12 +18,12 @@ resource "cloudflare_d1_database" "drafts" {
 
 resource "cloudflare_r2_bucket" "revision_bodies" {
   account_id = var.cloudflare_account_id
-  name       = "draft-approval-revision-bodies"
+  name       = "resend-challenge-revision-bodies"
 }
 
 resource "cloudflare_queue" "send" {
   account_id = var.cloudflare_account_id
-  queue_name = "draft-approval-send"
+  queue_name = "resend-challenge-send"
 
   settings = {
     message_retention_period = local.queue_message_retention_seconds
@@ -32,7 +32,7 @@ resource "cloudflare_queue" "send" {
 
 resource "cloudflare_queue" "send_dlq" {
   account_id = var.cloudflare_account_id
-  queue_name = "draft-approval-send-dlq"
+  queue_name = "resend-challenge-send-dlq"
 
   settings = {
     message_retention_period = local.queue_message_retention_seconds

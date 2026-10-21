@@ -1,4 +1,4 @@
-import type { DraftsStorage, SendQueue } from "@draft-approval/drafts";
+import type { DraftsStorage, SendQueue } from "@resend-challenge/drafts";
 
 import type { Role } from "#src/authentication.ts";
 

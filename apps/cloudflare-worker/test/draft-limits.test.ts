@@ -1,6 +1,6 @@
 import { test } from "vitest";
 
-import { LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN } from "@draft-approval/api.routes";
+import { LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN } from "@resend-challenge/api.routes";
 
 import { useWorker } from "#test/use-worker.ts";
 

@@ -6,8 +6,8 @@ import type {
   DraftResponse,
   DraftSummaryResponse,
   RevisionResponse,
-} from "@draft-approval/api.routes";
-import { ERROR_CODE } from "@draft-approval/api.routes";
+} from "@resend-challenge/api.routes";
+import { ERROR_CODE } from "@resend-challenge/api.routes";
 import {
   approveRevision,
   createDraft,
@@ -24,7 +24,7 @@ import {
   type RejectRevisionResult,
   type Revision,
   type RevisionSummary,
-} from "@draft-approval/drafts";
+} from "@resend-challenge/drafts";
 
 import type { ApiServerHonoEnvironment } from "#src/api-server-environment.ts";
 import { jsonError } from "#src/http-errors.ts";

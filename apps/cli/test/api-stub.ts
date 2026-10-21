@@ -15,7 +15,7 @@ export type RecordedRequest = {
 export type StubResponse = { status: number; body: unknown };
 
 export type ApiStub = {
-  /** The stub's origin on 127.0.0.1, for `--api-url` or `DRAFT_APPROVAL_API_URL`. */
+  /** The stub's origin on 127.0.0.1, for `--api-url` or `RESEND_CHALLENGE_API_URL`. */
   url: string;
   /** Every request the stub received, in order. */
   requests: RecordedRequest[];

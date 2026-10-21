@@ -3,7 +3,7 @@ import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { createRoute, Link } from "@tanstack/react-router";
 import React from "react";
 
-import type { DraftSummaryResponse } from "@draft-approval/api.routes";
+import type { DraftSummaryResponse } from "@resend-challenge/api.routes";
 
 import { DSButton } from "#src/design-system/button.tsx";
 import {

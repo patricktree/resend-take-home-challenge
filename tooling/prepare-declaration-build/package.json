@@ -1,5 +1,5 @@
 {
-  "name": "@draft-approval/prepare-declaration-build",
+  "name": "@resend-challenge/prepare-declaration-build",
   "private": true,
   "description": "CLI that clears stale declaration outputs and mirrors a package's source manifest into its declaration directory before tsc --build",
   "bin": {
@@ -30,10 +30,10 @@
     "commander": "^15.0.0"
   },
   "devDependencies": {
-    "@draft-approval/config-oxlint": "workspace:*",
     "@patricktree-stack/config-typescript": "workspace:*",
     "@patricktree-stack/config-vitest": "workspace:*",
     "@patricktree-stack/test-utils-node": "workspace:*",
+    "@resend-challenge/config-oxlint": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "@vitest/coverage-v8": "catalog:",

@@ -1,9 +1,9 @@
-import { createApiServer, type ApiServerEnvironment } from "@draft-approval/api.server";
+import { createApiServer, type ApiServerEnvironment } from "@resend-challenge/api.server";
 import {
   handleQueueBatch,
   runScheduledTasks,
   type SendPipelineEnvironment,
-} from "@draft-approval/drafts";
+} from "@resend-challenge/drafts";
 
 type WorkerEnvironment = ApiServerEnvironment & SendPipelineEnvironment;
 

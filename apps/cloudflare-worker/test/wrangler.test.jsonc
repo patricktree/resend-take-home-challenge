@@ -3,7 +3,7 @@
 // `.dev.vars` must never change what the integration tests see.
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
-  "name": "draft-approval-test",
+  "name": "resend-challenge-test",
   "main": "worker.ts",
   "compatibility_flags": ["nodejs_compat"],
   "compatibility_date": "2026-08-18",
@@ -18,7 +18,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "draft-approval",
+      "database_name": "resend-challenge",
       "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "../../../libs/drafts/migrations",
     },
@@ -26,14 +26,14 @@
   "r2_buckets": [
     {
       "binding": "REVISION_BODIES",
-      "bucket_name": "draft-approval-revision-bodies",
+      "bucket_name": "resend-challenge-revision-bodies",
     },
   ],
   "queues": {
     "producers": [
       {
         "binding": "SEND_QUEUE",
-        "queue": "draft-approval-send",
+        "queue": "resend-challenge-send",
       },
     ],
   },
@@ -55,7 +55,7 @@
       "d1_databases": [
         {
           "binding": "DB",
-          "database_name": "draft-approval",
+          "database_name": "resend-challenge",
           "database_id": "00000000-0000-0000-0000-000000000000",
           "migrations_dir": "../../../libs/drafts/migrations",
         },
@@ -63,25 +63,25 @@
       "r2_buckets": [
         {
           "binding": "REVISION_BODIES",
-          "bucket_name": "draft-approval-revision-bodies",
+          "bucket_name": "resend-challenge-revision-bodies",
         },
       ],
       "queues": {
         "producers": [
           {
             "binding": "SEND_QUEUE",
-            "queue": "draft-approval-send",
+            "queue": "resend-challenge-send",
           },
         ],
         "consumers": [
           // The production consumer's settings (wrangler.jsonc).
           {
-            "queue": "draft-approval-send",
+            "queue": "resend-challenge-send",
             "max_concurrency": 1,
             "max_batch_size": 8,
             "max_batch_timeout": 1,
             "max_retries": 100,
-            "dead_letter_queue": "draft-approval-send-dlq",
+            "dead_letter_queue": "resend-challenge-send-dlq",
           },
         ],
       },

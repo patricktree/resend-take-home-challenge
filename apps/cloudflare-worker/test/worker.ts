@@ -22,7 +22,7 @@ import {
   SEND_QUEUE_NAME,
   type SendQueue,
   type SendQueueMessage,
-} from "@draft-approval/drafts";
+} from "@resend-challenge/drafts";
 
 import productionWorker from "#src/index.ts";
 

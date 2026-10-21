@@ -78,7 +78,7 @@ test("two concurrent requests with the same key give one success and one 409 con
 });
 
 function createIdempotencyKey(): string {
-  return `draft-approval-live-test/${crypto.randomUUID()}`;
+  return `resend-challenge-live-test/${crypto.randomUUID()}`;
 }
 
 /** An email shaped like the ones the Send Queue consumer sends. */
@@ -87,7 +87,7 @@ function createEmail() {
   return {
     from: resendFrom,
     to: ["delivered@resend.dev"],
-    subject: `draft-approval live contract test ${runId}`,
+    subject: `resend-challenge live contract test ${runId}`,
     text: "Sent by pnpm test:resend-live.",
     tags: [{ name: "draft_id", value: `live-test-${runId}` }],
   };
@@ -103,7 +103,7 @@ async function postEmail(
       Authorization: `Bearer ${resendApiKey}`,
       "Content-Type": "application/json",
       "Idempotency-Key": idempotencyKey,
-      "User-Agent": "draft-approval-live-test",
+      "User-Agent": "resend-challenge-live-test",
     },
     body: JSON.stringify(email),
     signal: AbortSignal.timeout(10_000),

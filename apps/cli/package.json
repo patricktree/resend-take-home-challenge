@@ -1,9 +1,9 @@
 {
-  "name": "@draft-approval/cli",
+  "name": "@resend-challenge/cli",
   "private": true,
-  "description": "The draft-approval CLI for Agents",
+  "description": "The resend-challenge CLI for Agents",
   "bin": {
-    "draft-approval": "./src/cli.ts"
+    "resend-challenge": "./src/cli.ts"
   },
   "type": "module",
   "imports": {
@@ -28,16 +28,16 @@
   },
   "dependencies": {
     "@commander-js/extra-typings": "~15.0.0",
-    "@draft-approval/api.client": "workspace:*",
-    "@draft-approval/api.routes": "workspace:*",
+    "@resend-challenge/api.client": "workspace:*",
+    "@resend-challenge/api.routes": "workspace:*",
     "commander": "~15.0.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@draft-approval/config-oxlint": "workspace:*",
-    "@draft-approval/prepare-declaration-build": "workspace:*",
     "@patricktree-stack/config-typescript": "workspace:*",
     "@patricktree-stack/config-vitest": "workspace:*",
+    "@resend-challenge/config-oxlint": "workspace:*",
+    "@resend-challenge/prepare-declaration-build": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "jsonc-parser": "^3.3.1",

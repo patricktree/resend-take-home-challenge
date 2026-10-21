@@ -24,10 +24,10 @@ export type SendQueue = {
 };
 
 /** The Send Queue, as named in wrangler.jsonc. */
-export const SEND_QUEUE_NAME = "draft-approval-send";
+export const SEND_QUEUE_NAME = "resend-challenge-send";
 
 /** The Send Queue's dead-letter queue, as named in wrangler.jsonc. */
-export const SEND_DLQ_NAME = "draft-approval-send-dlq";
+export const SEND_DLQ_NAME = "resend-challenge-send-dlq";
 
 const outgoingEmailSchema = z.strictObject({
   /** Resolved from `RESEND_FROM` when the Approval is recorded; not part of the review. */

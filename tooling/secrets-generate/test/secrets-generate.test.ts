@@ -12,7 +12,7 @@ const PLACEHOLDER_AGENT_TOKEN = "agent_placeholder-run-pnpm-secrets-generate";
 
 const WRANGLER_CONFIG = `// The production config.
 {
-  "name": "draft-approval",
+  "name": "resend-challenge",
   "vars": {
     "LOCAL_DEVELOPMENT": "false",
     // The public Agent token.

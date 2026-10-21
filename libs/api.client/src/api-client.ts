@@ -13,9 +13,9 @@ import type {
   RejectionRequest,
   ReviseRequest,
   RevisionResponse,
-} from "@draft-approval/api.routes";
+} from "@resend-challenge/api.routes";
 
-export type DraftApprovalClientOptions = {
+export type ApiClientOptions = {
   /** The origin the API runs on, for example `https://resend-challenge.patricktree.me`. */
   baseUrl: string;
   /** The Agent token or the Reviewer token, sent as `Authorization: Bearer …`. */
@@ -84,7 +84,7 @@ export class ApiError extends Error {
  * sends it on every request, so it reads its own writes. Every error response throws
  * {@link ApiError}.
  */
-export class DraftApprovalClient {
+export class ApiClient {
   readonly #honoClient;
   readonly #token: string;
   readonly #fetch: (request: Request) => Promise<Response>;
@@ -95,7 +95,7 @@ export class DraftApprovalClient {
     token,
     // Browsers refuse `fetch` called as a method of another object ("Illegal invocation").
     fetch = (request) => globalThis.fetch(request),
-  }: DraftApprovalClientOptions) {
+  }: ApiClientOptions) {
     this.#token = token;
     this.#fetch = fetch;
     this.#honoClient = hc<ApiContractApp>(baseUrl.replace(/\/$/, ""), {

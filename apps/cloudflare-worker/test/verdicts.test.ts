@@ -7,7 +7,7 @@ import {
   LOCAL_AGENT_TOKEN,
   LOCAL_REVIEWER_TOKEN,
   type DraftSummaryResponse,
-} from "@draft-approval/api.routes";
+} from "@resend-challenge/api.routes";
 
 import { readSentSendQueueMessages, useWorker, type TestWorker } from "#test/use-worker.ts";
 

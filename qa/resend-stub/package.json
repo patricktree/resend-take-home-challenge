@@ -1,5 +1,5 @@
 {
-  "name": "@draft-approval/resend-stub",
+  "name": "@resend-challenge/resend-stub",
   "private": true,
   "description": "A node:http stand-in for Resend's POST /emails that models its idempotency, for the integration and e2e tests; plus the opt-in live contract test against the real API",
   "type": "module",
@@ -28,10 +28,10 @@
     "turbo:test": "pnpm run test"
   },
   "devDependencies": {
-    "@draft-approval/config-oxlint": "workspace:*",
-    "@draft-approval/prepare-declaration-build": "workspace:*",
     "@patricktree-stack/config-typescript": "workspace:*",
     "@patricktree-stack/config-vitest": "workspace:*",
+    "@resend-challenge/config-oxlint": "workspace:*",
+    "@resend-challenge/prepare-declaration-build": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "@vitest/coverage-v8": "catalog:",

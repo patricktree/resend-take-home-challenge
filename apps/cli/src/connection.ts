@@ -1,12 +1,12 @@
-import { DraftApprovalClient } from "@draft-approval/api.client";
-import { ERROR_CODE } from "@draft-approval/api.routes";
+import { ResendChallengeClient } from "@resend-challenge/api.client";
+import { ERROR_CODE } from "@resend-challenge/api.routes";
 
 import { CLI_ERROR_CODE, CliError } from "#src/cli-error.ts";
 import { PRODUCTION_API_URL, PUBLIC_AGENT_TOKEN } from "#src/production.ts";
 
 export const ENVIRONMENT_VARIABLE = {
-  TOKEN: "DRAFT_APPROVAL_TOKEN",
-  API_URL: "DRAFT_APPROVAL_API_URL",
+  TOKEN: "RESEND_CHALLENGE_TOKEN",
+  API_URL: "RESEND_CHALLENGE_API_URL",
 } as const;
 
 /** Plain HTTP is allowed only on these hosts, where nothing leaves the machine. */
@@ -14,19 +14,19 @@ const LOOPBACK_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 /**
  * Creates the typed client for one invocation: the API URL from `--api-url`, then
- * `DRAFT_APPROVAL_API_URL`, then production; the token from `DRAFT_APPROVAL_TOKEN`, then the public
- * Agent token.
+ * `RESEND_CHALLENGE_API_URL`, then production; the token from `RESEND_CHALLENGE_TOKEN`, then the
+ * public Agent token.
  */
 export function createClient(
   apiUrlOption: string | undefined,
   environment: NodeJS.ProcessEnv,
-): DraftApprovalClient {
+): ResendChallengeClient {
   const apiUrl = resolveApiUrl(
     apiUrlOption ?? readNonEmpty(environment, ENVIRONMENT_VARIABLE.API_URL) ?? PRODUCTION_API_URL,
   );
   const token = readNonEmpty(environment, ENVIRONMENT_VARIABLE.TOKEN) ?? PUBLIC_AGENT_TOKEN;
 
-  return new DraftApprovalClient({
+  return new ResendChallengeClient({
     baseUrl: apiUrl.origin,
     token,
     fetch: async (request) => {
@@ -73,7 +73,7 @@ function resolveApiUrl(configuredApiUrl: string): URL {
   return apiUrl;
 }
 
-/** An empty variable counts as unset, as with `DRAFT_APPROVAL_TOKEN= pnpm draft-approval …`. */
+/** An empty variable counts as unset, as with `RESEND_CHALLENGE_TOKEN= pnpm resend-challenge …`. */
 function readNonEmpty(environment: NodeJS.ProcessEnv, name: string): string | undefined {
   const value = environment[name];
   return value === undefined || value === "" ? undefined : value;

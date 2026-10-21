@@ -4,12 +4,12 @@
 // reach the tests.
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
-  "name": "draft-approval-e2e",
+  "name": "resend-challenge-e2e",
   "main": "../../apps/cloudflare-worker/src/index.ts",
   "compatibility_flags": ["nodejs_compat"],
   "compatibility_date": "2026-08-18",
   "assets": {
-    // Built by `pnpm --filter '@draft-approval/e2e' test:e2e` before the tests run.
+    // Built by `pnpm --filter '@resend-challenge/e2e' test:e2e` before the tests run.
     "directory": "../../apps/cloudflare-worker/dist/client",
     "binding": "ASSETS",
     "not_found_handling": "none",
@@ -19,7 +19,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "draft-approval",
+      "database_name": "resend-challenge",
       "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "../../libs/drafts/migrations",
     },
@@ -27,28 +27,28 @@
   "r2_buckets": [
     {
       "binding": "REVISION_BODIES",
-      "bucket_name": "draft-approval-revision-bodies",
+      "bucket_name": "resend-challenge-revision-bodies",
     },
   ],
   "queues": {
     "producers": [
       {
         "binding": "SEND_QUEUE",
-        "queue": "draft-approval-send",
+        "queue": "resend-challenge-send",
       },
     ],
     // As in production (wrangler.jsonc), so Miniflare delivers each Send to the consumer.
     "consumers": [
       {
-        "queue": "draft-approval-send",
+        "queue": "resend-challenge-send",
         "max_concurrency": 1,
         "max_batch_size": 8,
         "max_batch_timeout": 1,
         "max_retries": 100,
-        "dead_letter_queue": "draft-approval-send-dlq",
+        "dead_letter_queue": "resend-challenge-send-dlq",
       },
       {
-        "queue": "draft-approval-send-dlq",
+        "queue": "resend-challenge-send-dlq",
       },
     ],
   },

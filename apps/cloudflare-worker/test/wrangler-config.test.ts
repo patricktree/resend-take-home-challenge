@@ -3,7 +3,7 @@ import nodeUrl from "node:url";
 import { test } from "vitest";
 import { experimental_readRawConfig } from "wrangler";
 
-import { SEND_DLQ_NAME, SEND_QUEUE_NAME } from "@draft-approval/drafts";
+import { SEND_DLQ_NAME, SEND_QUEUE_NAME } from "@resend-challenge/drafts";
 
 // The production config, which `pnpm dev` also uses; the expected values come from spec section 12.
 const PRODUCTION_CONFIG_PATH = nodeUrl.fileURLToPath(new URL("../wrangler.jsonc", import.meta.url));
@@ -42,17 +42,17 @@ test("the Send Queue has a producer, a paced consumer with a DLQ, and the DLQ ha
   const config = readProductionConfig();
 
   expect(config.queues).toStrictEqual({
-    producers: [{ binding: "SEND_QUEUE", queue: "draft-approval-send" }],
+    producers: [{ binding: "SEND_QUEUE", queue: "resend-challenge-send" }],
     consumers: [
       {
-        queue: "draft-approval-send",
+        queue: "resend-challenge-send",
         max_concurrency: 1,
         max_batch_size: 8,
         max_batch_timeout: 1,
         max_retries: 100,
-        dead_letter_queue: "draft-approval-send-dlq",
+        dead_letter_queue: "resend-challenge-send-dlq",
       },
-      { queue: "draft-approval-send-dlq" },
+      { queue: "resend-challenge-send-dlq" },
     ],
   });
 });

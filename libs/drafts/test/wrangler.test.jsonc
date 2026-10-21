@@ -2,14 +2,14 @@
 // It lives in `test/` because Wrangler loads `.dev.vars` and `.env` files from the config's directory.
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
-  "name": "draft-approval-drafts-test",
+  "name": "resend-challenge-drafts-test",
   "main": "worker.ts",
   "compatibility_flags": ["nodejs_compat"],
   "compatibility_date": "2026-08-18",
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "draft-approval",
+      "database_name": "resend-challenge",
       "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "../migrations",
     },
@@ -17,7 +17,7 @@
   "r2_buckets": [
     {
       "binding": "REVISION_BODIES",
-      "bucket_name": "draft-approval-revision-bodies",
+      "bucket_name": "resend-challenge-revision-bodies",
     },
   ],
 }

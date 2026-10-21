@@ -1,6 +1,6 @@
 import React from "react";
 
-import { ApiError } from "@draft-approval/api.client";
+import { ApiError } from "@resend-challenge/api.client";
 
 type ErrorMessageProps = {
   /** What a route or query threw; React rendering can throw anything, not only errors. */

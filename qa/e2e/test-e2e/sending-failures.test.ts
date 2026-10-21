@@ -1,4 +1,4 @@
-import { resendError } from "@draft-approval/resend-stub";
+import { resendError } from "@resend-challenge/resend-stub";
 
 import { expect, test } from "#test-e2e/fixtures.ts";
 import { createDraftData, createPendingDraft, openDraftPage } from "#test-e2e/review-ui.ts";

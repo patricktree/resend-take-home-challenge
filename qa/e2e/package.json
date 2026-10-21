@@ -1,5 +1,5 @@
 {
-  "name": "@draft-approval/e2e",
+  "name": "@resend-challenge/e2e",
   "private": true,
   "description": "Playwright e2e tests of the review flow",
   "type": "module",
@@ -8,7 +8,7 @@
   },
   "scripts": {
     "clean": "del-cli --dot=true \"*.tsbuildinfo\" \"playwright-output\"",
-    "test:e2e": "turbo run turbo:build --filter=@draft-approval/e2e... --output-logs=errors-only && playwright test",
+    "test:e2e": "turbo run turbo:build --filter=@resend-challenge/e2e... --output-logs=errors-only && playwright test",
     "test:e2e:ui": "PWDEBUG=1 playwright test --ui",
     "test:e2e:update": "pnpm run test:e2e --update-snapshots=changed",
     "turbo:build": "tsc --build ./tsconfig.json",
@@ -16,14 +16,14 @@
     "turbo:lint:fix": "pnpm run turbo:lint --fix"
   },
   "devDependencies": {
-    "@draft-approval/api.client": "workspace:*",
-    "@draft-approval/api.routes": "workspace:*",
-    "@draft-approval/cloudflare-worker": "workspace:*",
-    "@draft-approval/config-oxlint": "workspace:*",
-    "@draft-approval/resend-stub": "workspace:*",
     "@patricktree-stack/config-playwright": "workspace:*",
     "@patricktree-stack/config-typescript": "workspace:*",
     "@playwright/test": "catalog:",
+    "@resend-challenge/api.client": "workspace:*",
+    "@resend-challenge/api.routes": "workspace:*",
+    "@resend-challenge/cloudflare-worker": "workspace:*",
+    "@resend-challenge/config-oxlint": "workspace:*",
+    "@resend-challenge/resend-stub": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "oxlint": "catalog:",

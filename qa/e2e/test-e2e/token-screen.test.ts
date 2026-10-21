@@ -1,4 +1,4 @@
-import { LOCAL_AGENT_TOKEN } from "@draft-approval/api.routes";
+import { LOCAL_AGENT_TOKEN } from "@resend-challenge/api.routes";
 
 import { expect, test } from "#test-e2e/fixtures.ts";
 import {

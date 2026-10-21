@@ -11,9 +11,9 @@ import {
   LOCAL_REVIEWER_TOKEN,
   type DraftDataRequest,
   type DraftSummaryResponse,
-} from "@draft-approval/api.routes";
-import type { SendQueueMessage } from "@draft-approval/drafts";
-import type { ResendStub } from "@draft-approval/resend-stub";
+} from "@resend-challenge/api.routes";
+import type { SendQueueMessage } from "@resend-challenge/drafts";
+import type { ResendStub } from "@resend-challenge/resend-stub";
 
 import { resendStubWorkerOptions, useResendStub } from "#test/use-resend-stub.ts";
 import { readSentSendQueueMessages, useWorker, type TestWorker } from "#test/use-worker.ts";

@@ -1,6 +1,6 @@
 import { defineConfig } from "oxlint";
 
-import { config as repoConfig } from "@draft-approval/config-oxlint/oxlint-base.js";
+import { config as repoConfig } from "@resend-challenge/config-oxlint/oxlint-base.js";
 
 export default defineConfig({
   extends: [repoConfig],
@@ -15,7 +15,7 @@ export default defineConfig({
       {
         name: "fetch",
         message:
-          "Call the API through `DraftApprovalClient` (#src/api-client.ts), which sends the stored Reviewer token.",
+          "Call the API through `ResendChallengeClient` (#src/api-client.ts), which sends the stored Reviewer token.",
       },
     ],
   },

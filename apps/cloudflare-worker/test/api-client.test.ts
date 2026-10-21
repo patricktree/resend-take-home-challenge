@@ -1,11 +1,11 @@
 import { test } from "vitest";
 
-import { ApiError, DraftApprovalClient } from "@draft-approval/api.client";
+import { ApiError, ResendChallengeClient } from "@resend-challenge/api.client";
 import {
   LOCAL_AGENT_TOKEN,
   LOCAL_REVIEWER_TOKEN,
   type ListDraftsQuery,
-} from "@draft-approval/api.routes";
+} from "@resend-challenge/api.routes";
 
 import { useWorker, type TestWorker } from "#test/use-worker.ts";
 
@@ -267,7 +267,7 @@ test("the client sends the latest read bookmark it received on every request", a
 }) => {
   const worker = await useWorker({ onTestFinished });
   const exchanges: { sentBookmark: string | null; receivedBookmark: string | null }[] = [];
-  const client = new DraftApprovalClient({
+  const client = new ResendChallengeClient({
     baseUrl: "http://localhost",
     token: LOCAL_AGENT_TOKEN,
     fetch: async (request) => {
@@ -299,7 +299,7 @@ test("the client keeps the read bookmark of an error response too", async ({
   const worker = await useWorker({ onTestFinished });
   const sentBookmarks: (string | null)[] = [];
   let lastReceivedBookmark: string | null = null;
-  const client = new DraftApprovalClient({
+  const client = new ResendChallengeClient({
     baseUrl: "http://localhost",
     token: LOCAL_AGENT_TOKEN,
     fetch: async (request) => {
@@ -385,7 +385,7 @@ test.for([
 ])(
   "an error envelope with $name throws a plain error naming the status, never an ApiError",
   async ({ code }, { expect }) => {
-    const client = new DraftApprovalClient({
+    const client = new ResendChallengeClient({
       baseUrl: "http://localhost",
       token: LOCAL_AGENT_TOKEN,
       fetch: async () =>
@@ -404,8 +404,8 @@ test.for([
   },
 );
 
-function createClient(worker: TestWorker, token: string): DraftApprovalClient {
-  return new DraftApprovalClient({
+function createClient(worker: TestWorker, token: string): ResendChallengeClient {
+  return new ResendChallengeClient({
     baseUrl: "http://localhost",
     token,
     fetch: (request) => fetchThroughWorker(worker, request),

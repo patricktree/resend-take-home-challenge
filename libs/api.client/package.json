@@ -1,5 +1,5 @@
 {
-  "name": "@draft-approval/api.client",
+  "name": "@resend-challenge/api.client",
   "private": true,
   "description": "The typed API client used by the Review UI, the MCP server and the CLI",
   "type": "module",
@@ -23,13 +23,13 @@
     "turbo:lint:fix": "pnpm run turbo:lint --fix"
   },
   "dependencies": {
-    "@draft-approval/api.routes": "workspace:*",
+    "@resend-challenge/api.routes": "workspace:*",
     "hono": "catalog:hono"
   },
   "devDependencies": {
-    "@draft-approval/config-oxlint": "workspace:*",
-    "@draft-approval/prepare-declaration-build": "workspace:*",
     "@patricktree-stack/config-typescript": "workspace:*",
+    "@resend-challenge/config-oxlint": "workspace:*",
+    "@resend-challenge/prepare-declaration-build": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "oxlint": "catalog:",

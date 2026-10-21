@@ -3,7 +3,7 @@ import type {
   DraftResponse,
   DraftSummaryResponse,
   RevisionResponse,
-} from "@draft-approval/api.routes";
+} from "@resend-challenge/api.routes";
 
 /** The Draft summary that create, revise and submit return. */
 export function formatDraftSummary(draft: DraftSummaryResponse): string {

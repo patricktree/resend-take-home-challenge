@@ -10,7 +10,7 @@ import {
   LOCAL_REVIEWER_TOKEN,
   type DraftListResponse,
   type DraftSummaryResponse,
-} from "@draft-approval/api.routes";
+} from "@resend-challenge/api.routes";
 
 import { useWorker, type TestWorker } from "#test/use-worker.ts";
 

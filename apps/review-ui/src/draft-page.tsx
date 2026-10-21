@@ -3,8 +3,8 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import React from "react";
 
-import { ApiError } from "@draft-approval/api.client";
-import type { DraftResponse } from "@draft-approval/api.routes";
+import { ApiError } from "@resend-challenge/api.client";
+import type { DraftResponse } from "@resend-challenge/api.routes";
 
 import { assertUnreachable } from "#src/assert-unreachable.ts";
 import { localTimeLabel, reviewStatusLabel, sendingStatusLabel } from "#src/draft-labels.ts";

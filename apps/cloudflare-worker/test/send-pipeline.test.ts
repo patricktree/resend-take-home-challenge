@@ -1,8 +1,8 @@
 import { Temporal } from "temporal-polyfill";
 import { test, type TestContext } from "vitest";
 
-import type { SendQueueMessage } from "@draft-approval/drafts";
-import { resendError, type ResendStub } from "@draft-approval/resend-stub";
+import type { SendQueueMessage } from "@resend-challenge/drafts";
+import { resendError, type ResendStub } from "@resend-challenge/resend-stub";
 
 import {
   expectExactlyOneEmailPerSentDraft,

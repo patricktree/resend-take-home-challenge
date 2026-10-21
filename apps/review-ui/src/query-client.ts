@@ -1,6 +1,6 @@
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
 
-import { ApiError } from "@draft-approval/api.client";
+import { ApiError } from "@resend-challenge/api.client";
 
 import { clearReviewerToken, rejectReviewerToken } from "#src/reviewer-session.ts";
 

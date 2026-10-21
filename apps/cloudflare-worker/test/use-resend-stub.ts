@@ -1,7 +1,7 @@
 import { expect, type TestContext } from "vitest";
 import { z } from "zod";
 
-import { startResendStub, type ResendStub } from "@draft-approval/resend-stub";
+import { startResendStub, type ResendStub } from "@resend-challenge/resend-stub";
 
 import type { TestWorker } from "#test/use-worker.ts";
 
@@ -25,7 +25,7 @@ const outgoingEmailSchema = z.object({
 const revisionBodySchema = z.object({ plainText: z.string() });
 
 /**
- * Starts a Resend stub (`@draft-approval/resend-stub`) on an OS-assigned port and closes it when
+ * Starts a Resend stub (`@resend-challenge/resend-stub`) on an OS-assigned port and closes it when
  * the test finishes. Point the test Worker at it with {@link resendStubWorkerOptions}.
  *
  * Pass `onTestFinished` from the test's own context, as for `useWorker()`.

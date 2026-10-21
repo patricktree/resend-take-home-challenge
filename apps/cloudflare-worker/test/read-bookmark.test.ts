@@ -1,6 +1,6 @@
 import { test } from "vitest";
 
-import { draftSummarySchema, LOCAL_AGENT_TOKEN } from "@draft-approval/api.routes";
+import { draftSummarySchema, LOCAL_AGENT_TOKEN } from "@resend-challenge/api.routes";
 
 import { useWorker } from "#test/use-worker.ts";
 

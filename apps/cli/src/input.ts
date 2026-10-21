@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { z } from "zod";
 
-import { ERROR_CODE } from "@draft-approval/api.routes";
+import { ERROR_CODE } from "@resend-challenge/api.routes";
 
 import { CliError } from "#src/cli-error.ts";
 
@@ -76,7 +76,7 @@ export async function readBody({ body, bodyFile }: BodyOptions): Promise<string>
 }
 
 /**
- * `pnpm draft-approval` runs the CLI in the repository root and keeps the directory it was called
+ * `pnpm resend-challenge` runs the CLI in the repository root and keeps the directory it was called
  * from in `INIT_CWD`, so a relative path means what the caller expects.
  */
 function resolveCallerPath(filePath: string): string {

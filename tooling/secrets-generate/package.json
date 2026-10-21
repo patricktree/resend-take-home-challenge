@@ -1,5 +1,5 @@
 {
-  "name": "@draft-approval/secrets-generate",
+  "name": "@resend-challenge/secrets-generate",
   "private": true,
   "description": "`pnpm secrets:generate`: creates the Agent and Reviewer tokens, commits the Agent token to the config and sets the Reviewer token as a Worker secret",
   "type": "module",
@@ -27,10 +27,10 @@
     "jsonc-parser": "^3.3.1"
   },
   "devDependencies": {
-    "@draft-approval/config-oxlint": "workspace:*",
-    "@draft-approval/prepare-declaration-build": "workspace:*",
     "@patricktree-stack/config-typescript": "workspace:*",
     "@patricktree-stack/config-vitest": "workspace:*",
+    "@resend-challenge/config-oxlint": "workspace:*",
+    "@resend-challenge/prepare-declaration-build": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "@vitest/coverage-v8": "catalog:",

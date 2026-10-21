@@ -1,7 +1,7 @@
 import { createMiddleware } from "hono/factory";
 
-import { READ_BOOKMARK_HEADER } from "@draft-approval/api.routes";
-import { drizzleForSession } from "@draft-approval/drafts";
+import { READ_BOOKMARK_HEADER } from "@resend-challenge/api.routes";
+import { drizzleForSession } from "@resend-challenge/drafts";
 
 import type { ApiServerHonoEnvironment } from "#src/api-server-environment.ts";
 

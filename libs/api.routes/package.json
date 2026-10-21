@@ -1,5 +1,5 @@
 {
-  "name": "@draft-approval/api.routes",
+  "name": "@resend-challenge/api.routes",
   "private": true,
   "description": "The HTTP API contract: OpenAPI routes, Zod schemas, the error envelope and the local tokens",
   "type": "module",
@@ -28,9 +28,9 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@draft-approval/config-oxlint": "workspace:*",
-    "@draft-approval/prepare-declaration-build": "workspace:*",
     "@patricktree-stack/config-typescript": "workspace:*",
+    "@resend-challenge/config-oxlint": "workspace:*",
+    "@resend-challenge/prepare-declaration-build": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "oxlint": "catalog:",

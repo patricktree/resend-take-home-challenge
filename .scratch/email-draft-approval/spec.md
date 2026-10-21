@@ -11,7 +11,7 @@ The domain vocabulary is defined in [GLOSSARY.md](../../GLOSSARY.md); this spec 
 The system is one Cloudflare Worker at `https://resend-challenge.patricktree.me`:
 
 - an HTTP API under `/api`, described by a published OpenAPI document, used by everyone through one typed TypeScript client;
-- an MCP server at `/mcp` and a CLI `draft-approval`, both built on that client, for Agents;
+- an MCP server at `/mcp` and a CLI `resend-challenge`, both built on that client, for Agents;
 - the Review UI, a React SPA under `/app`, for the Reviewer;
 - D1 as the single source of truth, R2 for Revision bodies, one Queue (plus a dead-letter queue) that drives every Send, and a cron-driven Send reconciler.
 
@@ -30,7 +30,7 @@ Prerequisites for building (not part of the system): a Cloudflare account with t
 | The approval fails with an error if the data changed since it was loaded | The verdict names the loaded Revision id and succeeds only while that Revision is the latest and Pending; otherwise 409 `REVISION_SUPERSEDED`, shown inline with "Reload Draft"    | [8](#8-approval-binding-and-concurrency), [11](#11-review-ui)   |
 | The user can reject an email draft                                       | "Reject" with an optional reason → `POST …/revisions/{revisionId}/rejection`                                                                                                       | [6](#6-http-api), [11](#11-review-ui)                           |
 | The human interface is accessible                                        | Deployed at a public URL, usable with nothing but a browser and the Reviewer token; no WCAG level is targeted                                                                      | [11](#11-review-ui)                                             |
-| The agent can create an email draft                                      | `POST /api/v1/drafts`, MCP `create_draft`, `draft-approval drafts create`                                                                                                          | [6](#6-http-api), [10](#10-agent-interfaces)                    |
+| The agent can create an email draft                                      | `POST /api/v1/drafts`, MCP `create_draft`, `resend-challenge drafts create`                                                                                                        | [6](#6-http-api), [10](#10-agent-interfaces)                    |
 | The agent can retrieve an email draft's data                             | `GET /api/v1/drafts/{draftId}` and `GET …/revisions/{revisionId}`, MCP `get_draft` / `get_revision`, CLI `drafts get` / `drafts revision`                                          | [6](#6-http-api), [10](#10-agent-interfaces)                    |
 | The agent can revise an email draft's data                               | `POST /api/v1/drafts/{draftId}/revisions` with `baseRevisionId`, MCP `revise_draft`, CLI `drafts revise`                                                                           | [6](#6-http-api), [10](#10-agent-interfaces)                    |
 | The agent can submit an email draft for approval                         | `POST …/revisions/{revisionId}/submission`, MCP `submit_draft`, CLI `drafts submit`                                                                                                | [6](#6-http-api), [10](#10-agent-interfaces)                    |
@@ -106,7 +106,7 @@ Review status and sending status are independent fields. Sending status is not `
 ```mermaid
 flowchart LR
   agentHost[Agent via MCP host] -->|/mcp, Agent token| worker
-  cli[draft-approval CLI] -->|/api/v1, Agent token| worker
+  cli[resend-challenge CLI] -->|/api/v1, Agent token| worker
   agentHttp[Agent via HTTP] -->|/api/v1, Agent token| worker
   browser[Reviewer's browser] -->|/app and /api/v1, Reviewer token| worker
   subgraph cloudflare[Cloudflare]
@@ -159,13 +159,13 @@ Static assets are configured with `run_worker_first: true`, `html_handling: "non
 
 ### Packages
 
-The repository follows cup's layout (`~/workspace/cup`), with package names under `@draft-approval/*`:
+The repository follows cup's layout (`~/workspace/cup`), with package names under `@resend-challenge/*`:
 
 | Folder                   | Role                                                                                                                                                                                                     |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `apps/cloudflare-worker` | Thin entry: `wrangler.jsonc`, Vite build with `@cloudflare/vite-plugin`; exports `fetch` (from `api.server`), `queue` and `scheduled` (both delegate to `drafts`); integration tests in `test/`          |
 | `apps/review-ui`         | React 19 SPA (TanStack Router and Query), served under `/app`                                                                                                                                            |
-| `apps/cli`               | The `draft-approval` CLI                                                                                                                                                                                 |
+| `apps/cli`               | The `resend-challenge` CLI                                                                                                                                                                               |
 | `libs/api.routes`        | `@hono/zod-openapi` contract: routes, Zod schemas, error schema, `LOCAL_AGENT_TOKEN` and `LOCAL_REVIEWER_TOKEN`                                                                                          |
 | `libs/api.client`        | Typed client (Hono RPC `hc` wrapped in a hand-written class), read-bookmark handling, OpenAPI export                                                                                                     |
 | `libs/api.server`        | Hono app: routing, authentication, error envelope, `/app` serving, `/mcp` mounting; calls into `drafts`                                                                                                  |
@@ -596,7 +596,7 @@ v1 has no event logging. Paths that already handle an error call a bare `console
 
 ### CLI
 
-- `draft-approval` in `apps/cli`, built with `commander` and `@commander-js/extra-typings` like cup's `apps/operator`. It never contains a verdict command.
+- `resend-challenge` in `apps/cli`, built with `commander` and `@commander-js/extra-typings` like cup's `apps/operator`. It never contains a verdict command.
 - Commands:
   - `drafts create --to <address> [--to <address> …] --subject <subject> (--body <text> | --body-file <path|->)`;
   - `drafts get <draftId>`;
@@ -604,11 +604,11 @@ v1 has no event logging. Paths that already handle an error call a bare `console
   - `drafts revise <draftId> --base-revision <revisionId> --to … --subject … (--body … | --body-file …)`;
   - `drafts submit <draftId> <revisionId>`;
   - `drafts revision <draftId> <revisionId>`.
-- Token: `DRAFT_APPROVAL_TOKEN`, falling back to the committed public Agent token.
-- API URL: `--api-url`, then `DRAFT_APPROVAL_API_URL`, then the production URL built in as a constant (equal to `PUBLIC_BASE_URL`). HTTPS is required except on loopback.
+- Token: `RESEND_CHALLENGE_TOKEN`, falling back to the committed public Agent token.
+- API URL: `--api-url`, then `RESEND_CHALLENGE_API_URL`, then the production URL built in as a constant (equal to `PUBLIC_BASE_URL`). HTTPS is required except on loopback.
 - Output: human-readable by default; `--json` prints one JSON value on stdout. Errors print `{ "error": { "code", "message" } }` on stderr and exit with 1. Inputs are validated with the contract's Zod schemas before any request.
 - `--help` on the root and every command; the root help links the OpenAPI document.
-- Evaluators run it from a checkout of the repository (`pnpm draft-approval …`); it is not published to npm.
+- Evaluators run it from a checkout of the repository (`pnpm resend-challenge …`); it is not published to npm.
 
 ## 11. Review UI
 
@@ -740,7 +740,7 @@ Priorities: integration tests first, e2e second, unit tests third. Vitest and Pl
 | ---------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | Integration            | Vitest in Wrangler's local test runtime, in `apps/cloudflare-worker/test/` and `libs/drafts/test/` | Every API, auth, MCP and Send-pipeline guarantee, including all races |
 | e2e                    | Playwright in cup's Docker image against `wrangler dev`                                            | The review flow, end to end through the real Queue                    |
-| CLI process            | Vitest, spawning the real `draft-approval` process against a `node:http` API stub                  | Argument parsing, output, exit codes, token handling                  |
+| CLI process            | Vitest, spawning the real `resend-challenge` process against a `node:http` API stub                | Argument parsing, output, exit codes, token handling                  |
 | Unit                   | Vitest                                                                                             | Pure functions only                                                   |
 | Live contract (opt-in) | Vitest, `pnpm test:resend-live`                                                                    | Resend's idempotency behavior against the real API                    |
 
@@ -783,7 +783,7 @@ Priorities: integration tests first, e2e second, unit tests third. Vitest and Pl
 
 ### CLI process tests
 
-`--help` on the root and every command (no approve or reject anywhere, the OpenAPI URL linked); `--json` output parses; `DRAFT_APPROVAL_TOKEN` is sent and the committed Agent token is the fallback; the token never appears in stdout or stderr; a 409 prints its code and exits non-zero; the built-in production URL equals `PUBLIC_BASE_URL` (a constant check, no network).
+`--help` on the root and every command (no approve or reject anywhere, the OpenAPI URL linked); `--json` output parses; `RESEND_CHALLENGE_TOKEN` is sent and the committed Agent token is the fallback; the token never appears in stdout or stderr; a 409 prints its code and exits non-zero; the built-in production URL equals `PUBLIC_BASE_URL` (a constant check, no network).
 
 ### e2e
 
@@ -865,7 +865,7 @@ Accepted behavior that is not a demo shortcut:
 - **Large bodies and attachments** through a dedicated upload endpoint (or presigned R2 URLs) rather than in the Draft request.
 - **OAuth 2.1 for `/mcp`** via `workers-oauth-provider`, so OAuth-only MCP hosts can connect.
 - **CI/CD**, replacing the manual deploys and local-only tests of [section 14](#operations-and-deployment): CI runs `pnpm validate:fast` and `pnpm validate:extended` on every change and gates deploys on them; deploys run from CI, through a staging environment, with the D1 migrations gated on review; a scheduled CI run executes the live Resend contract test (`pnpm test:resend-live`).
-- **Distributing the CLI** and any other package used outside the repository, such as the typed client. Today the CLI runs only from a checkout, through Node's type stripping, and no package is published (none has a `"files"` field). The options are bundling the CLI into one JavaScript file with a bundler, or publishing npm packages, which then also have to ship the CLI's workspace dependencies `@draft-approval/api.client` and `@draft-approval/api.routes` built to JavaScript.
+- **Distributing the CLI** and any other package used outside the repository, such as the typed client. Today the CLI runs only from a checkout, through Node's type stripping, and no package is published (none has a `"files"` field). The options are bundling the CLI into one JavaScript file with a bundler, or publishing npm packages, which then also have to ship the CLI's workspace dependencies `@resend-challenge/api.client` and `@resend-challenge/api.routes` built to JavaScript.
 
 ## 17. Out of scope
 

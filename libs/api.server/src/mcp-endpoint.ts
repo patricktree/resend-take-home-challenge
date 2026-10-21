@@ -2,9 +2,9 @@ import { createMcpHandler } from "agents/mcp/server";
 import type { Context, Hono } from "hono";
 import { createMiddleware } from "hono/factory";
 
-import { DraftApprovalClient } from "@draft-approval/api.client";
-import { ERROR_CODE } from "@draft-approval/api.routes";
-import { createDraftApprovalMcpServer } from "@draft-approval/mcp-server";
+import { ResendChallengeClient } from "@resend-challenge/api.client";
+import { ERROR_CODE } from "@resend-challenge/api.routes";
+import { createResendChallengeMcpServer } from "@resend-challenge/mcp-server";
 
 import type { ApiServerHonoEnvironment } from "#src/api-server-environment.ts";
 import { parseBearerToken, ROLE } from "#src/authentication.ts";
@@ -48,14 +48,14 @@ export function createMcpEndpoint(
     }
 
     // One client per HTTP request, which is one MCP call: no read bookmark is kept between calls.
-    const client = new DraftApprovalClient({
+    const client = new ResendChallengeClient({
       // The request's own origin, so the local-development rule sees the same host as the caller's.
       baseUrl: new URL(context.req.url).origin,
       token: callerToken,
       fetch: async (request) => app.fetch(request, context.env, context.executionCtx),
     });
     const handleMcpRequest = createMcpHandler(
-      () => createDraftApprovalMcpServer({ client, publicBaseUrl: context.env.PUBLIC_BASE_URL }),
+      () => createResendChallengeMcpServer({ client, publicBaseUrl: context.env.PUBLIC_BASE_URL }),
       // The Worker sends no CORS headers anywhere (spec section 7, "Browser hardening").
       { route: MCP_PATH, corsOptions: false },
     );

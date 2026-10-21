@@ -23,7 +23,7 @@ const config: KnipConfig = {
     "qa/e2e": {
       ignoreDependencies: [
         /* Not imported: the tests serve its build output (wrangler.jsonc, `assets`), so Turbo must build it first. */
-        "@draft-approval/cloudflare-worker",
+        "@resend-challenge/cloudflare-worker",
         /* Run as a binary from test-e2e/fixtures.ts, which starts `wrangler dev` for each test. */
         "wrangler",
       ],

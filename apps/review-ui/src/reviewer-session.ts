@@ -11,7 +11,7 @@ export type ReviewerSession = {
  * `localStorage`, not `sessionStorage`: every `reviewUrl` opens a new tab, which must find the
  * token.
  */
-const TOKEN_STORAGE_KEY = "draft-approval.reviewer-token";
+const TOKEN_STORAGE_KEY = "resend-challenge.reviewer-token";
 
 const listeners = new Set<() => void>();
 

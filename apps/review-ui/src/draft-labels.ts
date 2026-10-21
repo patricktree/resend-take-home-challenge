@@ -1,6 +1,6 @@
 import { Temporal } from "temporal-polyfill";
 
-import type { DraftSummaryResponse } from "@draft-approval/api.routes";
+import type { DraftSummaryResponse } from "@resend-challenge/api.routes";
 
 import { assertUnreachable } from "#src/assert-unreachable.ts";
 

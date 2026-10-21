@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Command, CommanderError, Option } from "@commander-js/extra-typings";
 
-import type { DraftApprovalClient } from "@draft-approval/api.client";
+import type { ResendChallengeClient } from "@resend-challenge/api.client";
 import {
   draftDataRequestSchema,
   draftParamsSchema,
@@ -11,7 +11,7 @@ import {
   reviseRequestSchema,
   revisionParamsSchema,
   sendingStatusSchema,
-} from "@draft-approval/api.routes";
+} from "@resend-challenge/api.routes";
 
 import { toErrorEnvelope } from "#src/cli-error.ts";
 import { createClient, ENVIRONMENT_VARIABLE } from "#src/connection.ts";
@@ -44,7 +44,7 @@ Output:
 API reference (OpenAPI 3.1): ${PRODUCTION_API_URL}${OPENAPI_DOCUMENT_PATH}`;
 
 const program = new Command()
-  .name("draft-approval")
+  .name("resend-challenge")
   .description(
     "Act as an Agent on Email Draft Approval: create, revise and submit email Drafts for a human Reviewer.",
   )
@@ -201,7 +201,7 @@ try {
 
 /** Sends one request and prints its result, as JSON with `--json`. */
 async function runApiCommand<Result>(
-  sendRequest: (client: DraftApprovalClient) => Promise<Result>,
+  sendRequest: (client: ResendChallengeClient) => Promise<Result>,
   formatHuman: (result: Result) => string,
 ): Promise<void> {
   const { apiUrl, json } = program.opts();

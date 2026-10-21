@@ -49,7 +49,7 @@ export async function postEmail(
         "Content-Type": "application/json",
         "Idempotency-Key": idempotencyKey,
         // Resend refuses requests without a User-Agent with 403.
-        "User-Agent": "draft-approval",
+        "User-Agent": "resend-challenge",
       },
       // Built field by field, so that every retry sends the same body under the same key.
       body: JSON.stringify({ from, to, subject, text, tags }),

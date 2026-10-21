@@ -3,8 +3,12 @@ import { bodyLimit } from "hono/body-limit";
 import { HTTPException } from "hono/http-exception";
 import crypto from "node:crypto";
 
-import { createApiContractApp, ERROR_CODE, REVIEWER_ONLY_ROUTES } from "@draft-approval/api.routes";
-import { findRootCause } from "@draft-approval/drafts";
+import {
+  createApiContractApp,
+  ERROR_CODE,
+  REVIEWER_ONLY_ROUTES,
+} from "@resend-challenge/api.routes";
+import { findRootCause } from "@resend-challenge/drafts";
 
 import type { ApiServerHonoEnvironment } from "#src/api-server-environment.ts";
 import { authenticate, requireReviewer } from "#src/authentication.ts";

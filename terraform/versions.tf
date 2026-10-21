@@ -6,7 +6,7 @@ terraform {
   # come from the environment, so no account id or credential is committed.
   # See https://developers.cloudflare.com/terraform/advanced-topics/remote-backend/.
   backend "s3" {
-    bucket = "draft-approval-terraform-state"
+    bucket = "resend-challenge-terraform-state"
     key    = "production/terraform.tfstate"
     region = "auto"
     # R2 supports conditional writes, which the S3 backend's lock file relies on.

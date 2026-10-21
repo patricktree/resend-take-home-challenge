@@ -6,8 +6,8 @@
 
 import { test } from "vitest";
 
-import { draftParamsSchema, revisionParamsSchema } from "@draft-approval/api.routes";
-import { isDraftId, isRevisionId } from "@draft-approval/drafts";
+import { draftParamsSchema, revisionParamsSchema } from "@resend-challenge/api.routes";
+import { isDraftId, isRevisionId } from "@resend-challenge/drafts";
 
 const UUID = "019a0b7e-5c3d-7f2a-9b1e-4d6c8a2f0e13";
 

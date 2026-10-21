@@ -1,7 +1,7 @@
 import { CommanderError } from "@commander-js/extra-typings";
 
-import { ApiError } from "@draft-approval/api.client";
-import { ERROR_CODE, type ErrorCode } from "@draft-approval/api.routes";
+import { ApiError } from "@resend-challenge/api.client";
+import { ERROR_CODE, type ErrorCode } from "@resend-challenge/api.routes";
 
 /** The API's codes and the CLI's own. */
 export type CliErrorCode = ErrorCode | (typeof CLI_ERROR_CODE)[keyof typeof CLI_ERROR_CODE];

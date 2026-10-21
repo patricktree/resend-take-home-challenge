@@ -1,6 +1,6 @@
 import { infiniteQueryOptions, type QueryClient, queryOptions } from "@tanstack/react-query";
 
-import type { ListDraftsQuery } from "@draft-approval/api.routes";
+import type { ListDraftsQuery } from "@resend-challenge/api.routes";
 
 import { getApiClient } from "#src/api-client.ts";
 

@@ -11,7 +11,7 @@ import {
   LOCAL_AGENT_TOKEN,
   LOCAL_REVIEWER_TOKEN,
   type DraftSummaryResponse,
-} from "@draft-approval/api.routes";
+} from "@resend-challenge/api.routes";
 
 import {
   TEST_AGENT_TOKEN,
@@ -447,7 +447,7 @@ async function connectMcpClient(
   { onTestFinished }: Pick<TestContext, "onTestFinished">,
 ): Promise<Client> {
   const mcpClient = new Client(
-    { name: "draft-approval-tests", version: "1.0.0" },
+    { name: "resend-challenge-tests", version: "1.0.0" },
     { versionNegotiation: { mode: versionNegotiation } },
   );
   const transport = new StreamableHTTPClientTransport(new URL(url), {

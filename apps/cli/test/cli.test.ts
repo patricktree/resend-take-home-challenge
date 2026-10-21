@@ -541,12 +541,14 @@ test.for([
   },
 );
 
-test("an invalid recipient's error names the option and lists the schema's issues", async ({
+test("an invalid recipient's error names the option and the address, and lists the schema's issues", async ({
   expect,
 }) => {
   const result = await runCli([
     "drafts",
     "create",
+    "--to",
+    "ada@example.com",
     "--to",
     "not-an-address",
     "--subject",
@@ -558,8 +560,93 @@ test("an invalid recipient's error names the option and lists the schema's issue
   expect(JSON.parse(result.stderr)).toStrictEqual({
     error: {
       code: "INVALID_REQUEST",
-      message: "Invalid input. --to: Must be a valid email address.",
-      issues: [{ path: ["to", 0], message: "Must be a valid email address." }],
+      message: 'Invalid input. --to "not-an-address": Must be a valid email address.',
+      issues: [{ path: ["to", 1], message: "Must be a valid email address." }],
+    },
+  });
+});
+
+test.for([
+  [
+    "an invalid Draft id names the positional argument",
+    ["drafts", "get", "drf_1"],
+    "Invalid input. <draftId>: Must be a Draft id (drf_…).",
+  ],
+  [
+    "an invalid base Revision id names --base-revision",
+    [
+      "drafts",
+      "revise",
+      DRAFT_ID,
+      "--base-revision",
+      "rev_1",
+      "--to",
+      "ada@example.com",
+      "--subject",
+      "Hi",
+      "--body",
+      "Hello",
+    ],
+    "Invalid input. --base-revision: Must be a Revision id (rev_…).",
+  ],
+  [
+    "a limit above 100 names --limit",
+    ["drafts", "list", "--limit", "500"],
+    "Invalid input. --limit: Too big: expected number to be <=100.",
+  ],
+] as const)("%s", async ([, args, message], { expect }) => {
+  const result = await runCli([...args]);
+
+  expect(JSON.parse(result.stderr)).toMatchObject({
+    error: { code: "INVALID_REQUEST", message },
+  });
+});
+
+test("an error with several issues separates them in its message", async ({ expect }) => {
+  const result = await runCli([
+    "drafts",
+    "create",
+    "--to",
+    "not-an-address",
+    "--subject",
+    "Hi\nthere",
+    "--body",
+    "Hello",
+  ]);
+
+  expect(JSON.parse(result.stderr)).toMatchObject({
+    error: {
+      code: "INVALID_REQUEST",
+      message:
+        'Invalid input. --to "not-an-address": Must be a valid email address; --subject: Must not contain line breaks.',
+    },
+  });
+});
+
+test("an invalid body read with --body-file names --body-file", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "resend-challenge-cli-"));
+  onTestFinished(() => fs.rm(directory, { recursive: true, force: true }));
+  const bodyPath = path.join(directory, "body.txt");
+  await fs.writeFile(bodyPath, "");
+
+  const result = await runCli([
+    "drafts",
+    "create",
+    "--to",
+    "ada@example.com",
+    "--subject",
+    "Hi",
+    "--body-file",
+    bodyPath,
+  ]);
+
+  expect(JSON.parse(result.stderr)).toMatchObject({
+    error: {
+      code: "INVALID_REQUEST",
+      message: "Invalid input. --body-file: Must not be empty.",
     },
   });
 });

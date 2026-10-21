@@ -31,6 +31,7 @@ export {
 export {
   ERROR_CODE,
   errorResponseSchema,
+  toValidationIssues,
   type ErrorCode,
   type ErrorExtras,
   type ErrorResponse,

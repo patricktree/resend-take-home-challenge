@@ -12,7 +12,12 @@ import {
   revisionParamsSchema,
   revisionSchema,
 } from "./drafts.ts";
-import { ERROR_CODE, errorResponseSchema, type ErrorResponse } from "./errors.ts";
+import {
+  ERROR_CODE,
+  errorResponseSchema,
+  toValidationIssues,
+  type ErrorResponse,
+} from "./errors.ts";
 
 /** What the contract needs from the app's environment: the request id of every error envelope. */
 export type ApiContractEnvironment = { Variables: { requestId: string } };
@@ -357,12 +362,7 @@ export function createApiContractApp<E extends ApiContractEnvironment>(handlers:
           code: ERROR_CODE.INVALID_REQUEST,
           message: "The request is invalid; see `issues`.",
           requestId: context.get("requestId"),
-          issues: result.error.issues.map((issue) => ({
-            path: issue.path.map((segment) =>
-              typeof segment === "number" ? segment : String(segment),
-            ),
-            message: issue.message,
-          })),
+          issues: toValidationIssues(result.error.issues),
         },
       };
       return context.json(body, 400);

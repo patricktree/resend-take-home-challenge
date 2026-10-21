@@ -52,7 +52,7 @@ Resolved in a grilling session with the repository owner on 2026-10-20.
 
 ### CLI
 
-- Token from `DRAFT_APPROVAL_TOKEN`. The API URL comes from `--api-url`, then `DRAFT_APPROVAL_API_URL`, then the production URL built into the CLI as a constant, so a bare invocation talks to the deployed system. Like cup, the CLI requires HTTPS except on loopback.
+- Token from `RESEND_CHALLENGE_TOKEN`. The API URL comes from `--api-url`, then `RESEND_CHALLENGE_API_URL`, then the production URL built into the CLI as a constant, so a bare invocation talks to the deployed system. Like cup, the CLI requires HTTPS except on loopback.
 
 ### Local development and tests
 

@@ -11,7 +11,6 @@ packages:
   - .patricktree-stack/tooling/config-typescript
   - .patricktree-stack/tooling/config-vitest
   - .patricktree-stack/tooling/config-wyw-in-js
-  - .patricktree-stack/qa-utils/test-utils-node
 
 allowBuilds:
   # its postinstall script only prints a funding notice (a dependency of "agents" through mimetext)

@@ -21,7 +21,7 @@ import {
   formatDraftSummary,
   formatRevision,
 } from "./human-output.ts";
-import { parseInput, readBody } from "./input.ts";
+import { getBodyArgumentName, parseInput, readBody } from "./input.ts";
 import { PRODUCTION_API_URL } from "./production.ts";
 
 /** Commander signals help output through these codes; they are not failures. */
@@ -73,12 +73,17 @@ drafts
   .requiredOption("--subject <subject>", "the subject, without line breaks")
   .addOption(new Option("--body <text>", "the plain-text body").conflicts("bodyFile"))
   .option("--body-file <path>", "read the plain-text body from a file, or from stdin with -")
-  .action(async (options) => {
-    const draftData = parseInput(draftDataRequestSchema, {
-      to: options.to,
-      subject: options.subject,
-      body: { plainText: await readBody(options) },
-    });
+  .action(async (options, command) => {
+    const draftData = parseInput(
+      draftDataRequestSchema,
+      {
+        to: options.to,
+        subject: options.subject,
+        body: { plainText: await readBody(options) },
+      },
+      command,
+      { body: getBodyArgumentName(options) },
+    );
     await runApiCommand((client) => client.drafts.create(draftData), formatDraftSummary);
   });
 
@@ -88,8 +93,8 @@ drafts
     "Get a Draft with its latest Revision, including the body, the review status and the sending status",
   )
   .argument("<draftId>", "the Draft id (drf_…)")
-  .action(async (draftId) => {
-    const params = parseInput(draftParamsSchema, { draftId });
+  .action(async (draftId, _options, command) => {
+    const params = parseInput(draftParamsSchema, { draftId }, command);
     await runApiCommand((client) => client.drafts.get(params.draftId), formatDraft);
   });
 
@@ -120,15 +125,19 @@ drafts
   )
   .option("--limit <n>", "the page size, 1–100 (default: 50)")
   .option("--cursor <cursor>", "the cursor of the next page, from the previous page")
-  .action(async (options) => {
-    const query = parseInput(listDraftsQuerySchema, {
-      reviewStatus: options.reviewStatus,
-      sendingStatus: options.sendingStatus,
-      orderBy: options.orderBy,
-      order: options.order,
-      limit: options.limit,
-      cursor: options.cursor,
-    });
+  .action(async (options, command) => {
+    const query = parseInput(
+      listDraftsQuerySchema,
+      {
+        reviewStatus: options.reviewStatus,
+        sendingStatus: options.sendingStatus,
+        orderBy: options.orderBy,
+        order: options.order,
+        limit: options.limit,
+        cursor: options.cursor,
+      },
+      command,
+    );
     await runApiCommand((client) => client.drafts.list(query), formatDraftList);
   });
 
@@ -146,14 +155,20 @@ drafts
   .requiredOption("--subject <subject>", "the subject, without line breaks")
   .addOption(new Option("--body <text>", "the plain-text body").conflicts("bodyFile"))
   .option("--body-file <path>", "read the plain-text body from a file, or from stdin with -")
-  .action(async (draftId, options) => {
-    const params = parseInput(draftParamsSchema, { draftId });
-    const reviseRequest = parseInput(reviseRequestSchema, {
-      baseRevisionId: options.baseRevision,
-      to: options.to,
-      subject: options.subject,
-      body: { plainText: await readBody(options) },
-    });
+  .action(async (draftId, options, command) => {
+    const params = parseInput(draftParamsSchema, { draftId }, command);
+    const reviseRequest = parseInput(
+      reviseRequestSchema,
+      {
+        baseRevisionId: options.baseRevision,
+        to: options.to,
+        subject: options.subject,
+        body: { plainText: await readBody(options) },
+      },
+      command,
+      // `--base-revision`'s attribute is `baseRevision`, so no option matches the field.
+      { baseRevisionId: "--base-revision", body: getBodyArgumentName(options) },
+    );
     await runApiCommand(
       (client) => client.drafts.revise(params.draftId, reviseRequest),
       formatDraftSummary,
@@ -167,8 +182,8 @@ drafts
   )
   .argument("<draftId>", "the Draft id (drf_…)")
   .argument("<revisionId>", "the Revision to submit, the Draft's latest (rev_…)")
-  .action(async (draftId, revisionId) => {
-    const params = parseInput(revisionParamsSchema, { draftId, revisionId });
+  .action(async (draftId, revisionId, _options, command) => {
+    const params = parseInput(revisionParamsSchema, { draftId, revisionId }, command);
     await runApiCommand(
       (client) => client.revisions.submit(params.draftId, params.revisionId),
       formatDraftSummary,
@@ -180,8 +195,8 @@ drafts
   .description("Get any of a Draft's Revisions, including Superseded ones, with its body")
   .argument("<draftId>", "the Draft id (drf_…)")
   .argument("<revisionId>", "the Revision id (rev_…)")
-  .action(async (draftId, revisionId) => {
-    const params = parseInput(revisionParamsSchema, { draftId, revisionId });
+  .action(async (draftId, revisionId, _options, command) => {
+    const params = parseInput(revisionParamsSchema, { draftId, revisionId }, command);
     await runApiCommand(
       (client) => client.revisions.get(params.draftId, params.revisionId),
       formatRevision,

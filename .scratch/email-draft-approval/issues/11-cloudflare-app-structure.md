@@ -55,7 +55,7 @@ Resolved in a grilling session with the repository owner on 2026-10-20. Earlier 
 - Every request runs on a D1 session: writes start it with `"first-primary"`, reads with the incoming `X-Read-Bookmark` ([07](07-exactly-once-sending.md), 09). Every response returns `session.getBookmark()`.
 - Drizzle 0.45 types its D1 driver as `D1Database` only, while `withSession()` returns a `D1DatabaseSession` (which has the `prepare` and `batch` Drizzle uses). One helper, `drizzleForSession(env.DB, bookmark)`, does the cast in one place, with a comment pointing at the limitation. Integration tests run reads and writes through it. Delete it once Drizzle accepts sessions.
 
-### Packages (cup's layout, `@draft-approval/*`)
+### Packages (cup's layout, `@resend-challenge/*`)
 
 | Folder                   | Role                                                                                                                                                                                                                                                                               |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -84,7 +84,7 @@ Resolved in a grilling session with the repository owner on 2026-10-20. Earlier 
 ### Tokens (refines [10](10-agent-reviewer-separation.md))
 
 - `pnpm secrets:generate` creates both tokens once (`agent_` / `reviewer_` + base64url of 32 random bytes). It writes the Agent token into `wrangler.jsonc` and pipes the Reviewer token into `wrangler secret put`, printing it once.
-- **The Agent token is public and committed**: a plain var `AGENT_TOKEN` in `wrangler.jsonc` (10 had it as a Worker secret; the code reads `env.AGENT_TOKEN` either way). The README shows it. The CLI falls back to it when `DRAFT_APPROVAL_TOKEN` is unset (as it already falls back to the production URL), and the MCP setup instructions use it, so nobody needs setup to act as an Agent.
+- **The Agent token is public and committed**: a plain var `AGENT_TOKEN` in `wrangler.jsonc` (10 had it as a Worker secret; the code reads `env.AGENT_TOKEN` either way). The README shows it. The CLI falls back to it when `RESEND_CHALLENGE_TOKEN` is unset (as it already falls back to the production URL), and the MCP setup instructions use it, so nobody needs setup to act as an Agent.
 - **The Reviewer token is never committed.** The repository owner hands it to Reviewers out of band. Committing it was considered and rejected: any Agent that can read the repo could then approve (breaking the core requirement, as 10 found for the SPA bundle), and anyone could send arbitrary email through the Resend account and domain.
 
 ### Local-environment flag (defines 10's flag)

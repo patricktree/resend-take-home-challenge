@@ -40,16 +40,21 @@ test("a tick re-enqueues a lost hand-off with one sendBatch of its frozen Send i
   const tickStart = Temporal.Now.instant().epochMilliseconds;
   await runCronTick(worker);
 
-  expect((await readSendQueueCalls(worker)).slice(1)).toStrictEqual([
-    { method: "sendBatch", messages: [message] },
-  ]);
+  const sendQueueCallsAfterFirstCronTick = await readSendQueueCalls(worker);
+  expect(sendQueueCallsAfterFirstCronTick).toHaveLength(2);
+  expect(sendQueueCallsAfterFirstCronTick[1]).toStrictEqual({
+    method: "sendBatch",
+    messages: [message],
+  });
   const { enqueued_at: enqueuedAt } = await readSendColumns(worker, draft.id);
   expect(enqueuedAt).toBeGreaterThanOrEqual(tickStart);
   expect(await getSending(worker, draft.id)).toStrictEqual({ status: "QUEUED" });
 
   // The next tick leaves the recorded hand-off alone, and the message sends the email.
   await runCronTick(worker);
-  expect(await readSendQueueCalls(worker)).toHaveLength(2);
+
+  const sendQueueCallsAfterSecondCronTick = await readSendQueueCalls(worker);
+  expect(sendQueueCallsAfterSecondCronTick).toHaveLength(2);
   await deliverSendQueueBatch(worker, [{ body: message }]);
   expect(await getSending(worker, draft.id)).toMatchObject({ status: "SENT" });
   await expectExactlyOneEmailPerSentDraft(worker, resendStub);

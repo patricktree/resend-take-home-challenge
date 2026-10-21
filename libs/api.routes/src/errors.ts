@@ -55,3 +55,16 @@ export const errorResponseSchema = z
     }),
   })
   .openapi("ErrorResponse");
+
+/**
+ * Maps Zod's issues to the `issues` of an `INVALID_REQUEST` error. The API's request validation and
+ * the CLI's validation before any request both use it, so their `issues` have the same shape.
+ */
+export function toValidationIssues(
+  issues: readonly { path: readonly PropertyKey[]; message: string }[],
+): z.infer<typeof validationIssueSchema>[] {
+  return issues.map((issue) => ({
+    path: issue.path.map((segment) => (typeof segment === "number" ? segment : String(segment))),
+    message: issue.message,
+  }));
+}

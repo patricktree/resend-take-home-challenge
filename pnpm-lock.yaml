@@ -271,30 +271,6 @@ importers:
         specifier: ^2.11.7
         version: 2.11.9
 
-  .patricktree-stack/qa-utils/test-utils-node:
-    devDependencies:
-      '@patricktree-stack/config-oxlint':
-        specifier: workspace:*
-        version: link:../../tooling/config-oxlint
-      '@patricktree-stack/config-typescript':
-        specifier: workspace:*
-        version: link:../../tooling/config-typescript
-      '@types/node':
-        specifier: 'catalog:'
-        version: 26.6.5
-      '@typescript/native':
-        specifier: 'catalog:'
-        version: typescript@7.0.2
-      oxlint:
-        specifier: 'catalog:'
-        version: 1.89.0(oxlint-tsgolint@7.0.2004)
-      oxlint-tsgolint:
-        specifier: 'catalog:'
-        version: 7.0.2004
-      typescript:
-        specifier: 'catalog:'
-        version: '@typescript/typescript6@6.0.2'
-
   .patricktree-stack/tooling/config-oxfmt:
     dependencies:
       oxfmt:

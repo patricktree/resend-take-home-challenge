@@ -28,7 +28,7 @@ test.for(idSamples("rev_"))(
 );
 
 /** For each prefix: a valid id, then near misses that both copies must reject. */
-function idSamples(prefix: "drf_" | "rev_") {
+function idSamples(prefix: "drf_" | "rev_"): { sample: string; isId: boolean }[] {
   const otherPrefix = prefix === "drf_" ? "rev_" : "drf_";
   return [
     { sample: `${prefix}${UUID}`, isId: true },

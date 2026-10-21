@@ -25,15 +25,17 @@ test("a deadline that passes while the body is read from R2 ends the Send FAILED
 }) => {
   const bindings = await useBindings({ onTestFinished });
   const sendIntent = await createApprovedSendIntent(bindings);
-  const deadline = Temporal.Now.instant().epochMilliseconds + 100;
-  // The R2 read answers only once the deadline has passed.
+  // Far enough ahead that the consumer's reads before the body are done long before it, also
+  // under load; the R2 read then answers only once it has passed.
+  const deadline = Temporal.Now.instant().epochMilliseconds + 2000;
   const slowRevisionBodies = new Proxy(bindings.REVISION_BODIES, {
     get: (target, property) => {
       if (property !== "get") {
         return Reflect.get(target, property);
       }
       return async (key: string) => {
-        await new Promise((resolve) => setTimeout(resolve, 200));
+        const untilPastDeadline = deadline + 100 - Temporal.Now.instant().epochMilliseconds;
+        await new Promise((resolve) => setTimeout(resolve, untilPastDeadline));
         return target.get(key);
       };
     },

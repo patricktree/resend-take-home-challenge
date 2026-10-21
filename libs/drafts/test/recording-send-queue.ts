@@ -10,10 +10,15 @@ export type RecordingSendQueue = SendQueue & {
 
 /**
  * Cloudflare Queues' limits of one `sendBatch()`
- * (https://developers.cloudflare.com/queues/platform/limits/): 100 messages and 256 KB of message
- * bodies in total, with KB read as 1000 bytes, the stricter reading.
+ * (https://developers.cloudflare.com/queues/platform/limits/): 100 messages and 256 KB in total,
+ * with KB read as 1000 bytes, the stricter reading; each message counts its body plus about 100
+ * bytes of internal metadata.
  */
-const QUEUE_BATCH_LIMITS = { MESSAGES: 100, BODY_BYTES: 256 * 1000 } as const;
+const QUEUE_BATCH_LIMITS = {
+  MESSAGES: 100,
+  BYTES: 256 * 1000,
+  METADATA_BYTES_PER_MESSAGE: 100,
+} as const;
 
 /**
  * Records every message; a `sendBatch()` over Cloudflare Queues' batch limits throws and records
@@ -30,15 +35,22 @@ export function createRecordingSendQueue(): RecordingSendQueue {
     },
     sendBatch: async (messageRequests) => {
       const messages = Array.from(messageRequests, ({ body }) => body);
-      const bodyBytes = messages.reduce(
-        (total, message) => total + new TextEncoder().encode(JSON.stringify(message)).byteLength,
+      const batchBytes = messages.reduce(
+        (total, message) =>
+          total +
+          new TextEncoder().encode(JSON.stringify(message)).byteLength +
+          QUEUE_BATCH_LIMITS.METADATA_BYTES_PER_MESSAGE,
         0,
       );
       if (messages.length > QUEUE_BATCH_LIMITS.MESSAGES) {
-        throw new Error(`sendBatch() of ${messages.length} messages exceeds the limit of 100.`);
+        throw new Error(
+          `sendBatch() of ${messages.length} messages exceeds the limit of ${QUEUE_BATCH_LIMITS.MESSAGES}.`,
+        );
       }
-      if (bodyBytes > QUEUE_BATCH_LIMITS.BODY_BYTES) {
-        throw new Error(`sendBatch() of ${bodyBytes} bytes exceeds the limit of 256 KB.`);
+      if (batchBytes > QUEUE_BATCH_LIMITS.BYTES) {
+        throw new Error(
+          `sendBatch() of ${batchBytes} bytes exceeds the limit of ${QUEUE_BATCH_LIMITS.BYTES}.`,
+        );
       }
       sentBatches.push(messages);
     },

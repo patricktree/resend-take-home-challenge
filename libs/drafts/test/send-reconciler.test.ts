@@ -22,7 +22,7 @@ const DRAFT_DATA = {
 
 /**
  * Draft data at the limits that make a Send Queue message largest: 50 recipients of 254 characters
- * and a subject of 998 emoji, 4 bytes each in UTF-8. Its message is about 17 KB, so 16 of them
+ * and a subject of 998 emoji, 4 bytes each in UTF-8. Its message is about 17 KB, so 20 of them
  * exceed the 256 KB of one `sendBatch()`.
  */
 const LARGEST_DRAFT_DATA = {
@@ -89,11 +89,8 @@ test("a tick re-enqueues large lost hand-offs in several sendBatch calls, each w
 
   await reconcileSends({ database: databaseOn(bindings.DB), sendQueue });
 
+  // The recording double refuses every sendBatch() over the limits, as Cloudflare Queues does.
   expect(sendQueue.sentBatches.length).toBeGreaterThan(1);
-  for (const batch of sendQueue.sentBatches) {
-    expect(batch.length).toBeLessThanOrEqual(100);
-    expect(serializedBytes(batch)).toBeLessThanOrEqual(256 * 1000);
-  }
   expect(sendQueue.sentBatches.flat().map(({ draftId }) => draftId)).toStrictEqual(
     draftIds.toReversed(),
   );
@@ -396,14 +393,6 @@ async function readSendingStatuses(database: D1Database): Promise<Record<string,
       id,
       failureReason === null ? sendingStatus : `${sendingStatus}/${failureReason}`,
     ]),
-  );
-}
-
-/** The size of the messages' bodies as JSON in UTF-8, as the Queues batch limit counts it. */
-function serializedBytes(messages: unknown[]): number {
-  return messages.reduce<number>(
-    (total, message) => total + new TextEncoder().encode(JSON.stringify(message)).byteLength,
-    0,
   );
 }
 

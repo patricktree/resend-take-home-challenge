@@ -46,11 +46,16 @@ const BACKSTOP_AFTER_DEADLINE_MILLISECONDS = 60 * 60 * 1000;
 
 /**
  * Cloudflare Queues' limits of one `sendBatch()`
- * (https://developers.cloudflare.com/queues/platform/limits/): 100 messages and 256 KB of message
- * bodies, with KB read as 1000 bytes, the stricter reading. A message of the largest Draft data is
- * about 17 KB, so 100 of them need several calls.
+ * (https://developers.cloudflare.com/queues/platform/limits/): 100 messages and 256 KB in total,
+ * with KB read as 1000 bytes, the stricter reading. Each message counts its body plus up to about
+ * 100 bytes of internal metadata, reserved here. A message of the largest Draft data is about 17
+ * KB, so 100 of them need several calls.
  */
-const QUEUE_BATCH_LIMITS = { MESSAGES: 100, BODY_BYTES: 256 * 1000 } as const;
+const QUEUE_BATCH_LIMITS = {
+  MESSAGES: 100,
+  BYTES: 256 * 1000,
+  METADATA_BYTES_PER_MESSAGE: 100,
+} as const;
 
 /**
  * `sending_status = 'QUEUED'` with the value inlined: SQLite uses a partial index only when the
@@ -141,19 +146,19 @@ async function recordHandOffs(
 function chunkWithinQueueBatchLimits(messages: SendQueueMessage[]): SendQueueMessage[][] {
   const chunks: SendQueueMessage[][] = [];
   let chunk: SendQueueMessage[] = [];
-  let chunkBodyBytes = 0;
+  let chunkBytes = 0;
   for (const message of messages) {
-    const bodyBytes = measureBodyBytes(message);
+    const messageBytes = measureBodyBytes(message) + QUEUE_BATCH_LIMITS.METADATA_BYTES_PER_MESSAGE;
     const isChunkFull =
       chunk.length === QUEUE_BATCH_LIMITS.MESSAGES ||
-      chunkBodyBytes + bodyBytes > QUEUE_BATCH_LIMITS.BODY_BYTES;
+      chunkBytes + messageBytes > QUEUE_BATCH_LIMITS.BYTES;
     if (chunk.length > 0 && isChunkFull) {
       chunks.push(chunk);
       chunk = [];
-      chunkBodyBytes = 0;
+      chunkBytes = 0;
     }
     chunk.push(message);
-    chunkBodyBytes += bodyBytes;
+    chunkBytes += messageBytes;
   }
   if (chunk.length > 0) {
     chunks.push(chunk);

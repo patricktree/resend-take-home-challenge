@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { z } from "zod";
 
-import { ERROR_CODE } from "@resend-challenge/api.routes";
+import { ERROR_CODE } from "@resend-challenge/api.client";
 
 import { CliError } from "./cli-error.ts";
 

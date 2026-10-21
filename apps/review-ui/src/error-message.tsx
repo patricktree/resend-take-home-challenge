@@ -1,6 +1,6 @@
 import React from "react";
 
-import { ApiError } from "@resend-challenge/api.client";
+import { ApiError, ERROR_CODE } from "@resend-challenge/api.client";
 
 type ErrorMessageProps = {
   /** What a route or query threw; React rendering can throw anything, not only errors. */
@@ -12,7 +12,7 @@ type ErrorMessageProps = {
  * the app then shows the token screen instead.
  */
 export function ErrorMessage({ error }: ErrorMessageProps): React.ReactNode {
-  if (error instanceof ApiError && error.code === "UNAUTHENTICATED") {
+  if (error instanceof ApiError && error.code === ERROR_CODE.UNAUTHENTICATED) {
     return null;
   }
 

@@ -15,6 +15,8 @@ import type {
   RevisionResponse,
 } from "@resend-challenge/api.routes";
 
+export type { ErrorCode } from "@resend-challenge/api.routes";
+
 export type ApiClientOptions = {
   /** The origin the API runs on, for example `https://resend-challenge.patricktree.me`. */
   baseUrl: string;
@@ -36,25 +38,26 @@ type ErrorBody = ErrorResponse["error"];
 const READ_BOOKMARK_HEADER = "X-Read-Bookmark";
 
 /**
- * Every `ErrorCode` of the contract, as a value: only the contract's types are imported, and
- * `satisfies` fails to compile when a code is missing here or not in the contract.
+ * Every value of {@link ApiError.code}, the contract's `ERROR_CODE` as the client's own value: only
+ * the contract's types are imported, and `satisfies` fails to compile when a code is missing here
+ * or not in the contract.
  */
-const KNOWN_ERROR_CODES = {
-  INVALID_REQUEST: true,
-  UNAUTHENTICATED: true,
-  AGENT_ONLY: true,
-  REVIEWER_ONLY: true,
-  NOT_FOUND: true,
-  DRAFT_NOT_FOUND: true,
-  REVISION_NOT_FOUND: true,
-  REVISION_SUPERSEDED: true,
-  REVISION_ALREADY_DECIDED: true,
-  REVISION_ALREADY_SUBMITTED: true,
-  REVISION_NOT_SUBMITTED: true,
-  DRAFT_APPROVED: true,
-  PAYLOAD_TOO_LARGE: true,
-  INTERNAL_ERROR: true,
-} as const satisfies Record<ErrorCode, true>;
+export const ERROR_CODE = {
+  INVALID_REQUEST: "INVALID_REQUEST",
+  UNAUTHENTICATED: "UNAUTHENTICATED",
+  AGENT_ONLY: "AGENT_ONLY",
+  REVIEWER_ONLY: "REVIEWER_ONLY",
+  NOT_FOUND: "NOT_FOUND",
+  DRAFT_NOT_FOUND: "DRAFT_NOT_FOUND",
+  REVISION_NOT_FOUND: "REVISION_NOT_FOUND",
+  REVISION_SUPERSEDED: "REVISION_SUPERSEDED",
+  REVISION_ALREADY_DECIDED: "REVISION_ALREADY_DECIDED",
+  REVISION_ALREADY_SUBMITTED: "REVISION_ALREADY_SUBMITTED",
+  REVISION_NOT_SUBMITTED: "REVISION_NOT_SUBMITTED",
+  DRAFT_APPROVED: "DRAFT_APPROVED",
+  PAYLOAD_TOO_LARGE: "PAYLOAD_TOO_LARGE",
+  INTERNAL_ERROR: "INTERNAL_ERROR",
+} as const satisfies { [Code in ErrorCode]: Code };
 
 /**
  * The routes declare the optional `X-Read-Bookmark` request header, so Hono RPC asks for a `header`
@@ -322,5 +325,5 @@ function isErrorEnvelope(value: unknown): value is ErrorResponse {
 }
 
 function isKnownErrorCode(code: string): code is ErrorCode {
-  return Object.hasOwn(KNOWN_ERROR_CODES, code);
+  return Object.hasOwn(ERROR_CODE, code);
 }

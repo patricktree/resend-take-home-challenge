@@ -11,8 +11,7 @@ import { z } from "zod";
 
 import { isPastSendDeadline } from "../domain/send-deadline.ts";
 import { sendQueueMessageSchema, type SendQueueMessage } from "../domain/send-queue-message.ts";
-import { classifyResendCall } from "../resend/classify-resend-call.ts";
-import { postEmail, type ResendConnection } from "../resend/post-email.ts";
+import { sendEmail } from "../resend/send-email.ts";
 import { findRootCauseMessage } from "../root-cause.ts";
 import { getRevisionBodyAt } from "../storage/revision-bodies.ts";
 import { hasSendEnded, recordFailed, recordSent } from "../storage/send-outbox.ts";
@@ -97,30 +96,22 @@ async function attemptSend(
     return;
   }
 
-  const call = await postEmail(readResendConnection(resend), idempotencyKey, {
+  const outcome = await sendEmail(resend, idempotencyKey, {
     from: outgoingEmail.from,
     to: outgoingEmail.to,
     subject: outgoingEmail.subject,
     text: body.plainText,
     tags: outgoingEmail.tags,
   });
-  const classification = classifyResendCall(call);
 
-  if (classification.classification === "SENT") {
-    await recordSent(database, draftId, classification.emailId);
+  if (outcome.kind === "SENT") {
+    await recordSent(database, draftId, outcome.emailId);
     message.ack();
     return;
   }
 
-  if (classification.classification === "REJECTED") {
-    const { resendErrorName, resendErrorMessage } = classification;
-    if (resendErrorName === "invalid_idempotent_request") {
-      // The same key with a different body: every attempt must send the same frozen body, so
-      // this is a bug of our own.
-      console.error(
-        `Resend refused the Send of Draft ${draftId} with 409 invalid_idempotent_request: ${resendErrorMessage ?? "(no message)"}`,
-      );
-    }
+  if (outcome.kind === "REJECTED") {
+    const { resendErrorName, resendErrorMessage } = outcome;
     await recordFailed(database, draftId, {
       reason: "REJECTED_BY_RESEND",
       ...(resendErrorName === undefined ? {} : { resendErrorName }),
@@ -130,7 +121,7 @@ async function attemptSend(
     return;
   }
 
-  retryLater(message, { deadline }, classification.retryAfterSeconds);
+  retryLater(message, { deadline }, outcome.retryAfterSeconds);
 }
 
 /** Hands the message back to the Queue, to be delivered again no later than the deadline. */
@@ -148,11 +139,4 @@ function retryLater(
       now: Temporal.Now.instant().epochMilliseconds,
     }),
   });
-}
-
-function readResendConnection({ baseUrl, apiKey }: SendPipeline["resend"]): ResendConnection {
-  if (apiKey === undefined || apiKey === "") {
-    throw new Error("RESEND_API_KEY is not configured.");
-  }
-  return { baseUrl, apiKey };
 }

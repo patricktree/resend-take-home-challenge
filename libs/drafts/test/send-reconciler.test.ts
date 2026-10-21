@@ -475,7 +475,14 @@ async function seedApprovedDrafts(
  * placeholders, wherever they occur, and each timestamp becomes whether it is set. The deadline
  * keeps its distance from the Approval.
  */
-async function readRowShapes(database: D1Database, draftId: DraftId) {
+async function readRowShapes(
+  database: D1Database,
+  draftId: DraftId,
+): Promise<{
+  draft: Record<string, unknown>;
+  deadlineAfterApproval: number;
+  revision: Record<string, unknown>;
+}> {
   const draftRow = await database
     .prepare("SELECT * FROM drafts WHERE id = ?1")
     .bind(draftId)

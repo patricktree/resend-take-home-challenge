@@ -9,7 +9,7 @@ import { reviseDraft } from "#src/revise-draft.ts";
 import { sendQueueMessageSchema } from "#src/send-queue.ts";
 import { submitRevision } from "#src/submit-revision.ts";
 
-import { createGatedD1Database } from "#test/gated-d1-database.ts";
+import { createHoldingD1Database } from "#test/holding-d1-database.ts";
 import { createFailingSendQueue, createRecordingSendQueue } from "#test/recording-send-queue.ts";
 import { useBindings, type TestBindings } from "#test/use-bindings.ts";
 
@@ -152,20 +152,20 @@ test("approve ‖ approve: the Approval whose batch commits second gets REVISION
   onTestFinished,
 }) => {
   const bindings = await useBindings({ onTestFinished });
-  const gatedDatabase = createGatedD1Database(bindings.DB);
+  const holdingDatabase = createHoldingD1Database(bindings.DB);
   const sendQueue = createRecordingSendQueue();
   const sendHandOff = { sendQueue, from: RESEND_FROM };
   const created = await createSubmittedDraft(bindings);
   const revisionId = created.latestRevision.id;
 
-  const gate = gatedDatabase.holdNext((call) => call.kind === "batch");
+  const hold = holdingDatabase.holdNext((call) => call.kind === "batch");
   const heldApproval = approveRevision(
-    storageOn(gatedDatabase.database, bindings),
+    storageOn(holdingDatabase.database, bindings),
     sendHandOff,
     created.id,
     revisionId,
   );
-  await gate.reached;
+  await hold.reached;
   const committedApproval = await approveRevision(
     storageOn(bindings.DB, bindings),
     sendHandOff,
@@ -173,7 +173,7 @@ test("approve ‖ approve: the Approval whose batch commits second gets REVISION
     revisionId,
   );
   const rowsAfterCommittedApproval = await readRows(bindings.DB);
-  gate.release();
+  hold.release();
 
   expect(committedApproval).toMatchObject({
     outcome: "APPROVED",
@@ -192,19 +192,19 @@ test("approve ‖ reject, reject first: the Approval gets REVISION_ALREADY_DECID
   onTestFinished,
 }) => {
   const bindings = await useBindings({ onTestFinished });
-  const gatedDatabase = createGatedD1Database(bindings.DB);
+  const holdingDatabase = createHoldingD1Database(bindings.DB);
   const sendQueue = createRecordingSendQueue();
   const created = await createSubmittedDraft(bindings);
   const revisionId = created.latestRevision.id;
 
-  const gate = gatedDatabase.holdNext((call) => call.kind === "batch");
+  const hold = holdingDatabase.holdNext((call) => call.kind === "batch");
   const heldApproval = approveRevision(
-    storageOn(gatedDatabase.database, bindings),
+    storageOn(holdingDatabase.database, bindings),
     { sendQueue, from: RESEND_FROM },
     created.id,
     revisionId,
   );
-  await gate.reached;
+  await hold.reached;
   const committedRejection = await rejectRevision(
     storageOn(bindings.DB, bindings),
     created.id,
@@ -212,7 +212,7 @@ test("approve ‖ reject, reject first: the Approval gets REVISION_ALREADY_DECID
     { reason: "Wrong recipient" },
   );
   const rowsAfterCommittedRejection = await readRows(bindings.DB);
-  gate.release();
+  hold.release();
 
   expect(committedRejection).toMatchObject({ outcome: "REJECTED" });
   expect(await heldApproval).toStrictEqual({
@@ -231,19 +231,19 @@ test("approve ‖ reject, approve first: the Rejection gets REVISION_ALREADY_DEC
   onTestFinished,
 }) => {
   const bindings = await useBindings({ onTestFinished });
-  const gatedDatabase = createGatedD1Database(bindings.DB);
+  const holdingDatabase = createHoldingD1Database(bindings.DB);
   const sendQueue = createRecordingSendQueue();
   const created = await createSubmittedDraft(bindings);
   const revisionId = created.latestRevision.id;
 
-  const gate = gatedDatabase.holdNext((call) => call.kind === "batch");
+  const hold = holdingDatabase.holdNext((call) => call.kind === "batch");
   const heldRejection = rejectRevision(
-    storageOn(gatedDatabase.database, bindings),
+    storageOn(holdingDatabase.database, bindings),
     created.id,
     revisionId,
     { reason: "Wrong recipient" },
   );
-  await gate.reached;
+  await hold.reached;
   const committedApproval = await approveRevision(
     storageOn(bindings.DB, bindings),
     { sendQueue, from: RESEND_FROM },
@@ -251,7 +251,7 @@ test("approve ‖ reject, approve first: the Rejection gets REVISION_ALREADY_DEC
     revisionId,
   );
   const rowsAfterCommittedApproval = await readRows(bindings.DB);
-  gate.release();
+  hold.release();
 
   expect(committedApproval).toMatchObject({ outcome: "APPROVED" });
   expect(await heldRejection).toStrictEqual({
@@ -270,25 +270,25 @@ test("approve ‖ revise, revise first: the Approval gets REVISION_SUPERSEDED, c
   onTestFinished,
 }) => {
   const bindings = await useBindings({ onTestFinished });
-  const gatedDatabase = createGatedD1Database(bindings.DB);
+  const holdingDatabase = createHoldingD1Database(bindings.DB);
   const sendQueue = createRecordingSendQueue();
   const created = await createSubmittedDraft(bindings);
 
-  const gate = gatedDatabase.holdNext((call) => call.kind === "batch");
+  const hold = holdingDatabase.holdNext((call) => call.kind === "batch");
   const heldApproval = approveRevision(
-    storageOn(gatedDatabase.database, bindings),
+    storageOn(holdingDatabase.database, bindings),
     { sendQueue, from: RESEND_FROM },
     created.id,
     created.latestRevision.id,
   );
-  await gate.reached;
+  await hold.reached;
   const committedRevise = await reviseDraft(storageOn(bindings.DB, bindings), created.id, {
     ...DRAFT_DATA,
     subject: "Committed revise",
     baseRevisionId: created.latestRevision.id,
   });
   const rowsAfterCommittedRevise = await readRows(bindings.DB);
-  gate.release();
+  hold.release();
 
   expect(committedRevise).toMatchObject({ outcome: "REVISED" });
   expect(await heldApproval).toStrictEqual({ outcome: "REVISION_SUPERSEDED" });

@@ -13,7 +13,7 @@ import type { OutgoingEmail, SendQueue } from "#src/send-queue.ts";
 import { reconcileSends } from "#src/send-reconciler.ts";
 import { submitRevision } from "#src/submit-revision.ts";
 
-import { createGatedD1Database } from "#test/gated-d1-database.ts";
+import { createHoldingD1Database } from "#test/holding-d1-database.ts";
 import { createFailingSendQueue, createRecordingSendQueue } from "#test/recording-send-queue.ts";
 import { useBindings, type TestBindings } from "#test/use-bindings.ts";
 
@@ -279,12 +279,12 @@ test("re-enqueue ‖ the Approval recording its hand-off, or the Send ending: th
   await bindings.DB.prepare("UPDATE drafts SET approved_at = ?1")
     .bind(now - HOUR_MILLISECONDS)
     .run();
-  const gatedDatabase = createGatedD1Database(bindings.DB);
+  const holdingDatabase = createHoldingD1Database(bindings.DB);
   const sendQueue = createRecordingSendQueue();
 
-  const gate = gatedDatabase.holdNext((call) => call.kind === "batch");
-  const tick = reconcileSends({ database: databaseOn(gatedDatabase.database), sendQueue });
-  await gate.reached;
+  const hold = holdingDatabase.holdNext((call) => call.kind === "batch");
+  const tick = reconcileSends({ database: databaseOn(holdingDatabase.database), sendQueue });
+  await hold.reached;
   const lateHandOffAt = now - 30 * SECOND_MILLISECONDS;
   await bindings.DB.batch([
     // The Approval's request records its hand-off after all, late.
@@ -297,7 +297,7 @@ test("re-enqueue ‖ the Approval recording its hand-off, or the Send ending: th
       "UPDATE drafts SET sending_status = 'SENT', email_id = 'email-id' WHERE id = ?1",
     ).bind(endedDraftId),
   ]);
-  gate.release();
+  hold.release();
   await tick;
 
   expect(sendQueue.sentBatches).toHaveLength(1);
@@ -332,18 +332,18 @@ test.for([
   "the $job job's query walks $indexName in order, without sorting",
   async ({ indexName, isJobQuery }, { expect, onTestFinished }) => {
     const bindings = await useBindings({ onTestFinished });
-    const gatedDatabase = createGatedD1Database(bindings.DB);
-    const gate = gatedDatabase.holdNext(
+    const holdingDatabase = createHoldingD1Database(bindings.DB);
+    const hold = holdingDatabase.holdNext(
       (call) =>
         call.kind === "statement" && call.query.startsWith("select") && isJobQuery(call.query),
     );
 
     const tick = reconcileSends({
-      database: databaseOn(gatedDatabase.database),
+      database: databaseOn(holdingDatabase.database),
       sendQueue: createRecordingSendQueue(),
     });
-    const call = await gate.reached;
-    gate.release();
+    const call = await hold.reached;
+    hold.release();
     await tick;
 
     if (call.kind !== "statement") {

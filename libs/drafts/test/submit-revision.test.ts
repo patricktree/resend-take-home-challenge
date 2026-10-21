@@ -5,7 +5,7 @@ import { drizzleForSession, type DraftsStorage } from "#src/database.ts";
 import { reviseDraft } from "#src/revise-draft.ts";
 import { submitRevision } from "#src/submit-revision.ts";
 
-import { createGatedD1Database } from "#test/gated-d1-database.ts";
+import { createHoldingD1Database } from "#test/holding-d1-database.ts";
 import { useBindings, type TestBindings } from "#test/use-bindings.ts";
 
 const DRAFT_DATA = {
@@ -19,24 +19,24 @@ test("submit ‖ submit: the Submission whose batch commits second gets REVISION
   onTestFinished,
 }) => {
   const bindings = await useBindings({ onTestFinished });
-  const gatedDatabase = createGatedD1Database(bindings.DB);
+  const holdingDatabase = createHoldingD1Database(bindings.DB);
   const created = await createDraft(storageOn(bindings.DB, bindings), DRAFT_DATA);
   const revisionId = created.latestRevision.id;
 
-  const gate = gatedDatabase.holdNext((call) => call.kind === "batch");
+  const hold = holdingDatabase.holdNext((call) => call.kind === "batch");
   const heldSubmission = submitRevision(
-    storageOn(gatedDatabase.database, bindings),
+    storageOn(holdingDatabase.database, bindings),
     created.id,
     revisionId,
   );
-  await gate.reached;
+  await hold.reached;
   const committedSubmission = await submitRevision(
     storageOn(bindings.DB, bindings),
     created.id,
     revisionId,
   );
   const rowsAfterCommittedSubmission = await readRows(bindings.DB);
-  gate.release();
+  hold.release();
 
   expect(committedSubmission).toMatchObject({
     outcome: "SUBMITTED",
@@ -54,23 +54,23 @@ test("submit ‖ revise, revise first: the Submission gets REVISION_SUPERSEDED a
   onTestFinished,
 }) => {
   const bindings = await useBindings({ onTestFinished });
-  const gatedDatabase = createGatedD1Database(bindings.DB);
+  const holdingDatabase = createHoldingD1Database(bindings.DB);
   const created = await createDraft(storageOn(bindings.DB, bindings), DRAFT_DATA);
 
-  const gate = gatedDatabase.holdNext((call) => call.kind === "batch");
+  const hold = holdingDatabase.holdNext((call) => call.kind === "batch");
   const heldSubmission = submitRevision(
-    storageOn(gatedDatabase.database, bindings),
+    storageOn(holdingDatabase.database, bindings),
     created.id,
     created.latestRevision.id,
   );
-  await gate.reached;
+  await hold.reached;
   const committedRevise = await reviseDraft(storageOn(bindings.DB, bindings), created.id, {
     ...DRAFT_DATA,
     subject: "Committed revise",
     baseRevisionId: created.latestRevision.id,
   });
   const rowsAfterCommittedRevise = await readRows(bindings.DB);
-  gate.release();
+  hold.release();
 
   expect(committedRevise).toMatchObject({
     outcome: "REVISED",
@@ -89,22 +89,22 @@ test("submit ‖ revise, submit first: the revise supersedes the now-Pending Rev
   onTestFinished,
 }) => {
   const bindings = await useBindings({ onTestFinished });
-  const gatedDatabase = createGatedD1Database(bindings.DB);
+  const holdingDatabase = createHoldingD1Database(bindings.DB);
   const created = await createDraft(storageOn(bindings.DB, bindings), DRAFT_DATA);
 
-  const gate = gatedDatabase.holdNext((call) => call.kind === "batch");
-  const heldRevise = reviseDraft(storageOn(gatedDatabase.database, bindings), created.id, {
+  const hold = holdingDatabase.holdNext((call) => call.kind === "batch");
+  const heldRevise = reviseDraft(storageOn(holdingDatabase.database, bindings), created.id, {
     ...DRAFT_DATA,
     subject: "Held revise",
     baseRevisionId: created.latestRevision.id,
   });
-  await gate.reached;
+  await hold.reached;
   const committedSubmission = await submitRevision(
     storageOn(bindings.DB, bindings),
     created.id,
     created.latestRevision.id,
   );
-  gate.release();
+  hold.release();
   const reviseOutcome = await heldRevise;
 
   expect(committedSubmission).toMatchObject({ outcome: "SUBMITTED" });

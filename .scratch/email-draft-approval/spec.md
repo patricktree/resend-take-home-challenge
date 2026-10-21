@@ -4,7 +4,7 @@ Status: ready to build. This document states the final decisions only; the reaso
 
 ## 1. Overview
 
-Email Draft Approval is a gate between Agents that compose emails and a human Reviewer who must approve each email before it is sent. Agents create Drafts, revise them (every change produces a new immutable Revision) and submit a specific Revision for review. The Reviewer approves or rejects that exact Revision in the Review UI. An Approval triggers the Send through Resend automatically, and each approved Draft sends at most one email, exactly once unless the Send fails.
+Email Draft Approval lets Agents write emails that are sent only after a human Reviewer approves them. An Agent creates and revises a Draft (every change produces a new immutable Revision) and submits a specific Revision; the Reviewer approves or rejects exactly that Revision in the Review UI. An Approval triggers the Send through Resend automatically, and each approved Draft sends at most one email, exactly once unless the Send fails.
 
 The domain vocabulary is defined in [GLOSSARY.md](../../GLOSSARY.md); this spec uses its terms (Agent, Reviewer, Review UI, Draft, Draft data, Revision, Submission, Pending, Decided, Superseded, Approval, Rejection, Send) without redefining them. Terms that exist only in the implementation (Draft summary, Send reconciler, outbox columns, read bookmark) are defined where they are introduced.
 
@@ -761,7 +761,7 @@ Priorities: integration tests first, e2e second, unit tests third. Vitest and Pl
 
 ### Forcing races
 
-- **Deterministic interleaving** (`libs/drafts` suite): a gated D1 test double wraps the real `DB` binding and holds a chosen statement (for example the Approval batch) until the test releases it, so "A reads, B commits, A writes" happens every time. There are no hooks in production code.
+- **Deterministic interleaving** (`libs/drafts` suite): a holding D1 test double wraps the real `DB` binding and holds a chosen statement (for example the Approval batch) until the test releases it, so "A reads, B commits, A writes" happens every time. There are no hooks in production code.
 - **Wired-up smoke** (integration): `Promise.all` of 10 concurrent HTTP requests through `worker.fetch` asserts exactly one 200, the right 409 for all others, one Queue message and one email in the ledger.
 - **Consumer overlap:** the stub holds a request open, so two concurrent `/__test/queue` deliveries of the same message deterministically overlap at Resend.
 - Every race in [section 8](#race-outcomes) runs in both variants where applicable, plus: the same Queue message delivered twice at once (one `SENT`, one ledger email, the other attempt retried after `409 concurrent_idempotent_requests`); Send reconciler re-enqueue ‖ consumer (one ledger email); late `SENT` from an in-flight attempt ‖ `FAILED` from the deadline or the DLQ (`SENT` wins); a message delivered for a Send that has already ended calls no Resend.

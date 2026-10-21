@@ -1,6 +1,6 @@
 # Email Draft Approval
 
-A gate between agents that compose emails and the humans who must approve them before anything is sent.
+Email Draft Approval lets Agents write emails that are sent only after a human Reviewer approves them. An Agent creates and revises a Draft and submits a specific Revision; the Reviewer approves or rejects exactly that Revision, and an approved Revision is sent through Resend once.
 
 ## Language
 

@@ -7,7 +7,7 @@ import { rejectRevision } from "#src/reject-revision.ts";
 import { reviseDraft } from "#src/revise-draft.ts";
 import { submitRevision } from "#src/submit-revision.ts";
 
-import { createGatedD1Database } from "#test/gated-d1-database.ts";
+import { createHoldingD1Database } from "#test/holding-d1-database.ts";
 import { useBindings, type TestBindings } from "#test/use-bindings.ts";
 
 const DRAFT_DATA = {
@@ -104,24 +104,24 @@ test("reject ‖ revise, revise first: the Rejection gets REVISION_SUPERSEDED an
   onTestFinished,
 }) => {
   const bindings = await useBindings({ onTestFinished });
-  const gatedDatabase = createGatedD1Database(bindings.DB);
+  const holdingDatabase = createHoldingD1Database(bindings.DB);
   const created = await createSubmittedDraft(bindings);
 
-  const gate = gatedDatabase.holdNext((call) => call.kind === "batch");
+  const hold = holdingDatabase.holdNext((call) => call.kind === "batch");
   const heldRejection = rejectRevision(
-    storageOn(gatedDatabase.database, bindings),
+    storageOn(holdingDatabase.database, bindings),
     created.id,
     created.latestRevision.id,
     { reason: "Wrong recipient" },
   );
-  await gate.reached;
+  await hold.reached;
   const committedRevise = await reviseDraft(storageOn(bindings.DB, bindings), created.id, {
     ...DRAFT_DATA,
     subject: "Committed revise",
     baseRevisionId: created.latestRevision.id,
   });
   const rowsAfterCommittedRevise = await readRows(bindings.DB);
-  gate.release();
+  hold.release();
 
   expect(committedRevise).toMatchObject({ outcome: "REVISED" });
   expect(await heldRejection).toStrictEqual({ outcome: "REVISION_SUPERSEDED" });
@@ -137,24 +137,24 @@ test("reject ‖ revise, reject first: the revise builds on the Rejected Revisio
   onTestFinished,
 }) => {
   const bindings = await useBindings({ onTestFinished });
-  const gatedDatabase = createGatedD1Database(bindings.DB);
+  const holdingDatabase = createHoldingD1Database(bindings.DB);
   const created = await createSubmittedDraft(bindings);
   const rejectedRevisionId = created.latestRevision.id;
 
-  const gate = gatedDatabase.holdNext((call) => call.kind === "batch");
-  const heldRevise = reviseDraft(storageOn(gatedDatabase.database, bindings), created.id, {
+  const hold = holdingDatabase.holdNext((call) => call.kind === "batch");
+  const heldRevise = reviseDraft(storageOn(holdingDatabase.database, bindings), created.id, {
     ...DRAFT_DATA,
     subject: "Held revise",
     baseRevisionId: rejectedRevisionId,
   });
-  await gate.reached;
+  await hold.reached;
   const committedRejection = await rejectRevision(
     storageOn(bindings.DB, bindings),
     created.id,
     rejectedRevisionId,
     { reason: "Wrong recipient" },
   );
-  gate.release();
+  hold.release();
   const reviseOutcome = await heldRevise;
 
   expect(committedRejection).toMatchObject({ outcome: "REJECTED" });

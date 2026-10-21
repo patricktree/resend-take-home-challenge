@@ -6,7 +6,7 @@ import { drizzleForSession, type DraftsStorage } from "#src/database.ts";
 import { reviseDraft } from "#src/revise-draft.ts";
 import { submitRevision } from "#src/submit-revision.ts";
 
-import { createGatedD1Database } from "#test/gated-d1-database.ts";
+import { createHoldingD1Database } from "#test/holding-d1-database.ts";
 import { createRecordingSendQueue } from "#test/recording-send-queue.ts";
 import { useBindings, type TestBindings } from "#test/use-bindings.ts";
 
@@ -21,24 +21,24 @@ test("revise ‖ revise on the same base: the revise whose batch commits second 
   onTestFinished,
 }) => {
   const bindings = await useBindings({ onTestFinished });
-  const gatedDatabase = createGatedD1Database(bindings.DB);
+  const holdingDatabase = createHoldingD1Database(bindings.DB);
   const created = await createDraft(storageOn(bindings.DB, bindings), DRAFT_DATA);
   const baseRevisionId = created.latestRevision.id;
 
-  const gate = gatedDatabase.holdNext((call) => call.kind === "batch");
-  const heldRevise = reviseDraft(storageOn(gatedDatabase.database, bindings), created.id, {
+  const hold = holdingDatabase.holdNext((call) => call.kind === "batch");
+  const heldRevise = reviseDraft(storageOn(holdingDatabase.database, bindings), created.id, {
     ...DRAFT_DATA,
     subject: "Held revise",
     baseRevisionId,
   });
-  await gate.reached;
+  await hold.reached;
   const committedRevise = await reviseDraft(storageOn(bindings.DB, bindings), created.id, {
     ...DRAFT_DATA,
     subject: "Committed revise",
     baseRevisionId,
   });
   const rowsAfterCommittedRevise = await readRows(bindings.DB);
-  gate.release();
+  hold.release();
   const heldOutcome = await heldRevise;
 
   expect(committedRevise).toMatchObject({
@@ -58,17 +58,17 @@ test("approve ‖ revise, approve first: the revise gets DRAFT_APPROVED and chan
   onTestFinished,
 }) => {
   const bindings = await useBindings({ onTestFinished });
-  const gatedDatabase = createGatedD1Database(bindings.DB);
+  const holdingDatabase = createHoldingD1Database(bindings.DB);
   const storage = storageOn(bindings.DB, bindings);
   const created = await createDraft(storage, DRAFT_DATA);
   await submitRevision(storage, created.id, created.latestRevision.id);
 
-  const gate = gatedDatabase.holdNext((call) => call.kind === "batch");
-  const heldRevise = reviseDraft(storageOn(gatedDatabase.database, bindings), created.id, {
+  const hold = holdingDatabase.holdNext((call) => call.kind === "batch");
+  const heldRevise = reviseDraft(storageOn(holdingDatabase.database, bindings), created.id, {
     ...DRAFT_DATA,
     baseRevisionId: created.latestRevision.id,
   });
-  await gate.reached;
+  await hold.reached;
   const committedApproval = await approveRevision(
     storage,
     { sendQueue: createRecordingSendQueue(), from: "drafts@resend-challenge.patricktree.me" },
@@ -76,7 +76,7 @@ test("approve ‖ revise, approve first: the revise gets DRAFT_APPROVED and chan
     created.latestRevision.id,
   );
   const rowsOfApprovedDraft = await readRows(bindings.DB);
-  gate.release();
+  hold.release();
 
   expect(committedApproval).toMatchObject({ outcome: "APPROVED" });
   expect(await heldRevise).toStrictEqual({ outcome: "DRAFT_APPROVED" });

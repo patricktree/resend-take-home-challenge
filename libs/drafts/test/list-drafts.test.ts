@@ -4,7 +4,7 @@ import { createDraft } from "#src/create-draft.ts";
 import { drizzleForSession, type DraftsStorage } from "#src/database.ts";
 import { listDrafts, type ListDraftsQuery } from "#src/list-drafts.ts";
 
-import { createGatedD1Database } from "#test/gated-d1-database.ts";
+import { createHoldingD1Database } from "#test/holding-d1-database.ts";
 import { useBindings, type TestBindings } from "#test/use-bindings.ts";
 
 const DRAFT_DATA = {
@@ -63,13 +63,13 @@ for (const { orderBy, order, indexName } of ORDERINGS) {
   });
 }
 
-/** Runs a list on the gated database and returns the SQL of its one statement. */
+/** Runs a list on the holding database and returns the SQL of its one statement. */
 async function captureListQuery(bindings: TestBindings, query: ListDraftsQuery): Promise<string> {
-  const gatedDatabase = createGatedD1Database(bindings.DB);
-  const gate = gatedDatabase.holdNext((call) => call.kind === "statement");
-  const listing = listDrafts(storageOn(gatedDatabase.database, bindings), query);
-  const call = await gate.reached;
-  gate.release();
+  const holdingDatabase = createHoldingD1Database(bindings.DB);
+  const hold = holdingDatabase.holdNext((call) => call.kind === "statement");
+  const listing = listDrafts(storageOn(holdingDatabase.database, bindings), query);
+  const call = await hold.reached;
+  hold.release();
   await listing;
 
   if (call.kind !== "statement") {

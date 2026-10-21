@@ -4,7 +4,9 @@ import { test, vi } from "vitest";
 import { approveRevision } from "#src/approve-revision.ts";
 import { createDraft } from "#src/create-draft.ts";
 import { drizzleForSession, type DraftsStorage } from "#src/database.ts";
+import type { DraftData } from "#src/draft.ts";
 import type { DraftId } from "#src/ids.ts";
+import type { SendQueue } from "#src/send-queue.ts";
 import { reconcileSends } from "#src/send-reconciler.ts";
 import { submitRevision } from "#src/submit-revision.ts";
 
@@ -16,6 +18,20 @@ const DRAFT_DATA = {
   to: ["ada@example.com"],
   subject: "Quarterly report",
   body: { plainText: "Hello Ada" },
+};
+
+/**
+ * Draft data at the limits that make a Send Queue message largest: 50 recipients of 254 characters
+ * and a subject of 998 emoji, 4 bytes each in UTF-8. Its message is about 17 KB, so 16 of them
+ * exceed the 256 KB of one `sendBatch()`.
+ */
+const LARGEST_DRAFT_DATA = {
+  to: Array.from(
+    { length: 50 },
+    (_, index) => `${String(index).padStart(64, "a")}@${"b".repeat(177)}.example.com`,
+  ),
+  subject: "📧".repeat(998),
+  body: { plainText: "Hello" },
 };
 
 const RESEND_FROM = "drafts@resend-challenge.patricktree.me";
@@ -53,6 +69,87 @@ test("a tick re-enqueues at most 100 lost hand-offs, the oldest Approvals first,
     draftIdsOldestFirst.slice(0, 100),
     draftIdsOldestFirst.slice(100),
   ]);
+  expect(await readEnqueuedDraftIds(bindings.DB)).toStrictEqual(draftIds.toSorted());
+});
+
+test("a tick re-enqueues large lost hand-offs in several sendBatch calls, each within the Queues limits of 100 messages and 256 KB, the oldest Approvals first", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const bindings = await useBindings({ onTestFinished });
+  const draftIds = await createApprovedDrafts(bindings, 40, {
+    isHandOffLost: true,
+    draftData: LARGEST_DRAFT_DATA,
+  });
+  const now = Temporal.Now.instant().epochMilliseconds;
+  await updateEachDraft(bindings.DB, draftIds, "approved_at", (index) => {
+    return now - HOUR_MILLISECONDS - index * SECOND_MILLISECONDS;
+  });
+  const sendQueue = createRecordingSendQueue();
+
+  await reconcileSends({ database: databaseOn(bindings.DB), sendQueue });
+
+  expect(sendQueue.sentBatches.length).toBeGreaterThan(1);
+  for (const batch of sendQueue.sentBatches) {
+    expect(batch.length).toBeLessThanOrEqual(100);
+    expect(serializedBytes(batch)).toBeLessThanOrEqual(256 * 1000);
+  }
+  expect(sendQueue.sentBatches.flat().map(({ draftId }) => draftId)).toStrictEqual(
+    draftIds.toReversed(),
+  );
+  expect(await readEnqueuedDraftIds(bindings.DB)).toStrictEqual(draftIds.toSorted());
+});
+
+test("a failed sendBatch of one chunk stops the job: the chunks before it are recorded as handed off, the rest are re-enqueued by a later tick", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const bindings = await useBindings({ onTestFinished });
+  const draftIds = await createApprovedDrafts(bindings, 40, {
+    isHandOffLost: true,
+    draftData: LARGEST_DRAFT_DATA,
+  });
+  const now = Temporal.Now.instant().epochMilliseconds;
+  await updateEachDraft(bindings.DB, draftIds, "approved_at", (index) => {
+    return now - HOUR_MILLISECONDS - index * SECOND_MILLISECONDS;
+  });
+  const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+  onTestFinished(() => consoleError.mockRestore());
+  const recordingSendQueue = createRecordingSendQueue();
+  let sendBatchCalls = 0;
+  const secondChunkFailingSendQueue: SendQueue = {
+    send: (message) => recordingSendQueue.send(message),
+    sendBatch: async (messageRequests) => {
+      sendBatchCalls++;
+      if (sendBatchCalls === 2) {
+        throw new Error("Queue unavailable");
+      }
+      return recordingSendQueue.sendBatch(messageRequests);
+    },
+  };
+
+  await reconcileSends({
+    database: databaseOn(bindings.DB),
+    sendQueue: secondChunkFailingSendQueue,
+  });
+
+  expect(sendBatchCalls).toBe(2);
+  const [firstChunk] = recordingSendQueue.sentBatches;
+  const firstChunkDraftIds = (firstChunk ?? []).map(({ draftId }) => draftId);
+  expect(firstChunkDraftIds).toStrictEqual(
+    draftIds.toReversed().slice(0, firstChunkDraftIds.length),
+  );
+  expect(await readEnqueuedDraftIds(bindings.DB)).toStrictEqual(firstChunkDraftIds.toSorted());
+  expect(consoleError).toHaveBeenCalledExactlyOnceWith(
+    expect.stringContaining("Queue unavailable"),
+  );
+
+  const sendQueue = createRecordingSendQueue();
+  await reconcileSends({ database: databaseOn(bindings.DB), sendQueue });
+
+  expect(sendQueue.sentBatches.flat().map(({ draftId }) => draftId)).toStrictEqual(
+    draftIds.toReversed().slice(firstChunkDraftIds.length),
+  );
   expect(await readEnqueuedDraftIds(bindings.DB)).toStrictEqual(draftIds.toSorted());
 });
 
@@ -236,7 +333,7 @@ test.for([
 async function createApprovedDrafts(
   bindings: TestBindings,
   count: number,
-  { isHandOffLost }: { isHandOffLost: boolean },
+  { isHandOffLost, draftData = DRAFT_DATA }: { isHandOffLost: boolean; draftData?: DraftData },
 ): Promise<DraftId[]> {
   const storage: DraftsStorage = {
     database: databaseOn(bindings.DB),
@@ -246,7 +343,7 @@ async function createApprovedDrafts(
 
   const draftIds: DraftId[] = [];
   for (let index = 0; index < count; index++) {
-    const created = await createDraft(storage, DRAFT_DATA);
+    const created = await createDraft(storage, draftData);
     await submitRevision(storage, created.id, created.latestRevision.id);
     const approved = await approveRevision(
       storage,
@@ -299,6 +396,14 @@ async function readSendingStatuses(database: D1Database): Promise<Record<string,
       id,
       failureReason === null ? sendingStatus : `${sendingStatus}/${failureReason}`,
     ]),
+  );
+}
+
+/** The size of the messages' bodies as JSON in UTF-8, as the Queues batch limit counts it. */
+function serializedBytes(messages: unknown[]): number {
+  return messages.reduce<number>(
+    (total, message) => total + new TextEncoder().encode(JSON.stringify(message)).byteLength,
+    0,
   );
 }
 

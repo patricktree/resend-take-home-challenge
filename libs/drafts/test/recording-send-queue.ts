@@ -8,6 +8,17 @@ export type RecordingSendQueue = SendQueue & {
   sentBatches: SendQueueMessage[][];
 };
 
+/**
+ * Cloudflare Queues' limits of one `sendBatch()`
+ * (https://developers.cloudflare.com/queues/platform/limits/): 100 messages and 256 KB of message
+ * bodies in total, with KB read as 1000 bytes, the stricter reading.
+ */
+const QUEUE_BATCH_LIMITS = { MESSAGES: 100, BODY_BYTES: 256 * 1000 } as const;
+
+/**
+ * Records every message; a `sendBatch()` over Cloudflare Queues' batch limits throws and records
+ * nothing, as the real binding refuses it.
+ */
 export function createRecordingSendQueue(): RecordingSendQueue {
   const sentMessages: SendQueueMessage[] = [];
   const sentBatches: SendQueueMessage[][] = [];
@@ -17,8 +28,19 @@ export function createRecordingSendQueue(): RecordingSendQueue {
     send: async (message) => {
       sentMessages.push(message);
     },
-    sendBatch: async (messages) => {
-      sentBatches.push(Array.from(messages, ({ body }) => body));
+    sendBatch: async (messageRequests) => {
+      const messages = Array.from(messageRequests, ({ body }) => body);
+      const bodyBytes = messages.reduce(
+        (total, message) => total + new TextEncoder().encode(JSON.stringify(message)).byteLength,
+        0,
+      );
+      if (messages.length > QUEUE_BATCH_LIMITS.MESSAGES) {
+        throw new Error(`sendBatch() of ${messages.length} messages exceeds the limit of 100.`);
+      }
+      if (bodyBytes > QUEUE_BATCH_LIMITS.BODY_BYTES) {
+        throw new Error(`sendBatch() of ${bodyBytes} bytes exceeds the limit of 256 KB.`);
+      }
+      sentBatches.push(messages);
     },
   };
 }

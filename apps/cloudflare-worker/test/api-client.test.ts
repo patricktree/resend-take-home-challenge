@@ -379,6 +379,31 @@ test("a request over 128 KB throws an ApiError with PAYLOAD_TOO_LARGE", async ({
   expect(error).toMatchObject({ status: 413, code: "PAYLOAD_TOO_LARGE" });
 });
 
+test.for([
+  { name: "an unknown code", code: "SOMETHING_NEW" },
+  { name: "a code that is not a string", code: 409 },
+])(
+  "an error envelope with $name throws a plain error naming the status, never an ApiError",
+  async ({ code }, { expect }) => {
+    const client = new DraftApprovalClient({
+      baseUrl: "http://localhost",
+      token: LOCAL_AGENT_TOKEN,
+      fetch: async () =>
+        Response.json(
+          { error: { code, message: "Something new.", requestId: "request-id" } },
+          { status: 409 },
+        ),
+    });
+
+    const failure = client.getDraft(UNKNOWN_DRAFT_ID);
+
+    await expect(failure).rejects.toThrow(
+      "The API answered with status 409 and no error envelope.",
+    );
+    await expect(failure).rejects.not.toBeInstanceOf(ApiError);
+  },
+);
+
 function createClient(worker: TestWorker, token: string): DraftApprovalClient {
   return new DraftApprovalClient({
     baseUrl: "http://localhost",

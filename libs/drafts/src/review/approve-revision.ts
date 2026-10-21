@@ -1,4 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
+import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { Temporal } from "temporal-polyfill";
 
 import type { DraftSummary } from "../domain/draft.ts";
@@ -113,7 +114,7 @@ export async function approveRevision(
  * Approval has committed and the reconciler re-enqueues every Send without `enqueued_at`.
  */
 async function handOffSend(
-  database: DraftsStorage["database"],
+  database: DrizzleD1Database,
   sendQueue: SendQueue,
   draftRow: typeof drafts.$inferSelect,
 ): Promise<void> {

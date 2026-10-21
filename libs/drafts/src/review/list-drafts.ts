@@ -5,6 +5,7 @@
  */
 
 import { and, asc, desc, eq, inArray, isNotNull, sql, type SQL } from "drizzle-orm";
+import type { DrizzleD1Database } from "drizzle-orm/d1";
 import buffer from "node:buffer";
 
 import type { DraftSummary, ReviewStatus, SendingStatus } from "../domain/draft.ts";
@@ -134,7 +135,7 @@ export async function listDrafts(
  * row, which keeps each item consistent.
  */
 async function readLastVerdictRows(
-  database: DraftsStorage["database"],
+  database: DrizzleD1Database,
   latestRevisionRows: (typeof revisions.$inferSelect)[],
 ): Promise<Map<DraftId, typeof revisions.$inferSelect>> {
   const lastVerdictRows = new Map<DraftId, typeof revisions.$inferSelect>();

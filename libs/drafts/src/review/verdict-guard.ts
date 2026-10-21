@@ -5,9 +5,9 @@
  */
 
 import { and, eq, exists } from "drizzle-orm";
+import type { DrizzleD1Database } from "drizzle-orm/d1";
 
 import type { DraftId, RevisionId } from "../domain/ids.ts";
-import type { DraftsStorage } from "../storage/database.ts";
 import { drafts, revisions } from "../storage/schema.ts";
 
 /**
@@ -15,7 +15,7 @@ import { drafts, revisions } from "../storage/schema.ts";
  * `PENDING`. Setting the verdict makes it false, so that statement runs last.
  */
 export function isLatestAndPending(
-  database: DraftsStorage["database"],
+  database: DrizzleD1Database,
   draftId: DraftId,
   revisionId: RevisionId,
 ) {

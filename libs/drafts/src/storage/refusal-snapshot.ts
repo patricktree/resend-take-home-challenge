@@ -1,8 +1,8 @@
 import { and, eq } from "drizzle-orm";
+import type { DrizzleD1Database } from "drizzle-orm/d1";
 
 import type { DraftId, RevisionId } from "../domain/ids.ts";
 import type { RefusalSnapshot } from "../domain/refusals.ts";
-import type { DraftsStorage } from "./database.ts";
 import { drafts, revisions } from "./schema.ts";
 
 /**
@@ -11,7 +11,7 @@ import { drafts, revisions } from "./schema.ts";
  * batch, so that it reads on the primary and at least as new as the batch.
  */
 export async function readRefusalSnapshot(
-  database: DraftsStorage["database"],
+  database: DrizzleD1Database,
   draftId: DraftId,
   revisionId: RevisionId,
 ): Promise<RefusalSnapshot> {

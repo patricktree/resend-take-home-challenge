@@ -5,8 +5,11 @@ import { approveRevision } from "#src/approve-revision.ts";
 import { createDraft } from "#src/create-draft.ts";
 import { drizzleForSession, type DraftsStorage } from "#src/database.ts";
 import type { DraftData } from "#src/draft.ts";
-import type { DraftId } from "#src/ids.ts";
-import type { SendQueue } from "#src/send-queue.ts";
+import { createDraftId, createRevisionId, type DraftId } from "#src/ids.ts";
+import { revisionBodyKey } from "#src/revision-bodies.ts";
+import { drafts, revisions } from "#src/schema.ts";
+import { computeSendDeadline } from "#src/send-deadline.ts";
+import type { OutgoingEmail, SendQueue } from "#src/send-queue.ts";
 import { reconcileSends } from "#src/send-reconciler.ts";
 import { submitRevision } from "#src/submit-revision.ts";
 
@@ -40,12 +43,43 @@ const SECOND_MILLISECONDS = 1000;
 
 const HOUR_MILLISECONDS = 60 * 60 * SECOND_MILLISECONDS;
 
+/** The columns that hold a timestamp, whose values differ between any two Drafts. */
+const TIMESTAMP_COLUMNS = new Set([
+  "created_at",
+  "last_action_at",
+  "approved_at",
+  "deadline",
+  "enqueued_at",
+  "submitted_at",
+  "decided_at",
+]);
+
+test.for([
+  { draftDataName: "small", draftData: DRAFT_DATA, isHandOffLost: false },
+  { draftDataName: "largest", draftData: LARGEST_DRAFT_DATA, isHandOffLost: true },
+])(
+  "a seeded approved Draft has the rows a real Approval writes ($draftDataName Draft data, isHandOffLost $isHandOffLost)",
+  async ({ draftData, isHandOffLost }, { expect, onTestFinished }) => {
+    const bindings = await useBindings({ onTestFinished });
+    // The real one first: `createApprovedDrafts()` loses the hand-off of every Draft in the table.
+    const [approvedDraftId] = await createApprovedDrafts(bindings, 1, { isHandOffLost, draftData });
+    const [seededDraftId] = await seedApprovedDrafts(bindings.DB, 1, { isHandOffLost, draftData });
+    if (approvedDraftId === undefined || seededDraftId === undefined) {
+      throw new Error("A fixture created no Draft.");
+    }
+
+    expect(await readRowShapes(bindings.DB, seededDraftId)).toStrictEqual(
+      await readRowShapes(bindings.DB, approvedDraftId),
+    );
+  },
+);
+
 test("a tick re-enqueues at most 100 lost hand-offs, the oldest Approvals first, with one sendBatch; the next tick re-enqueues the rest", async ({
   expect,
   onTestFinished,
 }) => {
   const bindings = await useBindings({ onTestFinished });
-  const draftIds = await createApprovedDrafts(bindings, 101, { isHandOffLost: true });
+  const draftIds = await seedApprovedDrafts(bindings.DB, 101, { isHandOffLost: true });
   // Approved in the reverse order of their ids, so that "oldest first" is not "lowest id first".
   const now = Temporal.Now.instant().epochMilliseconds;
   await updateEachDraft(bindings.DB, draftIds, "approved_at", (index) => {
@@ -77,7 +111,7 @@ test("a tick re-enqueues large lost hand-offs in several sendBatch calls, each w
   onTestFinished,
 }) => {
   const bindings = await useBindings({ onTestFinished });
-  const draftIds = await createApprovedDrafts(bindings, 20, {
+  const draftIds = await seedApprovedDrafts(bindings.DB, 20, {
     isHandOffLost: true,
     draftData: LARGEST_DRAFT_DATA,
   });
@@ -102,7 +136,7 @@ test("a failed sendBatch of one chunk stops the job: the chunks before it are re
   onTestFinished,
 }) => {
   const bindings = await useBindings({ onTestFinished });
-  const draftIds = await createApprovedDrafts(bindings, 20, {
+  const draftIds = await seedApprovedDrafts(bindings.DB, 20, {
     isHandOffLost: true,
     draftData: LARGEST_DRAFT_DATA,
   });
@@ -155,7 +189,7 @@ test("the backstop resolves at most 100 Sends per tick, the earliest deadlines f
   onTestFinished,
 }) => {
   const bindings = await useBindings({ onTestFinished });
-  const draftIds = await createApprovedDrafts(bindings, 101, { isHandOffLost: false });
+  const draftIds = await seedApprovedDrafts(bindings.DB, 101, { isHandOffLost: false });
   // Deadlines in the reverse order of their ids, so that "earliest first" is not "lowest id first".
   const now = Temporal.Now.instant().epochMilliseconds;
   await updateEachDraft(bindings.DB, draftIds, "deadline", (index) => {
@@ -358,6 +392,123 @@ async function createApprovedDrafts(
     await bindings.DB.prepare("UPDATE drafts SET enqueued_at = NULL").run();
   }
   return draftIds;
+}
+
+/**
+ * Inserts `count` approved Drafts with one batch, as `createApprovedDrafts()` would create them,
+ * but in one round trip instead of several per Draft: dozens of Drafts created one by one take long
+ * enough to exceed the test timeout on a loaded machine. Their rows are those of a real Approval,
+ * which the test "a seeded approved Draft has the rows a real Approval writes" pins. The Revision
+ * bodies stay out of R2, since the Send reconciler never reads them.
+ *
+ * The ids are created one after the other, so they sort in creation order.
+ */
+async function seedApprovedDrafts(
+  database: D1Database,
+  count: number,
+  { isHandOffLost, draftData = DRAFT_DATA }: { isHandOffLost: boolean; draftData?: DraftData },
+): Promise<DraftId[]> {
+  const drizzleDatabase = databaseOn(database);
+  const approvedAt = Temporal.Now.instant();
+  const now = approvedAt.epochMilliseconds;
+
+  const draftIds: DraftId[] = [];
+  const inserts = [];
+  for (let index = 0; index < count; index++) {
+    const draftId = createDraftId();
+    const revisionId = createRevisionId();
+    // In the key order of the Approval's `json_object()`, so that the stored JSON text is the same.
+    const outgoingEmail: OutgoingEmail = {
+      from: RESEND_FROM,
+      to: draftData.to,
+      subject: draftData.subject,
+      bodyKey: revisionBodyKey(revisionId),
+      tags: [{ name: "draft_id", value: draftId }],
+    };
+    const draftRow: typeof drafts.$inferSelect = {
+      id: draftId,
+      createdAt: now,
+      lastActionAt: now,
+      latestRevisionId: revisionId,
+      sendingStatus: "QUEUED",
+      approvedRevisionId: revisionId,
+      approvedAt: now,
+      idempotencyKey: `draft-send/${draftId}`,
+      outgoingEmail,
+      deadline: computeSendDeadline(approvedAt),
+      enqueuedAt: isHandOffLost ? null : now,
+      emailId: null,
+      failureReason: null,
+      resendErrorName: null,
+      resendErrorMessage: null,
+    };
+    const revisionRow: typeof revisions.$inferSelect = {
+      id: revisionId,
+      draftId,
+      revisionNumber: 1,
+      createdAt: now,
+      toAddresses: draftData.to,
+      subject: draftData.subject,
+      reviewStatus: "APPROVED",
+      submittedAt: now,
+      decidedAt: now,
+      rejectionReason: null,
+    };
+    // The Draft row goes first: the Revision's foreign key references it.
+    inserts.push(
+      drizzleDatabase.insert(drafts).values(draftRow),
+      drizzleDatabase.insert(revisions).values(revisionRow),
+    );
+    draftIds.push(draftId);
+  }
+
+  const [firstInsert, ...otherInserts] = inserts;
+  if (firstInsert === undefined) {
+    throw new Error("seedApprovedDrafts() needs a count of at least 1.");
+  }
+  await drizzleDatabase.batch([firstInsert, ...otherInserts]);
+  return draftIds;
+}
+
+/**
+ * The rows of a Draft and of its one Revision, made comparable across Drafts: the ids become
+ * placeholders, wherever they occur, and each timestamp becomes whether it is set. The deadline
+ * keeps its distance from the Approval.
+ */
+async function readRowShapes(database: D1Database, draftId: DraftId) {
+  const draftRow = await database
+    .prepare("SELECT * FROM drafts WHERE id = ?1")
+    .bind(draftId)
+    .first();
+  const revisionRow = await database
+    .prepare("SELECT * FROM revisions WHERE draft_id = ?1")
+    .bind(draftId)
+    .first();
+  if (draftRow === null || revisionRow === null) {
+    throw new Error(`Draft ${draftId} or its Revision has no row.`);
+  }
+  const revisionId = String(revisionRow["id"]);
+
+  const toShape = (row: Record<string, unknown>) =>
+    Object.fromEntries(
+      Object.entries(row).map(([column, value]) => {
+        if (TIMESTAMP_COLUMNS.has(column)) {
+          return [column, value === null ? null : "<timestamp>"];
+        }
+        if (typeof value === "string") {
+          return [
+            column,
+            value.replaceAll(draftId, "<draft id>").replaceAll(revisionId, "<revision id>"),
+          ];
+        }
+        return [column, value];
+      }),
+    );
+  return {
+    draft: toShape(draftRow),
+    deadlineAfterApproval: Number(draftRow["deadline"]) - Number(draftRow["approved_at"]),
+    revision: toShape(revisionRow),
+  };
 }
 
 /** Sets `column` of each Draft to `valueAt(index)`, in one batch. */

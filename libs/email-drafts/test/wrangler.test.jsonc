@@ -1,8 +1,8 @@
-// The drafts suite's test runtime: the D1 and R2 bindings the use cases run on, with an empty Worker.
+// The email-drafts suite's test runtime: the D1 and R2 bindings the use cases run on, with an empty Worker.
 // It lives in `test/` because Wrangler loads `.dev.vars` and `.env` files from the config's directory.
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
-  "name": "resend-challenge-drafts-test",
+  "name": "resend-challenge-email-drafts-test",
   "main": "worker.ts",
   "compatibility_flags": ["nodejs_compat"],
   "compatibility_date": "2026-08-18",

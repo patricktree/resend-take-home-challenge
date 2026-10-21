@@ -13,7 +13,7 @@ export default defineConfig({
     /* written by the snapshot test, which compares it byte for byte */
     "apps/cloudflare-worker/test/__snapshots__/openapi.json",
     /* written by `drizzle-kit generate` */
-    "libs/drafts/migrations/**",
+    "libs/email-drafts/migrations/**",
   ],
   sortImports: {
     customGroups: [

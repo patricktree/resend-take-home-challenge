@@ -1,7 +1,7 @@
 import { Temporal } from "temporal-polyfill";
 import { test, type TestContext } from "vitest";
 
-import type { SendQueueMessage } from "@resend-challenge/drafts";
+import type { SendQueueMessage } from "@resend-challenge/email-drafts";
 import { resendError, type ResendStub } from "@resend-challenge/resend-stub";
 
 import {

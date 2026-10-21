@@ -3,7 +3,7 @@ import nodeUrl from "node:url";
 import { test } from "vitest";
 import { experimental_readRawConfig } from "wrangler";
 
-import { SEND_DLQ_NAME, SEND_QUEUE_NAME } from "@resend-challenge/drafts";
+import { SEND_DLQ_NAME, SEND_QUEUE_NAME } from "@resend-challenge/email-drafts";
 
 // The production config, which `pnpm dev` also uses; the expected values come from spec section 12.
 const PRODUCTION_CONFIG_PATH = nodeUrl.fileURLToPath(new URL("../wrangler.jsonc", import.meta.url));
@@ -83,13 +83,13 @@ test("the vars configure production and the secrets are required", ({ expect }) 
 });
 
 // `handleQueueBatch()` dispatches on the batch's queue name, so a config that names a Queue
-// differently from libs/drafts would leave its batches without a consumer.
+// differently from libs/email-drafts would leave its batches without a consumer.
 test.for([
   { name: "production", configPath: PRODUCTION_CONFIG_PATH },
   { name: "integration test", configPath: TEST_CONFIG_PATH },
   { name: "e2e", configPath: E2E_CONFIG_PATH },
 ])(
-  "the $name Wrangler config names exactly the Send Queue and its DLQ that libs/drafts consumes",
+  "the $name Wrangler config names exactly the Send Queue and its DLQ that libs/email-drafts consumes",
   ({ configPath }, { expect }) => {
     const { rawConfig } = experimental_readRawConfig({ config: configPath });
 
@@ -99,7 +99,7 @@ test.for([
   },
 );
 
-test("Terraform creates the Send Queue and its DLQ under the names libs/drafts consumes", async ({
+test("Terraform creates the Send Queue and its DLQ under the names libs/email-drafts consumes", async ({
   expect,
 }) => {
   const terraform = await fs.readFile(TERRAFORM_CLOUDFLARE_URL, "utf8");

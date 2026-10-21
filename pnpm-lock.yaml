@@ -391,9 +391,9 @@ importers:
       '@resend-challenge/api.server':
         specifier: workspace:*
         version: link:../../libs/api.server
-      '@resend-challenge/drafts':
+      '@resend-challenge/email-drafts':
         specifier: workspace:*
-        version: link:../../libs/drafts
+        version: link:../../libs/email-drafts
     devDependencies:
       '@cloudflare/vite-plugin':
         specifier: catalog:web-app
@@ -608,9 +608,9 @@ importers:
       '@resend-challenge/api.routes':
         specifier: workspace:*
         version: link:../api.routes
-      '@resend-challenge/drafts':
+      '@resend-challenge/email-drafts':
         specifier: workspace:*
-        version: link:../drafts
+        version: link:../email-drafts
       '@resend-challenge/mcp-server':
         specifier: workspace:*
         version: link:../mcp-server
@@ -661,7 +661,7 @@ importers:
         specifier: 'catalog:'
         version: 4.144.0(@types/node@26.6.5)
 
-  libs/drafts:
+  libs/email-drafts:
     dependencies:
       drizzle-orm:
         specifier: ^0.45.4

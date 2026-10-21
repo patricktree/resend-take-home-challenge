@@ -21,7 +21,7 @@
       "binding": "DB",
       "database_name": "resend-challenge",
       "database_id": "00000000-0000-0000-0000-000000000000",
-      "migrations_dir": "../../libs/drafts/migrations",
+      "migrations_dir": "../../libs/email-drafts/migrations",
     },
   ],
   "r2_buckets": [

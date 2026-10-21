@@ -8,7 +8,7 @@
 import { Temporal } from "temporal-polyfill";
 import { test } from "vitest";
 
-import type { SendQueueMessage } from "@resend-challenge/drafts";
+import type { SendQueueMessage } from "@resend-challenge/email-drafts";
 import { resendError } from "@resend-challenge/resend-stub";
 
 import { expectExactlyOneEmailPerSentDraft } from "./use-resend-stub.ts";

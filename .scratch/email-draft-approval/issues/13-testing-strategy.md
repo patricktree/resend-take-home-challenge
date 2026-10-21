@@ -18,7 +18,7 @@ Which tests prove the system's guarantees, and at which level? Settle the integr
   - integration tests run the whole Worker in Wrangler's local test runtime (`createTestHarness`) from `apps/cloudflare-worker/test/`, with `wrangler.test.jsonc`, `applyD1Migrations()`, `worker.fetch` and `worker.scheduled()`;
   - consumer scenarios go through the test-only routes `POST /__test/queue` / `POST /__test/dlq` in `test/worker.ts`, which call the real `queue()` handler with a synthesized `MessageBatch` and report ack / retry / `delaySeconds`; one test checks real Miniflare delivery from an Approval to the consumer;
   - Resend is a `node:http` stub on an OS-assigned port, scripted per test;
-  - `libs/drafts` has its own smaller suite for races easier to pin down without HTTP;
+  - `libs/email-drafts` has its own smaller suite for races easier to pin down without HTTP;
   - e2e: the built Worker under `wrangler dev` on an OS-assigned port, Playwright in cup's Docker image, local tokens accepted on `host.docker.internal`;
   - the `/app` security headers and SPA fallback are asserted by an integration test.
 - Open for this ticket: how to make two conditional writes actually race in the local runtime (concurrent `fetch` calls vs. interleaving at the D1 level), whether to use screenshot baselines like cup, and whether the CLI gets cup's spawn-the-real-process test against a stub.
@@ -30,17 +30,17 @@ Resolved in a grilling session with the repository owner on 2026-10-20. The test
 
 ### Levels
 
-| Level                    | Tool                                                                                 | Covers                                                                                  |
-| ------------------------ | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
-| Integration (priority 1) | Vitest + `createTestHarness`, `apps/cloudflare-worker/test/` and `libs/drafts/test/` | Every API, auth, MCP and Send-pipeline guarantee, including all races                   |
-| e2e (priority 2)         | Playwright in cup's Docker image against `wrangler dev`                              | The review flow from [12](12-review-ui.md)'s comment, end to end through the real Queue |
-| CLI process              | Vitest, spawning the real `draft-approval` process against a `node:http` API stub    | Argument parsing, output, exit codes, token handling                                    |
-| Unit (priority 3)        | Vitest                                                                               | Pure functions only (see below)                                                         |
-| Live contract (opt-in)   | Vitest, `pnpm test:resend-live`                                                      | Resend's idempotency behavior, against the real API                                     |
+| Level                    | Tool                                                                                       | Covers                                                                                  |
+| ------------------------ | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| Integration (priority 1) | Vitest + `createTestHarness`, `apps/cloudflare-worker/test/` and `libs/email-drafts/test/` | Every API, auth, MCP and Send-pipeline guarantee, including all races                   |
+| e2e (priority 2)         | Playwright in cup's Docker image against `wrangler dev`                                    | The review flow from [12](12-review-ui.md)'s comment, end to end through the real Queue |
+| CLI process              | Vitest, spawning the real `draft-approval` process against a `node:http` API stub          | Argument parsing, output, exit codes, token handling                                    |
+| Unit (priority 3)        | Vitest                                                                                     | Pure functions only (see below)                                                         |
+| Live contract (opt-in)   | Vitest, `pnpm test:resend-live`                                                            | Resend's idempotency behavior, against the real API                                     |
 
 ### Isolation: a fresh harness per test
 
-- Every integration test (including the `libs/drafts` suite) gets its own harness through a `useWorker()` fixture: `createTestHarness` → `listen()` → apply the D1 migrations → set `RESEND_BASE_URL` to that test's own stub instance via `harness.update()` → `close()` in `afterEach`.
+- Every integration test (including the `libs/email-drafts` suite) gets its own harness through a `useWorker()` fixture: `createTestHarness` → `listen()` → apply the D1 migrations → set `RESEND_BASE_URL` to that test's own stub instance via `harness.update()` → `close()` in `afterEach`.
 - A new harness starts with empty D1, R2 and Queue storage, so no test sees another's Drafts, bodies or in-flight messages, table-wide queries (lists, paging, both reconciler jobs) are deterministic, and tests in one file may run concurrently. No reset code.
 - Measured with cup's Wrangler 4.144 on a toy Worker with D1, R2 and a Queue: `listen()` about 110 ms (375 ms for the first harness in a process), each migration statement about 27 ms over the binding proxy, `close()` about 3 ms. Applying the real migrations inside workerd rather than statement by statement over the proxy keeps setup well under a second per test.
 - Tests reach the bindings through `worker.getEnv()` (as cup does): to backdate rows, to wrap `DB` in the gated D1 and to inspect state. There is no `/__test/d1` route; `/__test/queue` and `/__test/dlq` remain the only test-only routes.
@@ -48,7 +48,7 @@ Resolved in a grilling session with the repository owner on 2026-10-20. The test
 ### Forcing races
 
 - Local D1 is one SQLite database behind one object: each statement or `batch()` runs atomically, and the statements of concurrent requests interleave one after another. Concurrent `fetch` calls alone leave the interesting order (both read, then both write) to luck.
-- **Deterministic interleaving (the `libs/drafts` suite):** a **gated D1** test double wraps the real `DB` binding and holds a chosen statement (for example the Approval's `batch()`) until the test releases it. A test can then run "A reads, B commits, A writes" every time. No hooks in production code; the only requirement is that `libs/drafts` use cases take the database as a parameter (they already receive it via `drizzleForSession`).
+- **Deterministic interleaving (the `libs/email-drafts` suite):** a **gated D1** test double wraps the real `DB` binding and holds a chosen statement (for example the Approval's `batch()`) until the test releases it. A test can then run "A reads, B commits, A writes" every time. No hooks in production code; the only requirement is that `libs/email-drafts` use cases take the database as a parameter (they already receive it via `drizzleForSession`).
 - **Wired-up smoke (integration):** `Promise.all` of 10 concurrent HTTP requests through `worker.fetch` asserts the invariants: exactly one 200, all others the right 409, one Queue message, one email in the stub's ledger.
 - **Consumer overlap:** the stub can hold a request open, so two concurrent `/__test/queue` deliveries of the same message deterministically overlap at Resend.
 

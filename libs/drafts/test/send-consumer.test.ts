@@ -1,12 +1,12 @@
 import { Temporal } from "temporal-polyfill";
 import { test, vi } from "vitest";
 
-import { approveRevision } from "../src/approve-revision.ts";
-import { createDraft } from "../src/create-draft.ts";
-import { drizzleForSession, type DraftsStorage } from "../src/database.ts";
-import { consumeSendBatch } from "../src/send-consumer.ts";
-import { SEND_QUEUE_NAME, type SendQueueMessage } from "../src/send-queue.ts";
-import { submitRevision } from "../src/submit-revision.ts";
+import { approveRevision } from "../src/review/approve-revision.ts";
+import { createDraft } from "../src/review/create-draft.ts";
+import { submitRevision } from "../src/review/submit-revision.ts";
+import { consumeSendBatch } from "../src/send/send-consumer.ts";
+import { SEND_QUEUE_NAME, type SendQueueMessage } from "../src/send/send-queue.ts";
+import { drizzleForSession, type DraftsStorage } from "../src/storage/database.ts";
 import { createRecordingSendQueue } from "./recording-send-queue.ts";
 import { useBindings, type TestBindings } from "./use-bindings.ts";
 

@@ -5,10 +5,10 @@
 
 import { and, eq, exists } from "drizzle-orm";
 
-import type { DraftsStorage } from "./database.ts";
-import type { Verdict } from "./draft.ts";
-import type { DraftId, RevisionId } from "./ids.ts";
-import { drafts, revisions } from "./schema.ts";
+import type { Verdict } from "../domain/draft.ts";
+import type { DraftId, RevisionId } from "../domain/ids.ts";
+import type { DraftsStorage } from "../storage/database.ts";
+import { drafts, revisions } from "../storage/schema.ts";
 
 /**
  * Why a verdict changed nothing, besides `REVISION_ALREADY_DECIDED`, which carries the existing

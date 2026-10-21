@@ -1,8 +1,8 @@
 import { test } from "vitest";
 
-import { createDraft } from "../src/create-draft.ts";
-import { drizzleForSession, type DraftsStorage } from "../src/database.ts";
-import { listDrafts, type ListDraftsQuery } from "../src/list-drafts.ts";
+import { createDraft } from "../src/review/create-draft.ts";
+import { listDrafts, type ListDraftsQuery } from "../src/review/list-drafts.ts";
+import { drizzleForSession, type DraftsStorage } from "../src/storage/database.ts";
 import { createHoldingD1Database } from "./holding-d1-database.ts";
 import { useBindings, type TestBindings } from "./use-bindings.ts";
 

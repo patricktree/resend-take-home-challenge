@@ -1,17 +1,17 @@
 import { Temporal } from "temporal-polyfill";
 import { test, vi } from "vitest";
 
-import { approveRevision } from "../src/approve-revision.ts";
-import { createDraft } from "../src/create-draft.ts";
-import { drizzleForSession, type DraftsStorage } from "../src/database.ts";
-import type { DraftData, OutgoingEmail } from "../src/draft.ts";
-import { createDraftId, createRevisionId, type DraftId } from "../src/ids.ts";
-import { revisionBodyKey } from "../src/revision-bodies.ts";
-import { drafts, revisions } from "../src/schema.ts";
-import { computeSendDeadline } from "../src/send-deadline.ts";
-import type { SendQueue } from "../src/send-queue.ts";
-import { reconcileSends } from "../src/send-reconciler.ts";
-import { submitRevision } from "../src/submit-revision.ts";
+import type { DraftData, OutgoingEmail } from "../src/domain/draft.ts";
+import { createDraftId, createRevisionId, type DraftId } from "../src/domain/ids.ts";
+import { computeSendDeadline } from "../src/domain/send-deadline.ts";
+import { approveRevision } from "../src/review/approve-revision.ts";
+import { createDraft } from "../src/review/create-draft.ts";
+import { submitRevision } from "../src/review/submit-revision.ts";
+import type { SendQueue } from "../src/send/send-queue.ts";
+import { reconcileSends } from "../src/send/send-reconciler.ts";
+import { drizzleForSession, type DraftsStorage } from "../src/storage/database.ts";
+import { revisionBodyKey } from "../src/storage/revision-bodies.ts";
+import { drafts, revisions } from "../src/storage/schema.ts";
 import { createHoldingD1Database } from "./holding-d1-database.ts";
 import { createFailingSendQueue, createRecordingSendQueue } from "./recording-send-queue.ts";
 import { useBindings, type TestBindings } from "./use-bindings.ts";

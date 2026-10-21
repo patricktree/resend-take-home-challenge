@@ -5,9 +5,9 @@
 
 import { z } from "zod";
 
-import type { OutgoingEmail } from "./draft.ts";
-import { isDraftId, type DraftId } from "./ids.ts";
-import type { drafts } from "./schema.ts";
+import type { OutgoingEmail } from "../domain/draft.ts";
+import { isDraftId, type DraftId } from "../domain/ids.ts";
+import type { drafts } from "../storage/schema.ts";
 
 export type SendQueueMessage = z.infer<typeof sendQueueMessageSchema>;
 

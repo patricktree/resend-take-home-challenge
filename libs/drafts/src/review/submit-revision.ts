@@ -1,11 +1,11 @@
 import { and, eq, exists } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 
-import type { DraftsStorage } from "./database.ts";
-import { selectLastVerdictRow, toDraftSummary } from "./draft-rows.ts";
-import type { DraftSummary, Verdict } from "./draft.ts";
-import { isDraftId, isRevisionId, type DraftId, type RevisionId } from "./ids.ts";
-import { drafts, revisions } from "./schema.ts";
+import type { DraftSummary, Verdict } from "../domain/draft.ts";
+import { isDraftId, isRevisionId, type DraftId, type RevisionId } from "../domain/ids.ts";
+import type { DraftsStorage } from "../storage/database.ts";
+import { selectLastVerdictRow, toDraftSummary } from "../storage/draft-rows.ts";
+import { drafts, revisions } from "../storage/schema.ts";
 
 export type SubmitRevisionResult =
   | { outcome: "SUBMITTED"; draft: DraftSummary }

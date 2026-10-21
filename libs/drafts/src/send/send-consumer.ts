@@ -8,13 +8,13 @@
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 
-import { drizzleForSession } from "./database.ts";
-import { classifyResendCall } from "./resend-call-classification.ts";
-import { postEmail, type ResendConnection } from "./resend-client.ts";
-import { getRevisionBodyAt } from "./revision-bodies.ts";
-import { findRootCauseMessage } from "./root-cause.ts";
-import { isPastSendDeadline } from "./send-deadline.ts";
-import { hasSendEnded, recordFailed, recordSent } from "./send-outcomes.ts";
+import { isPastSendDeadline } from "../domain/send-deadline.ts";
+import { classifyResendCall } from "../resend/classify-resend-call.ts";
+import { postEmail, type ResendConnection } from "../resend/post-email.ts";
+import { findRootCauseMessage } from "../root-cause.ts";
+import { drizzleForSession } from "../storage/database.ts";
+import { getRevisionBodyAt } from "../storage/revision-bodies.ts";
+import { hasSendEnded, recordFailed, recordSent } from "../storage/send-outcomes.ts";
 import { sendQueueMessageSchema, type SendQueueMessage } from "./send-queue.ts";
 import { computeRetryDelaySeconds } from "./send-retry-delay.ts";
 

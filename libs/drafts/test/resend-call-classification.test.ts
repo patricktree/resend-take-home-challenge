@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { classifyResendCall } from "../src/resend-call-classification.ts";
+import { classifyResendCall } from "../src/resend/classify-resend-call.ts";
 
 const EMAIL_ID = "4ef9a417-02e9-4d39-ad75-9611e0fcc33c";
 

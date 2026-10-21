@@ -1,6 +1,6 @@
 /*
  * The D1 schema (spec section 5). Timestamps are integer milliseconds since the Unix epoch.
- * `drizzle-kit generate` turns the schema into the SQL migrations in `../migrations/`, so every
+ * `drizzle-kit generate` turns the schema into the SQL migrations in `../../migrations/`, so every
  * change here needs `pnpm --filter '@resend-challenge/drafts' migrations:generate`.
  *
  * SQLite passes a CHECK whose expression is NULL, so the constraints compare nullable columns with
@@ -10,8 +10,13 @@
 import { sql, type SQL } from "drizzle-orm";
 import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
-import { FAILURE_REASONS, REVIEW_STATUSES, SENDING_STATUSES, type OutgoingEmail } from "./draft.ts";
-import type { DraftId, RevisionId } from "./ids.ts";
+import {
+  FAILURE_REASONS,
+  REVIEW_STATUSES,
+  SENDING_STATUSES,
+  type OutgoingEmail,
+} from "../domain/draft.ts";
+import type { DraftId, RevisionId } from "../domain/ids.ts";
 
 export const drafts = sqliteTable(
   "drafts",

@@ -1,8 +1,8 @@
-import { drizzleForSession } from "./database.ts";
-import { consumeSendBatch, type SendPipelineEnvironment } from "./send-consumer.ts";
-import { consumeSendDlqBatch } from "./send-dlq-consumer.ts";
-import { SEND_DLQ_NAME, SEND_QUEUE_NAME, type SendQueue } from "./send-queue.ts";
-import { reconcileSends } from "./send-reconciler.ts";
+import { consumeSendBatch, type SendPipelineEnvironment } from "../send/send-consumer.ts";
+import { consumeSendDlqBatch } from "../send/send-dlq-consumer.ts";
+import { SEND_DLQ_NAME, SEND_QUEUE_NAME, type SendQueue } from "../send/send-queue.ts";
+import { reconcileSends } from "../send/send-reconciler.ts";
+import { drizzleForSession } from "../storage/database.ts";
 
 /** The Worker bindings the Send reconciler reads. */
 export type SendReconcilerEnvironment = {

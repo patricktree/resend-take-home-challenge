@@ -8,9 +8,9 @@
 
 ## Queries
 
-- A query meant to use a partial index must spell out the index's `WHERE` terms with literal values (see `IS_QUEUED` in `src/send-reconciler.ts`): SQLite does not match a bound parameter, such as the one `eq()` binds, against a partial index's `WHERE`.
-- Inside a D1 `batch()`, Drizzle maps a joined select by column name, so columns both tables have (such as `id`) overwrite each other; batch single-table selects instead (see `src/get-draft.ts`).
+- A query meant to use a partial index must spell out the index's `WHERE` terms with literal values (see `IS_QUEUED` in `src/send/send-reconciler.ts`): SQLite does not match a bound parameter, such as the one `eq()` binds, against a partial index's `WHERE`.
+- Inside a D1 `batch()`, Drizzle maps a joined select by column name, so columns both tables have (such as `id`) overwrite each other; batch single-table selects instead (see `src/review/get-draft.ts`).
 
 ## Migrations
 
-D1 migrations live in `migrations/`; every Wrangler config points `migrations_dir` there. They are generated from the Drizzle schema in `src/schema.ts`: after changing it, run `pnpm --filter '@resend-challenge/drafts' migrations:generate --name <change>` and commit the new SQL file with the updated `meta/` files; never edit a generated migration.
+D1 migrations live in `migrations/`; every Wrangler config points `migrations_dir` there. They are generated from the Drizzle schema in `src/storage/schema.ts`: after changing it, run `pnpm --filter '@resend-challenge/drafts' migrations:generate --name <change>` and commit the new SQL file with the updated `meta/` files; never edit a generated migration.

@@ -1,14 +1,14 @@
 /*
  * How a Draft is stored: maps the rows of `drafts` and `revisions` to the domain types of
- * `draft.ts`, and selects the row of a Draft's last verdict.
+ * `domain/draft.ts`, and selects the row of a Draft's last verdict.
  */
 
 import { and, desc, eq, isNotNull } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { Temporal } from "temporal-polyfill";
 
-import type { DraftSummary, LastVerdict, RevisionSummary, Sending } from "./draft.ts";
-import type { DraftId } from "./ids.ts";
+import type { DraftSummary, LastVerdict, RevisionSummary, Sending } from "../domain/draft.ts";
+import type { DraftId } from "../domain/ids.ts";
 import { revisions, type drafts } from "./schema.ts";
 
 /**

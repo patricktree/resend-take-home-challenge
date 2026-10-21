@@ -1,7 +1,7 @@
 import { Temporal } from "temporal-polyfill";
 import { expect, test } from "vitest";
 
-import { parseRetryAfterSeconds } from "../src/resend-client.ts";
+import { parseRetryAfterSeconds } from "../src/resend/post-email.ts";
 
 const NOW = Temporal.Instant.from("2026-10-21T08:00:00.000Z").epochMilliseconds;
 

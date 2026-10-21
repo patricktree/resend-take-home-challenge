@@ -7,7 +7,7 @@
 import { and, eq, or } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 
-import type { DraftId } from "./ids.ts";
+import type { DraftId } from "../domain/ids.ts";
 import { drafts } from "./schema.ts";
 
 export type SendFailure =

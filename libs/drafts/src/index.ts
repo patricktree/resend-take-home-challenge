@@ -2,9 +2,9 @@ export {
   approveRevision,
   type ApproveRevisionResult,
   type SendHandOff,
-} from "./approve-revision.ts";
-export { createDraft } from "./create-draft.ts";
-export { drizzleForSession, type DraftsStorage } from "./database.ts";
+} from "./review/approve-revision.ts";
+export { createDraft } from "./review/create-draft.ts";
+export { drizzleForSession, type DraftsStorage } from "./storage/database.ts";
 export type {
   Draft,
   DraftData,
@@ -16,21 +16,21 @@ export type {
   RevisionSummary,
   Sending,
   Verdict,
-} from "./draft.ts";
-export { getDraft } from "./get-draft.ts";
-export { getRevision } from "./get-revision.ts";
-export { isDraftId, isRevisionId, type DraftId, type RevisionId } from "./ids.ts";
-export { listDrafts } from "./list-drafts.ts";
-export { rejectRevision, type RejectRevisionResult } from "./reject-revision.ts";
-export { reviseDraft } from "./revise-draft.ts";
+} from "./domain/draft.ts";
+export { getDraft } from "./review/get-draft.ts";
+export { getRevision } from "./review/get-revision.ts";
+export { isDraftId, isRevisionId, type DraftId, type RevisionId } from "./domain/ids.ts";
+export { listDrafts } from "./review/list-drafts.ts";
+export { rejectRevision, type RejectRevisionResult } from "./review/reject-revision.ts";
+export { reviseDraft } from "./review/revise-draft.ts";
 export { findRootCause } from "./root-cause.ts";
-export type { SendPipelineEnvironment } from "./send-consumer.ts";
+export type { SendPipelineEnvironment } from "./send/send-consumer.ts";
 export {
   SEND_DLQ_NAME,
   SEND_QUEUE_NAME,
   sendQueueMessageSchema,
   type SendQueue,
   type SendQueueMessage,
-} from "./send-queue.ts";
-export { submitRevision } from "./submit-revision.ts";
-export { handleQueueBatch, runScheduledTasks } from "./worker-handlers.ts";
+} from "./send/send-queue.ts";
+export { submitRevision } from "./review/submit-revision.ts";
+export { handleQueueBatch, runScheduledTasks } from "./worker/worker-handlers.ts";

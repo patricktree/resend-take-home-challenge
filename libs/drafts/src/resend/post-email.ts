@@ -6,7 +6,7 @@
 
 import { Temporal } from "temporal-polyfill";
 
-import type { ResendCall } from "./resend-call-classification.ts";
+import type { ResendCall } from "./classify-resend-call.ts";
 
 /** Where and as whom the adapter calls Resend. */
 export type ResendConnection = {

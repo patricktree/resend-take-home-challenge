@@ -2,9 +2,9 @@
 
 ## Layout
 
-`src/index.ts` is the package's interface; `src/root-cause.ts` serves every log line. The folders:
+`src/index.ts` is the package's interface; `src/root-cause.ts` serves every log line, and `src/assert-unreachable.ts` every exhaustive switch. The folders:
 
-- `domain/`: the Draft types, status values and `OutgoingEmail` (`draft.ts`), the ids, the 23 h Send deadline, the Send Queue message and its schema (`send-queue-message.ts`), and the refusal precedence of revise, Submission and verdict (`refusals.ts`) as pure functions. It imports nothing else from the package.
+- `domain/`: the Draft types, status values and `OutgoingEmail` (`draft.ts`), the ids, the 23 h Send deadline, the Send Queue message and its schema (`send-queue-message.ts`), and the refusal precedence of revise, Submission and verdict (`refusals.ts`) as pure functions. It imports nothing else from the package but `assert-unreachable.ts`.
 - `storage/`: the D1 and R2 adapter: the Drizzle schema, `drizzleForSession()`, the row-to-domain mapping (`draft-rows.ts`), the one read behind every refusal (`refusal-snapshot.ts`), the R2 bodies, and the Send outbox (`send-outbox.ts`), which owns every write and query of the outbox columns after the Approval batch and builds Send Queue messages from rows. Nothing in `storage/` imports `send/`, which imports `storage/`.
 - `review/`: the use cases of the review flow. Each mutation keeps its guarded batch inline, with Drizzle and no repository port: the guard and the statement order are the use case.
 - `send/`: the Send pipeline: the Send Queue port and its batch limits (`send-queue.ts`), the Queue and DLQ consumers, the Send reconciler and the retry delay.

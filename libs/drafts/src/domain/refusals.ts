@@ -5,6 +5,7 @@
  * refused by the use case before anything is read.
  */
 
+import { assertUnreachable } from "../assert-unreachable.ts";
 import type { ReviewStatus, SendingStatus, Verdict } from "./draft.ts";
 import type { DraftId, RevisionId } from "./ids.ts";
 
@@ -176,9 +177,4 @@ export function explainVerdictRefusal(
       return assertUnreachable(snapshot.revisionReviewStatus);
     }
   }
-}
-
-/** Fails to compile when a switch misses a case, and throws if an unexpected value arrives anyway. */
-function assertUnreachable(value: never): never {
-  throw new Error(`Unexpected value: ${JSON.stringify(value)}`);
 }

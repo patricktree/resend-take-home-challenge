@@ -2,7 +2,7 @@
   "oxc.enable": true,
   "oxc.path.oxfmt": "./node_modules/.bin/oxfmt",
   "oxc.lint.run": "onType",
-  "oxc.path.oxlint": "./node_modules/.bin/oxlint",
+  "oxc.path.oxlint": "./tooling/config-oxlint/node_modules/.bin/oxlint",
   "editor.formatOnSaveMode": "file",
   "[css]": {
     "editor.defaultFormatter": "oxc.oxc-vscode"

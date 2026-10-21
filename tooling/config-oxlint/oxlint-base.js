@@ -7,6 +7,10 @@ const noRestrictedImports = baseConfig.rules?.["no-restricted-imports"];
 
 export const config = defineConfig({
   extends: [baseConfig],
+  options: {
+    maxWarnings: 0,
+    typeAware: true,
+  },
   rules: {
     "no-restricted-imports": [
       ...(noRestrictedImports ?? ["error"]),

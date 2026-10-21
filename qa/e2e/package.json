@@ -12,7 +12,7 @@
     "test:e2e:ui": "PWDEBUG=1 playwright test --ui",
     "test:e2e:update": "pnpm run test:e2e --update-snapshots=changed",
     "turbo:build": "tsc --build ./tsconfig.json",
-    "turbo:lint": "oxlint --type-aware --max-warnings 0 .",
+    "turbo:lint": "oxlint .",
     "turbo:lint:fix": "pnpm run turbo:lint --fix"
   },
   "devDependencies": {

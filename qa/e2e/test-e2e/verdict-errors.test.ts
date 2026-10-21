@@ -48,6 +48,38 @@ test("a verdict on a Revision the Agent replaced is refused inline and not recor
   expect(resendStub.requests).toStrictEqual([]);
 });
 
+test("a shown verdict error survives the Reviewer coming back to the tab: the Draft is not read again until Reload Draft", async ({
+  page,
+  reviewEnvironment,
+}) => {
+  const { agentClient } = reviewEnvironment;
+  // A controlled clock, so the Reviewer can be away for a minute: the Review UI reads the Draft
+  // again on coming back only once its data is stale.
+  await page.clock.install();
+  const draft = await createPendingDraft(agentClient, createDraftData("Price increase"));
+  await openDraftPage(page, draft);
+  const revised = await agentClient.reviseDraft(draft.id, {
+    ...createDraftData("Price increase from March"),
+    baseRevisionId: draft.latestRevision.id,
+  });
+  await agentClient.submitRevision(draft.id, revised.latestRevision.id);
+  await page.getByRole("button", { name: "Approve" }).click();
+  await expect(page.getByRole("alert")).toHaveText(
+    "The Agent changed this Draft after you opened it; your verdict was not recorded.",
+  );
+  const draftReads = recordDraftReads(page, draft.id);
+
+  // The Reviewer is away for a minute, then comes back to the tab, which fires `visibilitychange`.
+  await page.clock.fastForward("01:00");
+  await page.evaluate(() => window.dispatchEvent(new Event("visibilitychange")));
+  await page.getByRole("button", { name: "Reload Draft" }).click();
+
+  await expect(page.getByText("Revision 2", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alert")).toBeHidden();
+  // Only Reload Draft read the Draft; coming back to the tab did not.
+  expect(draftReads).toHaveLength(1);
+});
+
 test("a Rejection of a Revision approved meanwhile is refused inline and not recorded", async ({
   page,
   reviewEnvironment,
@@ -123,6 +155,20 @@ test("a verdict with a stored Agent token asks for the Reviewer token", async ({
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
   expect((await reviewerClient.getDraft(draft.id)).reviewStatus).toBe("PENDING");
 });
+
+/** Collects the page's reads of the Draft, to show which of them happened. */
+function recordDraftReads(page: Page, draftId: string): string[] {
+  const draftReads: string[] = [];
+  page.on("request", (request) => {
+    if (
+      request.method() === "GET" &&
+      new URL(request.url()).pathname === `/api/v1/drafts/${draftId}`
+    ) {
+      draftReads.push(request.url());
+    }
+  });
+  return draftReads;
+}
 
 /** Collects the page's verdict requests, to show that none is sent again. */
 function recordVerdictRequests(page: Page): string[] {

@@ -14,6 +14,8 @@ import { ErrorMessage } from "#src/error-message.tsx";
 type VerdictControlsProps = {
   /** A Pending Draft; render the controls keyed by its latest Revision id, so they reset with it. */
   draft: DraftResponse;
+  /** Told whether a verdict error shows, so that the Draft page holds still until "Reload Draft". */
+  onVerdictErrorShownChange: (isShown: boolean) => void;
 };
 
 type Verdict = { kind: "APPROVAL" } | { kind: "REJECTION"; reason: string | undefined };
@@ -47,7 +49,10 @@ const ALREADY_DECIDED_MESSAGES: Record<ExistingVerdict, string> = {
  * Approve, an optional reason and Reject for the loaded Revision. A failed verdict shows inline
  * above the controls and is never retried: the Reviewer reloads the Draft and decides again.
  */
-export function VerdictControls({ draft }: VerdictControlsProps): React.ReactNode {
+export function VerdictControls({
+  draft,
+  onVerdictErrorShownChange,
+}: VerdictControlsProps): React.ReactNode {
   const reasonInputId = React.useId();
   const queryClient = useQueryClient();
   const draftId = draft.id;
@@ -65,6 +70,7 @@ export function VerdictControls({ draft }: VerdictControlsProps): React.ReactNod
           ),
     // Awaited, so the buttons stay disabled until the page shows the refetched Draft.
     onSuccess: () => invalidateDraftQueries(queryClient),
+    onError: () => onVerdictErrorShownChange(true),
   });
   const reloadMutation = useMutation({
     mutationFn: () =>
@@ -72,7 +78,10 @@ export function VerdictControls({ draft }: VerdictControlsProps): React.ReactNod
         { queryKey: draftQuery(draftId).queryKey, exact: true },
         { throwOnError: true },
       ),
-    onSuccess: () => verdictMutation.reset(),
+    onSuccess: () => {
+      verdictMutation.reset();
+      onVerdictErrorShownChange(false);
+    },
   });
   const isBusy = verdictMutation.isPending || reloadMutation.isPending;
   // A failed reload replaces the verdict error it was meant to clear.
@@ -81,6 +90,7 @@ export function VerdictControls({ draft }: VerdictControlsProps): React.ReactNod
   function submitVerdict(verdict: Verdict): void {
     // The error box then shows this verdict's outcome, not an earlier failed reload.
     reloadMutation.reset();
+    onVerdictErrorShownChange(false);
     verdictMutation.mutate(verdict);
   }
 

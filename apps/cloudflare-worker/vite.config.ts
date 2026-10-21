@@ -13,6 +13,12 @@ import {
 
 const WORKER_DIRECTORY = import.meta.dirname;
 
+/** Each key is a directive of `SECURITY_HEADERS` in libs/api.server/src/review-ui.ts, verbatim. */
+const DEV_SERVER_CSP_ADDITIONS = {
+  "script-src 'self'": "script-src 'self' 'unsafe-inline'",
+  "default-src 'self'": "default-src 'self'; style-src 'self' 'unsafe-inline'",
+};
+
 export default defineConfig(({ command }) => {
   const workerConfig = defineConfig({
     envDir: WORKER_DIRECTORY,
@@ -29,17 +35,11 @@ export default defineConfig(({ command }) => {
 
   switch (command) {
     case "build": {
-      // The Review UI builds first (Turbo); never ship the Worker without it. Its build output
-      // becomes the Worker's static assets.
-      const reviewUiIndexHtml = path.join(REVIEW_UI_BUILD_DIRECTORY, "app/index.html");
-      if (!fs.existsSync(reviewUiIndexHtml)) {
-        throw new Error(
-          `${reviewUiIndexHtml} is missing: build @draft-approval/review-ui first (\`pnpm build\` does).`,
-        );
-      }
+      // The Review UI's build output becomes the Worker's static assets.
       return mergeConfig(workerConfig, {
         root: WORKER_DIRECTORY,
         publicDir: REVIEW_UI_BUILD_DIRECTORY,
+        plugins: [requireReviewUiBuild()],
       });
     }
     case "serve": {
@@ -53,6 +53,26 @@ export default defineConfig(({ command }) => {
     }
   }
 });
+
+/**
+ * The Review UI builds first (Turbo); never ship the Worker without it. The check runs when a build
+ * starts, not when the config loads, so tools that only read the config (Knip) work on a fresh
+ * checkout.
+ */
+function requireReviewUiBuild(): Plugin {
+  return {
+    name: "draft-approval:require-review-ui-build",
+    apply: "build",
+    buildStart() {
+      const reviewUiIndexHtml = path.join(REVIEW_UI_BUILD_DIRECTORY, "app/index.html");
+      if (!fs.existsSync(reviewUiIndexHtml)) {
+        throw new Error(
+          `${reviewUiIndexHtml} is missing: build @draft-approval/review-ui first (\`pnpm build\` does).`,
+        );
+      }
+    },
+  };
+}
 
 /**
  * Bridges two gaps between Vite's dev server and the Worker's production `/app` serving
@@ -85,12 +105,6 @@ function reviewUiDevServer(): Plugin {
     },
   };
 }
-
-/** Each key is a directive of `SECURITY_HEADERS` in libs/api.server/src/review-ui.ts, verbatim. */
-const DEV_SERVER_CSP_ADDITIONS = {
-  "script-src 'self'": "script-src 'self' 'unsafe-inline'",
-  "default-src 'self'": "default-src 'self'; style-src 'self' 'unsafe-inline'",
-};
 
 async function serveIndexHtml(server: ViteDevServer, response: http.ServerResponse): Promise<void> {
   try {

@@ -1,6 +1,9 @@
 /*
  * The Send Queue's messages (spec section 9). An Approval hands its Send intent to the Queue with one
  * message; the Queue consumer and the Send reconciler read the same shape.
+ *
+ * This module imports only `domain/`: `storage/send-outbox.ts` builds these messages from rows and
+ * imports it, while the rest of `send/` imports `storage/`.
  */
 
 import { z } from "zod";

@@ -864,6 +864,8 @@ Accepted behavior that is not a demo shortcut:
 - **MCP App review view** that signs the Reviewer in through our own login and calls the API directly with that token, never through the host's MCP connection. It trusts the host to deliver the View code unmodified and never takes a verdict from host-supplied data.
 - **Large bodies and attachments** through a dedicated upload endpoint (or presigned R2 URLs) rather than in the Draft request.
 - **OAuth 2.1 for `/mcp`** via `workers-oauth-provider`, so OAuth-only MCP hosts can connect.
+- **CI/CD**, replacing the manual deploys and local-only tests of [section 14](#operations-and-deployment): CI runs `pnpm validate:fast` and `pnpm validate:extended` on every change and gates deploys on them; deploys run from CI, through a staging environment, with the D1 migrations gated on review; a scheduled CI run executes the live Resend contract test (`pnpm test:resend-live`).
+- **Distributing the CLI** and any other package used outside the repository, such as the typed client. Today the CLI runs only from a checkout, through Node's type stripping, and no package is published (none has a `"files"` field). The options are bundling the CLI into one JavaScript file with a bundler, or publishing npm packages, which then also have to ship the CLI's workspace dependencies `@draft-approval/api.client` and `@draft-approval/api.routes` built to JavaScript.
 
 ## 17. Out of scope
 

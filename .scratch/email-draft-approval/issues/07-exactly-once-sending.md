@@ -16,7 +16,7 @@ How is an approved Revision sent through Resend exactly once, despite repeated a
 
 ## Answer
 
-Resolved by grilling with Patrick on 2026-10-20. All options considered (A–K) and their trade-offs are in [research/send-topology-options.md](../research/send-topology-options.md); the decision is **option C**.
+Resolved in a grilling session with the repository owner on 2026-10-20. All options considered (A–K) and their trade-offs are in [research/send-topology-options.md](../research/send-topology-options.md); the decision is **option C**.
 
 ### Topology (option C)
 

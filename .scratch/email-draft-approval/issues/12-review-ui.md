@@ -19,7 +19,7 @@ How should the Reviewer's flow look and behave in the Review UI (a deployed Reac
 
 ## Answer
 
-Settled without a prototype: Patrick declined one and delegated every look-and-behaviour choice with "keep it simple; it is a take-home challenge, no good UX required". Everything below is the simplest option that honours the Comments above; nothing beyond them was added for polish.
+Settled without a prototype: the repository owner declined one and delegated every look-and-behaviour choice with "keep it simple; it is a take-home challenge, no good UX required". Everything below is the simplest option that honours the Comments above; nothing beyond them was added for polish.
 
 - **Routes** (TanStack Router, `basepath: "/app"`): `/app/` is the Pending list, `/app/decided` the Decided list, `/app/drafts/$draftId` the Draft page. One header on every screen: links "Pending" and "Decided", and a "Sign out" button. No master-detail split, no tabs, no counts in the header.
 - **Token screen**: without a stored token, the app renders the token screen _in place of_ the requested route, so the URL stays as it is and a `reviewUrl` deep link lands on its Draft once a token is entered (no redirect, no return-URL parameter). One password-type input labelled "Reviewer token" and a "Continue" button. A value starting with `agent_` is refused client-side with "This is an Agent token. Enter the Reviewer token." The token is not checked against the API up front: it is stored in `localStorage` and the route's query runs; any 401 clears the token and the query cache and shows the token screen again with "The token was not accepted." "Sign out" clears the token and the query cache.

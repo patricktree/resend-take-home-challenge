@@ -1,4 +1,4 @@
-# Input spec (as given by patricktree)
+# Input spec (as given by the repository owner)
 
 ## Requirements
 
@@ -8,7 +8,7 @@
 - (functional) the user can open a pending email draft for review
 - (functional) the user can see (retrieve) the email draft's data
 - (functional) the user can approve an email draft
-  - (by patricktree) (functional) the approval is rejected and the user is shown an error message if the email draft's data changed since the email draft was loaded
+  - (added by the repository owner) (functional) the approval is rejected and the user is shown an error message if the email draft's data changed since the email draft was loaded
 - (functional) the user can reject an email draft
 - (non-functional) the human interface is accessible
 

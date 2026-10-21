@@ -15,7 +15,7 @@ How does the system make sure an Approval is only accepted for exactly the Draft
 
 ## Answer
 
-Resolved by grilling with Patrick on 2026-10-20.
+Resolved in a grilling session with the repository owner on 2026-10-20.
 
 ### Binding
 

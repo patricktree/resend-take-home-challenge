@@ -2,7 +2,7 @@
 
 Working comparison for [ticket 07](../issues/07-exactly-once-sending.md), written during the grilling on 2026-10-20.
 
-**Decision (Patrick, 2026-10-20): option C**, D1 outbox + Queue + reconciler cron, with the [shared Send pipeline](#shared-send-pipeline-in-b-and-c). The other options stay here as the record of what was considered; B is the named path if per-Draft write locality ever matters.
+**Decision (repository owner, 2026-10-20): option C**, D1 outbox + Queue + reconciler cron, with the [shared Send pipeline](#shared-send-pipeline-in-b-and-c). The other options stay here as the record of what was considered; B is the named path if per-Draft write locality ever matters.
 
 Every option uses the same Resend idempotency key per Draft and the same frozen `outgoingEmail` (`from`, `to`, `subject`, plus the R2 key of the body), so none of them can send two emails for one Draft within Resend's 24 h window; they differ in everything around that.
 

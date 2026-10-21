@@ -10,12 +10,12 @@ Does the Reviewer list, review, approve and reject Drafts in a dedicated web UI,
 
 ## Answer
 
-Resolved by grilling with Patrick on 2026-10-20.
+Resolved in a grilling session with the repository owner on 2026-10-20.
 
 ### Requirement, corrected
 
 - The challenge asks for "a simple deployed and accessible interface where a human can review pending drafts and approve or reject them". It does not say "web UI"; [spec-input.md](../spec-input.md) now reads "the human interface is accessible".
-- "Accessible" means reachable: evaluators open it at a deployed URL with no local setup. No WCAG conformance level is required (Patrick clarified it is not necessary).
+- "Accessible" means reachable: evaluators open it at a deployed URL with no local setup. No WCAG conformance level is required (the repository owner clarified it is not necessary).
 
 ### The human interface is the Review UI, and only it
 

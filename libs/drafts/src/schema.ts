@@ -10,26 +10,8 @@
 import { sql, type SQL } from "drizzle-orm";
 import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
+import { FAILURE_REASONS, REVIEW_STATUSES, SENDING_STATUSES, type OutgoingEmail } from "./draft.ts";
 import type { DraftId, RevisionId } from "./ids.ts";
-import type { OutgoingEmail } from "./send-queue.ts";
-
-export type SendingStatus = (typeof SENDING_STATUSES)[number];
-
-export type FailureReason = (typeof FAILURE_REASONS)[number];
-
-export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
-
-export const SENDING_STATUSES = ["NOT_SENT", "QUEUED", "SENT", "FAILED"] as const;
-
-export const FAILURE_REASONS = ["REJECTED_BY_RESEND", "OUTCOME_UNKNOWN"] as const;
-
-export const REVIEW_STATUSES = [
-  "UNSUBMITTED",
-  "PENDING",
-  "APPROVED",
-  "REJECTED",
-  "SUPERSEDED",
-] as const;
 
 export const drafts = sqliteTable(
   "drafts",

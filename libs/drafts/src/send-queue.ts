@@ -5,11 +5,9 @@
 
 import { z } from "zod";
 
+import type { OutgoingEmail } from "./draft.ts";
 import { isDraftId, type DraftId } from "./ids.ts";
 import type { drafts } from "./schema.ts";
-
-/** The email an Approval freezes on the Draft row; the Send sends exactly this, with the body. */
-export type OutgoingEmail = z.infer<typeof outgoingEmailSchema>;
 
 export type SendQueueMessage = z.infer<typeof sendQueueMessageSchema>;
 
@@ -43,16 +41,14 @@ export const QUEUE_BATCH_LIMITS = {
   METADATA_BYTES_PER_MESSAGE: 100,
 } as const;
 
+/** Validates a frozen outgoing email, which the domain type `OutgoingEmail` defines. */
 const outgoingEmailSchema = z.strictObject({
-  /** Resolved from `RESEND_FROM` when the Approval is recorded; not part of the review. */
   from: z.string().min(1),
   to: z.array(z.string()).min(1),
   subject: z.string(),
-  /** The R2 key of the approved Revision's body. */
   bodyKey: z.string().min(1),
-  /** Carries the `draft_id` tag from the start: adding it later would change the frozen body. */
   tags: z.array(z.strictObject({ name: z.string(), value: z.string() })),
-});
+}) satisfies z.ZodType<OutgoingEmail>;
 
 export const sendQueueMessageSchema = z.strictObject({
   draftId: z.custom<DraftId>(

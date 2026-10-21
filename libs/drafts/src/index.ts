@@ -10,6 +10,7 @@ export type {
   DraftData,
   DraftSummary,
   LastVerdict,
+  OutgoingEmail,
   Revision,
   RevisionBody,
   RevisionSummary,
@@ -28,7 +29,6 @@ export {
   SEND_DLQ_NAME,
   SEND_QUEUE_NAME,
   sendQueueMessageSchema,
-  type OutgoingEmail,
   type SendQueue,
   type SendQueueMessage,
 } from "./send-queue.ts";

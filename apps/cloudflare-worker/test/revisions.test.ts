@@ -218,6 +218,30 @@ test.for([
   },
 );
 
+test.for([
+  { name: "an unknown Revision", isOtherDraftsRevision: false },
+  { name: "another Draft's Revision", isOtherDraftsRevision: true },
+])(
+  "revising an approved Draft on $name answers with 404 REVISION_NOT_FOUND and changes nothing",
+  async ({ isOtherDraftsRevision }, { expect, onTestFinished }) => {
+    const worker = await useWorker({ onTestFinished });
+    const created = await createDraft(worker);
+    const other = await createDraft(worker);
+    await expectSubmittedAndDecided(worker, created.id, created.latestRevision.id, "approval");
+    const rowsBefore = await readRows(worker);
+
+    // REVISION_NOT_FOUND takes precedence over DRAFT_APPROVED, as for Submissions and verdicts.
+    const response = await reviseDraft(worker, created.id, {
+      ...DRAFT_DATA,
+      baseRevisionId: isOtherDraftsRevision ? other.latestRevision.id : UNKNOWN_REVISION_ID,
+    });
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toMatchObject({ error: { code: "REVISION_NOT_FOUND" } });
+    expect(await readRows(worker)).toStrictEqual(rowsBefore);
+  },
+);
+
 test("revising an unknown Draft answers with 404 DRAFT_NOT_FOUND", async ({
   expect,
   onTestFinished,

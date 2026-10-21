@@ -1155,7 +1155,7 @@
             }
           },
           "404": {
-            "description": "`DRAFT_NOT_FOUND`: no Draft has this id. `REVISION_NOT_FOUND`: `baseRevisionId` is not one of the Draft's Revisions.",
+            "description": "`DRAFT_NOT_FOUND`: no Draft has this id. `REVISION_NOT_FOUND`: `baseRevisionId` is not one of the Draft's Revisions, also when the Draft is approved. Both come before every 409.",
             "headers": {
               "X-Read-Bookmark": {
                 "schema": {
@@ -1175,7 +1175,7 @@
             }
           },
           "409": {
-            "description": "`DRAFT_APPROVED`: the Draft is approved and accepts no further Revisions (checked first). `REVISION_SUPERSEDED`: `baseRevisionId` is no longer the Draft's latest Revision; read the Draft again and build on its latest Revision.",
+            "description": "In order of precedence: `DRAFT_APPROVED`: the Draft is approved and accepts no further Revisions. `REVISION_SUPERSEDED`: `baseRevisionId` is no longer the Draft's latest Revision; read the Draft again and build on its latest Revision.",
             "headers": {
               "X-Read-Bookmark": {
                 "schema": {
@@ -1546,6 +1546,26 @@
               }
             }
           },
+          "413": {
+            "description": "`PAYLOAD_TOO_LARGE`: the request body exceeds 128 KB; this operation takes no body.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": false,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "`INTERNAL_ERROR`: an unexpected error occurred.",
             "headers": {
@@ -1721,6 +1741,26 @@
           },
           "409": {
             "description": "In order of precedence: `REVISION_SUPERSEDED`: the Revision is no longer the Draft's latest; reload the Draft and review its latest Revision. `REVISION_ALREADY_DECIDED`: the Revision already has a verdict, named in `existingVerdict`, also when it is the same verdict again; nothing is recorded twice. `REVISION_NOT_SUBMITTED`: the Revision is `UNSUBMITTED` and awaits no verdict.",
+            "headers": {
+              "X-Read-Bookmark": {
+                "schema": {
+                  "type": "string",
+                  "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+                },
+                "required": false,
+                "description": "The D1 read bookmark. Send the latest value you received on every request to read your own writes; every response returns the current one."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "`PAYLOAD_TOO_LARGE`: the request body exceeds 128 KB; this operation takes no body.",
             "headers": {
               "X-Read-Bookmark": {
                 "schema": {

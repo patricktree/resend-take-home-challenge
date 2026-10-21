@@ -689,8 +689,9 @@ Production only, on the custom domain `resend-challenge.patricktree.me`. There i
 
 ### Terraform
 
-- Cloudflare provider v5 and the Resend provider, in `terraform/`.
-- Manages: the D1 database (read replication `auto`), the R2 bucket for Revision bodies, the Send Queue and the Send DLQ, and the Resend sending domain `resend-challenge.patricktree.me` with its verification DNS records in the Cloudflare zone.
+- Cloudflare provider v5 only, in `terraform/`.
+- Manages: the D1 database (read replication `auto`), the R2 bucket for Revision bodies, the Send Queue and the Send DLQ.
+- Not managed: the Resend sending domain `resend-challenge.patricktree.me` (region `eu-west-1`) and its verification DNS records in the Cloudflare zone, both created by hand in the Resend and Cloudflare dashboards (README "Human steps"). No Resend provider is used: the community provider `y0n0zawa/resend` has a single maintainer and would receive a full-access Resend key during `terraform apply`.
 - State lives in an R2 bucket through the S3 backend; that bucket is created once by hand as a bootstrap step.
 
 ### `wrangler.jsonc`

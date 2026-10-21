@@ -32,8 +32,3 @@ output "send_dlq_id" {
   description = "The Send DLQ's id, for the Cloudflare dashboard and API."
   value       = cloudflare_queue.send_dlq.queue_id
 }
-
-output "resend_domain_id" {
-  description = "The Resend sending domain's id."
-  value       = resend_domain.sending.id
-}

@@ -26,18 +26,10 @@ terraform {
       source  = "cloudflare/cloudflare"
       version = "5.27.0"
     }
-    resend = {
-      source  = "y0n0zawa/resend"
-      version = "1.0.1"
-    }
   }
 }
 
 provider "cloudflare" {
   # A variable rather than the provider default CLOUDFLARE_API_TOKEN, which Wrangler would also pick up.
   api_token = var.cloudflare_api_token
-}
-
-provider "resend" {
-  api_key = var.resend_management_api_key
 }

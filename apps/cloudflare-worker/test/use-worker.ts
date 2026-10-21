@@ -1,12 +1,11 @@
 import nodeUrl from "node:url";
 import type { TestContext } from "vitest";
 import { createTestHarness, type WorkerHandle } from "wrangler";
-import { z } from "zod";
 
 import type { SendQueueMessage } from "@resend-challenge/email-drafts";
 
 import type * as testWorkerModule from "./worker.ts";
-import type { SendQueueCall } from "./worker.ts";
+import type { MessageHandling, QueueDelivery, SendQueueCall } from "./worker.ts";
 
 export type TestWorker = WorkerHandle<TestWorkerEnvironment, typeof testWorkerModule>;
 
@@ -23,12 +22,6 @@ type TestWorkerEnvironment = {
   REVISION_BODIES: R2Bucket;
   SEND_QUEUE: Queue;
 };
-
-/**
- * What the consumer did to one message of a batch from `deliverSendQueueBatch()` or
- * `deliverSendDlqBatch()`.
- */
-type MessageHandling = z.infer<typeof messageHandlingsSchema>[number];
 
 /** One message of a batch delivered through `deliverSendQueueBatch()` or `deliverSendDlqBatch()`. */
 type DeliveredMessage = {
@@ -51,15 +44,6 @@ type UseWorkerOptions = {
    */
   shouldConsumeSendQueue?: boolean;
 };
-
-/** The answer of `POST /__test/queue` and `POST /__test/dlq` (test/worker.ts). */
-const messageHandlingsSchema = z.array(
-  z.strictObject({
-    id: z.string(),
-    outcome: z.enum(["ACK", "RETRY", "NONE"]),
-    delaySeconds: z.number().optional(),
-  }),
-);
 
 /**
  * Starts a fresh instance of the whole Worker in Wrangler's local test runtime, with the D1
@@ -107,27 +91,30 @@ export async function readSendQueueCalls(worker: TestWorker): Promise<SendQueueC
 }
 
 /**
- * Delivers one batch to the Send Queue consumer through the test-only route `POST /__test/queue` of
+ * Delivers one batch to the Send Queue consumer through the RPC method `deliverSendQueueBatch()` of
  * test/worker.ts, which runs the real `queue()` handler with the real bindings, and returns what
- * the handler did to each message, in order.
+ * the handler did to each message, in order. The empty `Blob` keeps the call from blocking this
+ * process, where the Resend stub runs (`NonBlockingCallMarker` in test/worker.ts).
  */
-export function deliverSendQueueBatch(
+export async function deliverSendQueueBatch(
   worker: TestWorker,
   messages: DeliveredMessage[],
 ): Promise<MessageHandling[]> {
-  return deliverBatch(worker, "/__test/queue", messages);
+  const testWorkerExport = await worker.getExport();
+  return testWorkerExport.deliverSendQueueBatch(toQueueDeliveries(messages), new Blob());
 }
 
 /**
  * Delivers one batch to the DLQ consumer, as the Send Queue's dead-letter queue would, through the
- * test-only route `POST /__test/dlq` of test/worker.ts; returns what the handler did to each
+ * RPC method `deliverSendDlqBatch()` of test/worker.ts; returns what the handler did to each
  * message, in order.
  */
-export function deliverSendDlqBatch(
+export async function deliverSendDlqBatch(
   worker: TestWorker,
   messages: DeliveredMessage[],
 ): Promise<MessageHandling[]> {
-  return deliverBatch(worker, "/__test/dlq", messages);
+  const testWorkerExport = await worker.getExport();
+  return testWorkerExport.deliverSendDlqBatch(toQueueDeliveries(messages), new Blob());
 }
 
 /**
@@ -142,24 +129,10 @@ export async function runCronTick(worker: TestWorker): Promise<void> {
   }
 }
 
-async function deliverBatch(
-  worker: TestWorker,
-  pathname: "/__test/queue" | "/__test/dlq",
-  messages: DeliveredMessage[],
-): Promise<MessageHandling[]> {
-  const response = await worker.fetch(pathname, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messages: messages.map(({ body, attempts = 1, id }, index) => ({
-        id: id ?? `message-${index}`,
-        body,
-        attempts,
-      })),
-    }),
-  });
-  if (response.status !== 200) {
-    throw new Error(`POST ${pathname} answered with ${response.status}: ${await response.text()}`);
-  }
-  return messageHandlingsSchema.parse(await response.json());
+function toQueueDeliveries(messages: DeliveredMessage[]): QueueDelivery[] {
+  return messages.map(({ body, attempts = 1, id }, index) => ({
+    id: id ?? `message-${index}`,
+    body,
+    attempts,
+  }));
 }

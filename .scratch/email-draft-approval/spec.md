@@ -748,9 +748,9 @@ Priorities: integration tests first, e2e second, unit tests third. Vitest and Pl
 
 - Each test gets its own instance of the whole Worker in Wrangler's local test runtime (`createTestHarness`) through a `useWorker()` fixture: start it, apply the D1 migrations, point `RESEND_BASE_URL` at that test's own Resend stub, and close it after the test. Every test starts with empty D1, R2 and Queue storage, so table-wide queries (lists, paging, both reconciler jobs) are deterministic and tests in a file can run concurrently. Migrations are applied inside workerd, not statement by statement over the binding proxy, to keep setup well under a second.
 - `wrangler.test.jsonc` declares local D1, R2 and Queues, `LOCAL_DEVELOPMENT: "true"` and the stub's `RESEND_BASE_URL`.
-- `test/worker.ts` re-exports the production Worker and adds two test-only routes, `POST /__test/queue` and `POST /__test/dlq`. They build a `MessageBatch` inside workerd, call the real `queue()` handler with the real bindings, and return each message's ack, retry and `delaySeconds`. These routes are not in the production build, and there are no others.
+- `test/worker.ts`, the test entry point, wraps the production Worker and adds two RPC methods, `deliverSendQueueBatch()` and `deliverSendDlqBatch()`, which tests call through `worker.getExport()`. They build a `MessageBatch` inside workerd, call the real `queue()` handler with the real bindings, and return each message's ack, retry and `delaySeconds`. The test entry point is not in the production build, and its `fetch` only delegates to the production Worker.
 - Requests go through `worker.fetch`, the cron through `worker.scheduled()`. Tests reach bindings through `worker.getEnv()` to backdate rows, wrap `DB` and inspect state.
-- The local test runtime cannot dispatch a Queue batch, and real Miniflare delivery cannot force a duplicate, so every consumer scenario goes through the test-only routes. Exactly one test checks that a message sent by an Approval really reaches the consumer through Miniflare.
+- The local test runtime cannot dispatch a Queue batch, and real Miniflare delivery cannot force a duplicate, so every consumer scenario goes through these RPC methods. Exactly one test checks that a message sent by an Approval really reaches the consumer through Miniflare.
 
 ### Resend stub
 
@@ -763,7 +763,7 @@ Priorities: integration tests first, e2e second, unit tests third. Vitest and Pl
 
 - **Deterministic interleaving** (`libs/email-drafts` suite): a holding D1 test double wraps the real `DB` binding and holds a chosen statement (for example the Approval batch) until the test releases it, so "A reads, B commits, A writes" happens every time. There are no hooks in production code.
 - **Wired-up smoke** (integration): `Promise.all` of 10 concurrent HTTP requests through `worker.fetch` asserts exactly one 200, the right 409 for all others, one Queue message and one email in the ledger.
-- **Consumer overlap:** the stub holds a request open, so two concurrent `/__test/queue` deliveries of the same message deterministically overlap at Resend.
+- **Consumer overlap:** the stub holds a request open, so two concurrent `deliverSendQueueBatch()` deliveries of the same message deterministically overlap at Resend.
 - Every race in [section 8](#race-outcomes) runs in both variants where applicable, plus: the same Queue message delivered twice at once (one `SENT`, one ledger email, the other attempt retried after `409 concurrent_idempotent_requests`); Send reconciler re-enqueue ‖ consumer (one ledger email); late `SENT` from an in-flight attempt ‖ `FAILED` from the deadline or the DLQ (`SENT` wins); a message delivered for a Send that has already ended calls no Resend.
 - Every losing verdict or revise leaves the Draft and Revision rows unchanged, and the test asserts it.
 

@@ -48,9 +48,9 @@
   },
   "env": {
     // The one test that proves real Queue delivery selects this environment (`useWorker()` with
-    // `shouldConsumeSendQueue`). Every other test delivers batches through `POST /__test/queue`, so
-    // the default environment has no consumer that could race them. Wrangler does not inherit
-    // bindings and vars into an environment, so they are repeated here.
+    // `shouldConsumeSendQueue`). Every other test delivers batches through `deliverSendQueueBatch()`
+    // (test/use-worker.ts), so the default environment has no consumer that could race them.
+    // Wrangler does not inherit bindings and vars into an environment, so they are repeated here.
     "send-queue-delivery": {
       "d1_databases": [
         {

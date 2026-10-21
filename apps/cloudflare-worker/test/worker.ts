@@ -11,7 +11,9 @@
  *   bindings, and answer with what the handler did to each message. The local test runtime cannot
  *   dispatch a Queue batch, and real Queue delivery cannot force a duplicate, so every consumer
  *   scenario goes through these routes (`deliverSendQueueBatch()` and `deliverSendDlqBatch()` in
- *   use-worker.ts).
+ *   use-worker.ts). They are routes, not RPC methods like `sendQueueCalls()`: Miniflare's proxy
+ *   behind `worker.getExport()` blocks the test process with `Atomics.wait()` until an RPC call
+ *   settles, which would hang the consumer's calls to the Resend stub running in that process.
  */
 
 import { WorkerEntrypoint } from "cloudflare:workers";

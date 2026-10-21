@@ -29,7 +29,7 @@
     "@modelcontextprotocol/client": "catalog:mcp",
     "@modelcontextprotocol/server": "catalog:mcp",
     "@resend-challenge/api.routes": "workspace:*",
-    "@resend-challenge/drafts": "workspace:*",
+    "@resend-challenge/email-drafts": "workspace:*",
     "@resend-challenge/mcp-server": "workspace:*",
     "agents": "catalog:mcp",
     "hono": "catalog:hono",

@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@resend-challenge/api.server": "workspace:*",
-    "@resend-challenge/drafts": "workspace:*"
+    "@resend-challenge/email-drafts": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "catalog:web-app",

@@ -1,7 +1,7 @@
 /*
  * The D1 schema (spec section 5). Timestamps are integer milliseconds since the Unix epoch.
  * `drizzle-kit generate` turns the schema into the SQL migrations in `../../migrations/`, so every
- * change here needs `pnpm --filter '@resend-challenge/drafts' migrations:generate`.
+ * change here needs `pnpm --filter '@resend-challenge/email-drafts' migrations:generate`.
  *
  * SQLite passes a CHECK whose expression is NULL, so the constraints compare nullable columns with
  * `IS` rather than `=`.

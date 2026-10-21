@@ -135,7 +135,7 @@ A single Worker exports three handlers:
 - `queue` handles the Send Queue and the Send DLQ, dispatching on `batch.queue`;
 - `scheduled` runs the Send reconciler every minute.
 
-There is no separate sender Worker: `RESEND_API_KEY` is a secret on this Worker, read only by the Send code in `libs/drafts`.
+There is no separate sender Worker: `RESEND_API_KEY` is a secret on this Worker, read only by the Send code in `libs/email-drafts`.
 
 ### Routing in `fetch`
 
@@ -168,13 +168,13 @@ The repository follows cup's layout (`~/workspace/cup`), with package names unde
 | `apps/cli`               | The `resend-challenge` CLI                                                                                                                                                                               |
 | `libs/api.routes`        | `@hono/zod-openapi` contract: routes, Zod schemas, error schema, `LOCAL_AGENT_TOKEN` and `LOCAL_REVIEWER_TOKEN`                                                                                          |
 | `libs/api.client`        | Typed client (Hono RPC `hc` wrapped in a hand-written class), read-bookmark handling, OpenAPI export                                                                                                     |
-| `libs/api.server`        | Hono app: routing, authentication, error envelope, `/app` serving, `/mcp` mounting; calls into `drafts`                                                                                                  |
-| `libs/drafts`            | The Draft domain: Drizzle schema and migrations, R2 body storage, use cases (create, revise, submit, approve, reject, list, get), Queue consumer, DLQ consumer, Send reconciler, internal Resend adapter |
+| `libs/api.server`        | Hono app: routing, authentication, error envelope, `/app` serving, `/mcp` mounting; calls into `email-drafts`                                                                                            |
+| `libs/email-drafts`      | The Draft domain: Drizzle schema and migrations, R2 body storage, use cases (create, revise, submit, approve, reject, list, get), Queue consumer, DLQ consumer, Send reconciler, internal Resend adapter |
 | `libs/mcp-server`        | The six MCP tools on the typed client                                                                                                                                                                    |
 | `qa/e2e`                 | Playwright e2e tests                                                                                                                                                                                     |
 | `terraform/`             | Infrastructure                                                                                                                                                                                           |
 
-Storage and the Send pipeline are one package because the outbox columns live on the Draft row: the Draft's invariants and the Send's conditional writes belong to one module. Inside `libs/drafts`, `src/` has layer folders for the domain types and pure rules (`domain/`) and for the D1 and R2 adapter (`storage/`, with the Send outbox), feature folders for the use cases of the review flow (`review/`) and of the Send pipeline (`send/`), and adapter folders for Resend (`resend/`) and the Worker glue (`worker/`).
+Storage and the Send pipeline are one package because the outbox columns live on the Draft row: the Draft's invariants and the Send's conditional writes belong to one module. Inside `libs/email-drafts`, `src/` has layer folders for the domain types and pure rules (`domain/`) and for the D1 and R2 adapter (`storage/`, with the Send outbox), feature folders for the use cases of the review flow (`review/`) and of the Send pipeline (`send/`), and adapter folders for Resend (`resend/`) and the Worker glue (`worker/`).
 
 ### Repository and tooling
 
@@ -271,7 +271,7 @@ Indexes: unique `(draft_id, revision_number)`; `review_status` (list filters joi
 - The D1 database has read replication enabled (`auto`).
 - Every request runs on a D1 session: writes start it with `"first-primary"`, reads start it from the incoming `X-Read-Bookmark` (or unconstrained without one). Every API response returns `session.getBookmark()` in `X-Read-Bookmark`.
 - Decisions never rely on replica reads: verdicts, Submissions, revisions and Send outcomes are conditional writes on the primary.
-- Drizzle 0.45 types its D1 driver as `D1Database` only, while `withSession()` returns a `D1DatabaseSession`. One helper, `drizzleForSession(env.DB, bookmark)`, does that cast in one place with a comment naming the limitation; remove it once Drizzle accepts sessions. Use cases in `libs/drafts` take the database as a parameter.
+- Drizzle 0.45 types its D1 driver as `D1Database` only, while `withSession()` returns a `D1DatabaseSession`. One helper, `drizzleForSession(env.DB, bookmark)`, does that cast in one place with a comment naming the limitation; remove it once Drizzle accepts sessions. Use cases in `libs/email-drafts` take the database as a parameter.
 
 ## 6. HTTP API
 
@@ -519,7 +519,7 @@ The `draft_id` tag is part of the frozen body from the start, because adding it 
   4. Classify the result (below). On a final result record the outcome and ack; on a retryable result call `message.retry({ delaySeconds })`.
 - One `POST /emails` per Draft, never `POST /emails/batch`: the batch endpoint takes one idempotency key per request, and Queue batches are not stable across retries, so a retried batch could neither reuse its key nor safely use a new one.
 - Pacing: each invocation starts its batch's Resend calls together and lasts at least 1.0 s, which keeps the system at about 8 requests per second, under Resend's 10 per second per team. A 429 that still slips through is retried.
-- The Resend adapter in `libs/drafts` uses plain `fetch` (no SDK) against `RESEND_BASE_URL`, so tests can point it at a stub.
+- The Resend adapter in `libs/email-drafts` uses plain `fetch` (no SDK) against `RESEND_BASE_URL`, so tests can point it at a stub.
 
 ### Classification and backoff
 
@@ -736,13 +736,13 @@ Manually, in this order: `terraform apply`, then `wrangler d1 migrations apply -
 
 Priorities: integration tests first, e2e second, unit tests third. Vitest and Playwright.
 
-| Level                  | Tool                                                                                               | Covers                                                                |
-| ---------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Integration            | Vitest in Wrangler's local test runtime, in `apps/cloudflare-worker/test/` and `libs/drafts/test/` | Every API, auth, MCP and Send-pipeline guarantee, including all races |
-| e2e                    | Playwright in cup's Docker image against `wrangler dev`                                            | The review flow, end to end through the real Queue                    |
-| CLI process            | Vitest, spawning the real `resend-challenge` process against a `node:http` API stub                | Argument parsing, output, exit codes, token handling                  |
-| Unit                   | Vitest                                                                                             | Pure functions only                                                   |
-| Live contract (opt-in) | Vitest, `pnpm test:resend-live`                                                                    | Resend's idempotency behavior against the real API                    |
+| Level                  | Tool                                                                                                     | Covers                                                                |
+| ---------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Integration            | Vitest in Wrangler's local test runtime, in `apps/cloudflare-worker/test/` and `libs/email-drafts/test/` | Every API, auth, MCP and Send-pipeline guarantee, including all races |
+| e2e                    | Playwright in cup's Docker image against `wrangler dev`                                                  | The review flow, end to end through the real Queue                    |
+| CLI process            | Vitest, spawning the real `resend-challenge` process against a `node:http` API stub                      | Argument parsing, output, exit codes, token handling                  |
+| Unit                   | Vitest                                                                                                   | Pure functions only                                                   |
+| Live contract (opt-in) | Vitest, `pnpm test:resend-live`                                                                          | Resend's idempotency behavior against the real API                    |
 
 ### Integration test setup
 
@@ -761,7 +761,7 @@ Priorities: integration tests first, e2e second, unit tests third. Vitest and Pl
 
 ### Forcing races
 
-- **Deterministic interleaving** (`libs/drafts` suite): a holding D1 test double wraps the real `DB` binding and holds a chosen statement (for example the Approval batch) until the test releases it, so "A reads, B commits, A writes" happens every time. There are no hooks in production code.
+- **Deterministic interleaving** (`libs/email-drafts` suite): a holding D1 test double wraps the real `DB` binding and holds a chosen statement (for example the Approval batch) until the test releases it, so "A reads, B commits, A writes" happens every time. There are no hooks in production code.
 - **Wired-up smoke** (integration): `Promise.all` of 10 concurrent HTTP requests through `worker.fetch` asserts exactly one 200, the right 409 for all others, one Queue message and one email in the ledger.
 - **Consumer overlap:** the stub holds a request open, so two concurrent `/__test/queue` deliveries of the same message deterministically overlap at Resend.
 - Every race in [section 8](#race-outcomes) runs in both variants where applicable, plus: the same Queue message delivered twice at once (one `SENT`, one ledger email, the other attempt retried after `409 concurrent_idempotent_requests`); Send reconciler re-enqueue ‖ consumer (one ledger email); late `SENT` from an in-flight attempt ‖ `FAILED` from the deadline or the DLQ (`SENT` wins); a message delivered for a Send that has already ended calls no Resend.

@@ -1,5 +1,5 @@
 /*
- * The API contract (libs/api.routes) and the domain (libs/drafts) each hold the id patterns: the
+ * The API contract (libs/api.routes) and the domain (libs/email-drafts) each hold the id patterns: the
  * contract must not depend on the domain. These tests keep the two copies in agreement, so that an
  * id the contract accepts is never one the domain treats as malformed, or the other way round.
  */
@@ -7,7 +7,7 @@
 import { test } from "vitest";
 
 import { draftParamsSchema, revisionParamsSchema } from "@resend-challenge/api.routes";
-import { isDraftId, isRevisionId } from "@resend-challenge/drafts";
+import { isDraftId, isRevisionId } from "@resend-challenge/email-drafts";
 
 const UUID = "019a0b7e-5c3d-7f2a-9b1e-4d6c8a2f0e13";
 

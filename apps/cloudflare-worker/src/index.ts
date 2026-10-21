@@ -3,7 +3,7 @@ import {
   handleQueueBatch,
   runScheduledTasks,
   type SendPipelineEnvironment,
-} from "@resend-challenge/drafts";
+} from "@resend-challenge/email-drafts";
 
 type WorkerEnvironment = ApiServerEnvironment & SendPipelineEnvironment;
 

@@ -8,7 +8,7 @@ import {
   ERROR_CODE,
   REVIEWER_ONLY_ROUTES,
 } from "@resend-challenge/api.routes";
-import { findRootCause } from "@resend-challenge/drafts";
+import { findRootCause } from "@resend-challenge/email-drafts";
 
 import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
 import { authenticate, requireReviewer } from "./authentication.ts";

@@ -12,7 +12,7 @@ import {
   type DraftDataRequest,
   type DraftSummaryResponse,
 } from "@resend-challenge/api.routes";
-import type { SendQueueMessage } from "@resend-challenge/drafts";
+import type { SendQueueMessage } from "@resend-challenge/email-drafts";
 import type { ResendStub } from "@resend-challenge/resend-stub";
 
 import { resendStubWorkerOptions, useResendStub } from "./use-resend-stub.ts";

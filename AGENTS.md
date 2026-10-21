@@ -52,7 +52,7 @@ Run `pnpm validate:fast` before every commit and both before opening a pull requ
 ## Package instructions
 
 - [`apps/cloudflare-worker/AGENTS.md`](apps/cloudflare-worker/AGENTS.md): integration tests (`useWorker()`, test-only routes, Send pipeline helpers, the Resend stub) and the Wrangler configs.
-- [`libs/drafts/AGENTS.md`](libs/drafts/AGENTS.md): the folder layout, race tests with the holding D1 double, the Send Queue doubles, large fixtures, partial indexes, D1 `batch()` with Drizzle and migrations.
+- [`libs/email-drafts/AGENTS.md`](libs/email-drafts/AGENTS.md): the folder layout, race tests with the holding D1 double, the Send Queue doubles, large fixtures, partial indexes, D1 `batch()` with Drizzle and migrations.
 - [`libs/api.server/AGENTS.md`](libs/api.server/AGENTS.md): the `agents` and MCP SDK catalog with its peer dependencies, and serving the Review UI.
 - [`libs/mcp-server/AGENTS.md`](libs/mcp-server/AGENTS.md): how the MCP server is split between its tools and the `/mcp` endpoint, and how it is tested.
 - [`apps/review-ui/AGENTS.md`](apps/review-ui/AGENTS.md): the SPA's stack, the verdict-error query freeze, the CSP, the build under `/app` and the unit tests.

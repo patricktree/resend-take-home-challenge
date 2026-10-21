@@ -3,7 +3,7 @@ import type { TestContext } from "vitest";
 import { createTestHarness, type WorkerHandle } from "wrangler";
 import { z } from "zod";
 
-import type { SendQueueMessage } from "@resend-challenge/drafts";
+import type { SendQueueMessage } from "@resend-challenge/email-drafts";
 
 import type * as testWorkerModule from "./worker.ts";
 import type { SendQueueCall } from "./worker.ts";

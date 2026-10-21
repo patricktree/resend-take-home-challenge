@@ -26,4 +26,4 @@ Tests stay flat in `test/`.
 
 ## Migrations
 
-D1 migrations live in `migrations/`; every Wrangler config points `migrations_dir` there. They are generated from the Drizzle schema in `src/storage/schema.ts`: after changing it, run `pnpm --filter '@resend-challenge/drafts' migrations:generate --name <change>` and commit the new SQL file with the updated `meta/` files; never edit a generated migration.
+D1 migrations live in `migrations/`; every Wrangler config points `migrations_dir` there. They are generated from the Drizzle schema in `src/storage/schema.ts`: after changing it, run `pnpm --filter '@resend-challenge/email-drafts' migrations:generate --name <change>` and commit the new SQL file with the updated `meta/` files; never edit a generated migration.

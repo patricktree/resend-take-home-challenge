@@ -24,7 +24,7 @@ import {
   type RejectRevisionResult,
   type Revision,
   type RevisionSummary,
-} from "@resend-challenge/drafts";
+} from "@resend-challenge/email-drafts";
 
 import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
 import { jsonError } from "./http-errors.ts";

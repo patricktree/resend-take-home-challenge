@@ -29,6 +29,20 @@ export const SEND_QUEUE_NAME = "resend-challenge-send";
 /** The Send Queue's dead-letter queue, as named in wrangler.jsonc. */
 export const SEND_DLQ_NAME = "resend-challenge-send-dlq";
 
+/**
+ * Cloudflare Queues' limits of one `sendBatch()`
+ * (https://developers.cloudflare.com/queues/platform/limits/): 100 messages and 256 KB in total,
+ * with KB read as 1000 bytes, the stricter reading. Each message counts its body plus up to about
+ * 100 bytes of internal metadata, reserved here. A message of the largest Draft data is about 17
+ * KB, so 100 of them need several calls. The recording Send Queue double of the tests
+ * (`test/recording-send-queue.ts`) refuses a `sendBatch()` over these same limits.
+ */
+export const QUEUE_BATCH_LIMITS = {
+  MESSAGES: 100,
+  BYTES: 256 * 1000,
+  METADATA_BYTES_PER_MESSAGE: 100,
+} as const;
+
 const outgoingEmailSchema = z.strictObject({
   /** Resolved from `RESEND_FROM` when the Approval is recorded; not part of the review. */
   from: z.string().min(1),

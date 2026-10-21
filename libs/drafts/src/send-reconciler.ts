@@ -19,7 +19,12 @@ import { Temporal } from "temporal-polyfill";
 import { findRootCauseMessage } from "./root-cause.ts";
 import { drafts } from "./schema.ts";
 import { recordFailed } from "./send-outcomes.ts";
-import { toSendQueueMessage, type SendQueue, type SendQueueMessage } from "./send-queue.ts";
+import {
+  QUEUE_BATCH_LIMITS,
+  toSendQueueMessage,
+  type SendQueue,
+  type SendQueueMessage,
+} from "./send-queue.ts";
 
 /** Where the Send reconciler reads and records Sends, and where it re-enqueues them. */
 export type SendReconcilerDependencies = {
@@ -43,19 +48,6 @@ const LOST_HAND_OFF_AFTER_MILLISECONDS = 60 * 1000;
  * `QUEUED` an hour later lost its message after the hand-off, for example to retention expiry.
  */
 const BACKSTOP_AFTER_DEADLINE_MILLISECONDS = 60 * 60 * 1000;
-
-/**
- * Cloudflare Queues' limits of one `sendBatch()`
- * (https://developers.cloudflare.com/queues/platform/limits/): 100 messages and 256 KB in total,
- * with KB read as 1000 bytes, the stricter reading. Each message counts its body plus up to about
- * 100 bytes of internal metadata, reserved here. A message of the largest Draft data is about 17
- * KB, so 100 of them need several calls.
- */
-const QUEUE_BATCH_LIMITS = {
-  MESSAGES: 100,
-  BYTES: 256 * 1000,
-  METADATA_BYTES_PER_MESSAGE: 100,
-} as const;
 
 /**
  * `sending_status = 'QUEUED'` with the value inlined: SQLite uses a partial index only when the

@@ -1,4 +1,4 @@
-import type { SendQueue, SendQueueMessage } from "../src/send-queue.ts";
+import { QUEUE_BATCH_LIMITS, type SendQueue, type SendQueueMessage } from "../src/send-queue.ts";
 
 /** A Send Queue test double that records every message sent to it. */
 export type RecordingSendQueue = SendQueue & {
@@ -7,18 +7,6 @@ export type RecordingSendQueue = SendQueue & {
   /** The messages of every `sendBatch()`, one array per call, in order. */
   sentBatches: SendQueueMessage[][];
 };
-
-/**
- * Cloudflare Queues' limits of one `sendBatch()`
- * (https://developers.cloudflare.com/queues/platform/limits/): 100 messages and 256 KB in total,
- * with KB read as 1000 bytes, the stricter reading; each message counts its body plus about 100
- * bytes of internal metadata.
- */
-const QUEUE_BATCH_LIMITS = {
-  MESSAGES: 100,
-  BYTES: 256 * 1000,
-  METADATA_BYTES_PER_MESSAGE: 100,
-} as const;
 
 /**
  * Records every message; a `sendBatch()` over Cloudflare Queues' batch limits throws and records

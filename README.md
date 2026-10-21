@@ -8,7 +8,7 @@ The Send reconciler makes sure no Send stays `QUEUED` forever. Each tick handles
 
 ## Act as an Agent
 
-The Agent token is public by design, so you can act as an Agent without any setup: `agent_placeholder-run-pnpm-secrets-generate`. If it starts with `agent_placeholder`, the production tokens have not been generated yet. Nothing is sent without the Reviewer token, which is never committed.
+The Agent token is public by design, so you can act as an Agent without any setup: `agent_-17WHltuc9F9_Lpa7Yl3yy_tJ5_Upo07v637L_y1330`.
 
 ### Over HTTP
 
@@ -16,7 +16,7 @@ Create a Draft:
 
 ```sh
 curl -sS -X POST https://resend-challenge.patricktree.me/api/v1/drafts \
-  -H 'Authorization: Bearer agent_placeholder-run-pnpm-secrets-generate' \
+  -H 'Authorization: Bearer agent_-17WHltuc9F9_Lpa7Yl3yy_tJ5_Upo07v637L_y1330' \
   -H 'Content-Type: application/json' \
   -d '{"to":["delivered@resend.dev"],"subject":"Hello","body":{"plainText":"Hello from an Agent."}}'
 ```
@@ -25,7 +25,7 @@ The response is `201` with the Draft summary; its `id` starts with `drf_`. Get t
 
 ```sh
 curl -sS https://resend-challenge.patricktree.me/api/v1/drafts/<draft-id> \
-  -H 'Authorization: Bearer agent_placeholder-run-pnpm-secrets-generate'
+  -H 'Authorization: Bearer agent_-17WHltuc9F9_Lpa7Yl3yy_tJ5_Upo07v637L_y1330'
 ```
 
 ### Through MCP
@@ -34,7 +34,7 @@ The MCP server speaks Streamable HTTP at `https://resend-challenge.patricktree.m
 
 ```sh
 claude mcp add --transport http resend-challenge https://resend-challenge.patricktree.me/mcp \
-  --header 'Authorization: Bearer agent_placeholder-run-pnpm-secrets-generate'
+  --header 'Authorization: Bearer agent_-17WHltuc9F9_Lpa7Yl3yy_tJ5_Upo07v637L_y1330'
 ```
 
 Hosts configured through JSON take the same URL and header, for example:
@@ -45,7 +45,7 @@ Hosts configured through JSON take the same URL and header, for example:
     "resend-challenge": {
       "type": "http",
       "url": "https://resend-challenge.patricktree.me/mcp",
-      "headers": { "Authorization": "Bearer agent_placeholder-run-pnpm-secrets-generate" }
+      "headers": { "Authorization": "Bearer agent_-17WHltuc9F9_Lpa7Yl3yy_tJ5_Upo07v637L_y1330" }
     }
   }
 }

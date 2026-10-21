@@ -69,7 +69,7 @@
     "RESEND_BASE_URL": "https://api.resend.com",
     "LOCAL_DEVELOPMENT": "false",
     // The public Agent token, written by `pnpm secrets:generate`; README.md shows the same value.
-    "AGENT_TOKEN": "agent_placeholder-run-pnpm-secrets-generate",
+    "AGENT_TOKEN": "agent_-17WHltuc9F9_Lpa7Yl3yy_tJ5_Upo07v637L_y1330",
   },
   // Set with `wrangler secret put`; a deploy without them fails. Locally, `.dev.vars` may provide them.
   "secrets": {

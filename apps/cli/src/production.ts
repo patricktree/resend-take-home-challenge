@@ -12,4 +12,4 @@ export const PRODUCTION_API_URL = "https://resend-challenge.patricktree.me";
  * the exact text `PUBLIC_AGENT_TOKEN = "<token>";`, so keep the declaration on one line in this
  * form.
  */
-export const PUBLIC_AGENT_TOKEN = "agent_placeholder-run-pnpm-secrets-generate";
+export const PUBLIC_AGENT_TOKEN = "agent_-17WHltuc9F9_Lpa7Yl3yy_tJ5_Upo07v637L_y1330";

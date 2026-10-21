@@ -1,9 +1,19 @@
+import fs from "node:fs/promises";
 import nodeUrl from "node:url";
 import { test } from "vitest";
 import { experimental_readRawConfig } from "wrangler";
 
+import { SEND_DLQ_NAME, SEND_QUEUE_NAME } from "@draft-approval/drafts";
+
 // The production config, which `pnpm dev` also uses; the expected values come from spec section 12.
 const PRODUCTION_CONFIG_PATH = nodeUrl.fileURLToPath(new URL("../wrangler.jsonc", import.meta.url));
+
+/** Every other Wrangler config, and the Terraform that creates the production Queues. */
+const TEST_CONFIG_PATH = nodeUrl.fileURLToPath(new URL("wrangler.test.jsonc", import.meta.url));
+const E2E_CONFIG_PATH = nodeUrl.fileURLToPath(
+  new URL("../../../qa/e2e/wrangler.jsonc", import.meta.url),
+);
+const TERRAFORM_CLOUDFLARE_URL = new URL("../../../terraform/cloudflare.tf", import.meta.url);
 
 function readProductionConfig() {
   return experimental_readRawConfig({ config: PRODUCTION_CONFIG_PATH }).rawConfig;
@@ -71,3 +81,47 @@ test("the vars configure production and the secrets are required", ({ expect }) 
   expect(config.secrets).toStrictEqual({ required: ["REVIEWER_TOKEN", "RESEND_API_KEY"] });
   expect(config.observability).toBeUndefined();
 });
+
+// `handleQueueBatch()` dispatches on the batch's queue name, so a config that names a Queue
+// differently from libs/drafts would leave its batches without a consumer.
+test.for([
+  { name: "production", configPath: PRODUCTION_CONFIG_PATH },
+  { name: "integration test", configPath: TEST_CONFIG_PATH },
+  { name: "e2e", configPath: E2E_CONFIG_PATH },
+])(
+  "the $name Wrangler config names exactly the Send Queue and its DLQ that libs/drafts consumes",
+  ({ configPath }, { expect }) => {
+    const { rawConfig } = experimental_readRawConfig({ config: configPath });
+
+    const queueNames = new Set(collectQueueNames(rawConfig));
+
+    expect([...queueNames].toSorted()).toStrictEqual([SEND_QUEUE_NAME, SEND_DLQ_NAME].toSorted());
+  },
+);
+
+test("Terraform creates the Send Queue and its DLQ under the names libs/drafts consumes", async ({
+  expect,
+}) => {
+  const terraform = await fs.readFile(TERRAFORM_CLOUDFLARE_URL, "utf8");
+
+  const queueNames = [...terraform.matchAll(/queue_name\s*=\s*"([^"]+)"/g)].flatMap(
+    ([, queueName]) => (queueName === undefined ? [] : [queueName]),
+  );
+
+  expect(queueNames.toSorted()).toStrictEqual([SEND_QUEUE_NAME, SEND_DLQ_NAME].toSorted());
+});
+
+/** Every value of a `queue` or `dead_letter_queue` key anywhere in a config, its environments too. */
+function collectQueueNames(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => collectQueueNames(item));
+  }
+  if (typeof value !== "object" || value === null) {
+    return [];
+  }
+  return Object.entries(value).flatMap(([key, child]) =>
+    (key === "queue" || key === "dead_letter_queue") && typeof child === "string"
+      ? [child]
+      : collectQueueNames(child),
+  );
+}

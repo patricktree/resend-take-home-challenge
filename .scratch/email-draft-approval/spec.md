@@ -92,7 +92,8 @@ A Revision's Draft data (`to`, subject, body) never changes. Its review status d
 - `NOT_SENT` → `QUEUED` happens only in the Approval's write. Nobody has a send operation and there is no undo window.
 - `QUEUED` → `SENT` or `FAILED` is written by the system only (Queue consumer, DLQ consumer, Send reconciler).
 - `failureReason` is `REJECTED_BY_RESEND` (definitely not sent; carries Resend's error name and message) or `OUTCOME_UNKNOWN` (it may have been sent; check the Resend dashboard before creating a new Draft).
-- `SENT` and `FAILED` are final, with one exception: a later `SENT` overrides `FAILED` / `OUTCOME_UNKNOWN`. Nothing else ever leaves `SENT` or `FAILED`.
+- `SENT` and `FAILED` are final, with one exception: a Resend attempt that was already in flight when the Send was recorded `FAILED` / `OUTCOME_UNKNOWN` still records its `SENT`. Nothing else ever leaves `SENT` or `FAILED`.
+- No new attempt starts once a Send has ended, so an email never goes out after the Reviewer was told that it was not sent or may have been sent, and acted on it.
 - Recovering from a failed Send means creating a new Draft, which goes through review again.
 - v1 tracks a Send only up to Resend's acceptance; delivery events are a [Future increment](#16-future-increments).
 
@@ -296,7 +297,7 @@ Indexes: unique `(draft_id, revision_number)`; `review_status` (list filters joi
 
 - There is no send, discard, revise-and-submit or Revision-history operation.
 - Create has no idempotency: a retried create may create a second Draft ([Known limitations](#15-known-limitations)).
-- Revise requires `baseRevisionId`, the Revision the change builds on. If the Draft is approved the result is 409 `DRAFT_APPROVED`; otherwise, if `baseRevisionId` is not the latest Revision, 409 `REVISION_SUPERSEDED`. This guards against lost updates and against duplicate Revisions from retries.
+- Revise requires `baseRevisionId`, the Revision the change builds on. If `baseRevisionId` is not one of the Draft's Revisions the result is 404 `REVISION_NOT_FOUND`; otherwise, if the Draft is approved, 409 `DRAFT_APPROVED`; otherwise, if `baseRevisionId` is not the latest Revision, 409 `REVISION_SUPERSEDED`. This guards against lost updates and against duplicate Revisions from retries.
 - Submission errors, in order of precedence: `DRAFT_APPROVED` (the Draft is approved, including when submitting the approved Revision itself), `REVISION_SUPERSEDED`, `REVISION_ALREADY_DECIDED` (with `existingVerdict`), `REVISION_ALREADY_SUBMITTED` (the Revision is already `PENDING`; a client retrying after a timeout learns from it that the first Submission went through).
 - Verdict errors: `REVISION_SUPERSEDED`, `REVISION_ALREADY_DECIDED` (with `existingVerdict`, also for a repeated identical verdict), `REVISION_NOT_SUBMITTED`. A repeated verdict is never an idempotent success and never records a second verdict or Send.
 - Drafts are not scoped per Agent: every Agent token sees and can revise every Draft ([Demo simplifications](#14-demo-simplifications)).
@@ -383,6 +384,8 @@ Envelope: `{ "error": { "code": "…", "message": "…", "requestId": "…", …
 | 500  | `INTERNAL_ERROR` (generic message, never the internal error text)                                                                                                              |
 
 `REVISION_SUPERSEDED` carries only code and message, not the latest Revision.
+
+On every operation the 404 codes (`DRAFT_NOT_FOUND`, then `REVISION_NOT_FOUND`) take precedence over the 409 codes.
 
 ### Read bookmark
 
@@ -510,9 +513,10 @@ The `draft_id` tag is part of the frozen body from the start, because adding it 
 - The consumer is the only code that calls Resend and the Queue is the only retry clock.
 - Settings: `max_concurrency: 1`, `max_batch_size: 8`, `max_batch_timeout: 1`, `max_retries: 100`, dead-letter queue configured. Message retention is at least the default 4 days and never below 24 h.
 - Per message:
-  1. If `deadline` has passed: record `FAILED` / `OUTCOME_UNKNOWN` without calling Resend, and ack.
-  2. Otherwise read the body from R2 and call `POST ${RESEND_BASE_URL}/emails` with `Authorization: Bearer ${RESEND_API_KEY}`, `Idempotency-Key: <idempotencyKey>` and exactly the frozen email (`from`, `to`, `subject`, `text` = the body's `plainText`, `tags`), with a 10 s timeout.
-  3. Classify the result (below). On a final result record the outcome and ack; on a retryable result call `message.retry({ delaySeconds })`.
+  1. If the Draft's Send has already ended (`SENT` or `FAILED`): ack without calling Resend.
+  2. Otherwise read the body from R2. If `deadline` has passed by now: record `FAILED` / `OUTCOME_UNKNOWN` without calling Resend, and ack. The deadline is checked after the R2 read, so the call itself never starts after it.
+  3. Otherwise call `POST ${RESEND_BASE_URL}/emails` with `Authorization: Bearer ${RESEND_API_KEY}`, `Idempotency-Key: <idempotencyKey>` and exactly the frozen email (`from`, `to`, `subject`, `text` = the body's `plainText`, `tags`), with a 10 s timeout.
+  4. Classify the result (below). On a final result record the outcome and ack; on a retryable result call `message.retry({ delaySeconds })`.
 - One `POST /emails` per Draft, never `POST /emails/batch`: the batch endpoint takes one idempotency key per request, and Queue batches are not stable across retries, so a retried batch could neither reuse its key nor safely use a new one.
 - Pacing: each invocation starts its batch's Resend calls together and lasts at least 1.0 s, which keeps the system at about 8 requests per second, under Resend's 10 per second per team. A 429 that still slips through is retried.
 - The Resend adapter in `libs/drafts` uses plain `fetch` (no SDK) against `RESEND_BASE_URL`, so tests can point it at a stub.
@@ -528,7 +532,7 @@ The `draft_id` tag is part of the frozen body from the start, because adding it 
 | Any other 4xx, including a 409 with an unknown name (Resend refused the request)                            | Final                                                               | `FAILED` / `REJECTED_BY_RESEND`                                      |
 | Any other status, or a 2xx without an `id`                                                                  | Retryable (ends as `OUTCOME_UNKNOWN` at the deadline at the latest) | `message.retry`                                                      |
 
-- Delay for every retryable result: `max(backoff, Retry-After if present)`, where backoff is 1 s × 2^(`message.attempts` − 1), capped at 1 h, plus up to 1 s of random jitter; the result is clamped so the next delivery is no later than `deadline`. That allows about 35 attempts within 23 h.
+- Delay for every retryable result: `max(backoff, Retry-After if present)`, where backoff is 1 s × 2^(`message.attempts` − 1), capped at 1 h, plus up to 1 s of random jitter; the result is clamped so the next delivery is no later than `deadline`, and to the 12 h maximum that `message.retry` accepts (only a longer `Retry-After`, such as one on a daily-quota 429, reaches it). That allows about 35 attempts within 23 h.
 - The 1 s start (Resend's own guidance) makes a one-off 5xx or timeout cost seconds; the 1 h cap and the deadline ride out a long outage; honoring `Retry-After` keeps a retry out of Resend's rate-limit window.
 - `max_retries: 100` is well above the attempts that fit before the deadline, so only crash loops reach the DLQ.
 
@@ -540,11 +544,11 @@ The `draft_id` tag is part of the frozen body from the start, because adding it 
 
 A cron trigger runs every minute and does two bounded jobs:
 
-1. **Lost hand-off:** Sends that are `QUEUED`, have no `enqueued_at` and were approved more than 1 min ago are re-enqueued with one `sendBatch` (built from the frozen outbox columns), and their `enqueued_at` is set.
+1. **Lost hand-off:** Sends that are `QUEUED`, have no `enqueued_at` and were approved more than 1 min ago are re-enqueued (built from the frozen outbox columns) with as few `sendBatch` calls as Cloudflare Queues' batch limits allow (at most 100 messages and 256 KB per call; one message can be up to about 20 KB, since it carries up to 50 recipients and the subject), and `enqueued_at` is set for the messages of every call that succeeded.
 2. **Backstop:** Sends still `QUEUED` at `deadline + 1 h` are recorded as `FAILED` / `OUTCOME_UNKNOWN` (for a message lost after the hand-off, for example by retention expiry).
 
 - Each job handles at most 100 rows per tick, oldest first, using the two partial indexes.
-- A tick stops at the first enqueue failure, so a Queues outage is not hammered and the backlog drains over later ticks.
+- A tick's job 1 stops at the first failed `sendBatch` call, so a Queues outage is not hammered and the backlog drains over later ticks.
 - Duplicates (a request that died between `queue.send` and setting `enqueued_at`, overlapping ticks) are absorbed by the idempotency key.
 
 ### DLQ consumer
@@ -558,7 +562,7 @@ All outcome writes are conditional on the Draft row:
 - `SENT`: applies when `sending_status = 'QUEUED'`, or when `FAILED` with `failure_reason = 'OUTCOME_UNKNOWN'` (then the failure fields are cleared).
 - `FAILED` (either reason): applies only when `sending_status = 'QUEUED'`.
 
-The first final outcome wins, except that a late `SENT` overrides `OUTCOME_UNKNOWN`.
+The first final outcome wins, except that a `SENT` from an attempt already in flight overrides `OUTCOME_UNKNOWN`; the consumer starts no new attempt for a Send that has ended.
 
 ### Why each approved Draft sends exactly one email
 
@@ -760,7 +764,7 @@ Priorities: integration tests first, e2e second, unit tests third. Vitest and Pl
 - **Deterministic interleaving** (`libs/drafts` suite): a gated D1 test double wraps the real `DB` binding and holds a chosen statement (for example the Approval batch) until the test releases it, so "A reads, B commits, A writes" happens every time. There are no hooks in production code.
 - **Wired-up smoke** (integration): `Promise.all` of 10 concurrent HTTP requests through `worker.fetch` asserts exactly one 200, the right 409 for all others, one Queue message and one email in the ledger.
 - **Consumer overlap:** the stub holds a request open, so two concurrent `/__test/queue` deliveries of the same message deterministically overlap at Resend.
-- Every race in [section 8](#race-outcomes) runs in both variants where applicable, plus: the same Queue message delivered twice at once (one `SENT`, one ledger email, the other attempt retried after `409 concurrent_idempotent_requests`); Send reconciler re-enqueue ‖ consumer (one ledger email); late `SENT` ‖ `FAILED` from the deadline or the DLQ (`SENT` wins).
+- Every race in [section 8](#race-outcomes) runs in both variants where applicable, plus: the same Queue message delivered twice at once (one `SENT`, one ledger email, the other attempt retried after `409 concurrent_idempotent_requests`); Send reconciler re-enqueue ‖ consumer (one ledger email); late `SENT` from an in-flight attempt ‖ `FAILED` from the deadline or the DLQ (`SENT` wins); a message delivered for a Send that has already ended calls no Resend.
 - Every losing verdict or revise leaves the Draft and Revision rows unchanged, and the test asserts it.
 
 ### Time

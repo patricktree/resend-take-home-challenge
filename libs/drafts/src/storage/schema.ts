@@ -1,6 +1,6 @@
 /*
  * The D1 schema (spec section 5). Timestamps are integer milliseconds since the Unix epoch.
- * `drizzle-kit generate` turns the schema into the SQL migrations in `../migrations/`, so every
+ * `drizzle-kit generate` turns the schema into the SQL migrations in `../../migrations/`, so every
  * change here needs `pnpm --filter '@resend-challenge/drafts' migrations:generate`.
  *
  * SQLite passes a CHECK whose expression is NULL, so the constraints compare nullable columns with
@@ -10,26 +10,13 @@
 import { sql, type SQL } from "drizzle-orm";
 import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
-import type { DraftId, RevisionId } from "./ids.ts";
-import type { OutgoingEmail } from "./send-queue.ts";
-
-export type SendingStatus = (typeof SENDING_STATUSES)[number];
-
-export type FailureReason = (typeof FAILURE_REASONS)[number];
-
-export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
-
-export const SENDING_STATUSES = ["NOT_SENT", "QUEUED", "SENT", "FAILED"] as const;
-
-export const FAILURE_REASONS = ["REJECTED_BY_RESEND", "OUTCOME_UNKNOWN"] as const;
-
-export const REVIEW_STATUSES = [
-  "UNSUBMITTED",
-  "PENDING",
-  "APPROVED",
-  "REJECTED",
-  "SUPERSEDED",
-] as const;
+import {
+  FAILURE_REASONS,
+  REVIEW_STATUSES,
+  SENDING_STATUSES,
+  type OutgoingEmail,
+} from "../domain/draft.ts";
+import type { DraftId, RevisionId } from "../domain/ids.ts";
 
 export const drafts = sqliteTable(
   "drafts",

@@ -1,36 +1,23 @@
 import { and, eq, exists, inArray, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 
-import type { DraftsStorage } from "./database.ts";
-import type { DraftData, DraftSummary } from "./draft.ts";
-import { selectLastVerdictRow, toDraftSummary } from "./draft.ts";
-import { createRevisionId, isDraftId, isRevisionId, type DraftId, type RevisionId } from "./ids.ts";
-import { putRevisionBody } from "./revision-bodies.ts";
-import { drafts, revisions } from "./schema.ts";
+import type { DraftData, DraftSummary } from "../domain/draft.ts";
+import { createRevisionId, isDraftId, isRevisionId } from "../domain/ids.ts";
+import {
+  explainReviseRefusal,
+  type RefusedMutation,
+  type ReviseRefusal,
+} from "../domain/refusals.ts";
+import type { DraftsStorage } from "../storage/database.ts";
+import { selectLastVerdictRow, toDraftSummary } from "../storage/draft-rows.ts";
+import { readRefusalSnapshot } from "../storage/refusal-snapshot.ts";
+import { putRevisionBody } from "../storage/revision-bodies.ts";
+import { drafts, revisions } from "../storage/schema.ts";
+
+export type ReviseDraftResult = { outcome: "REVISED"; draft: DraftSummary } | ReviseRefusal;
 
 /** The Draft data of the new Revision and the Revision it builds on. */
 type ReviseDraftInput = DraftData & { baseRevisionId: string };
-
-export type ReviseDraftResult =
-  | { outcome: "REVISED"; draft: DraftSummary }
-  | { outcome: ReviseDraftRefusal };
-
-/**
- * Why a revise changed nothing, in order of precedence (a malformed id counts as not found and is
- * refused before anything is read):
- *
- * - `DRAFT_NOT_FOUND`: no Draft has this id;
- * - `REVISION_NOT_FOUND`: the base is not one of the Draft's Revisions;
- * - `DRAFT_APPROVED`: the Draft is approved and accepts no further Revisions;
- * - `REVISION_SUPERSEDED`: the base is not the Draft's latest Revision.
- *
- * Every 404 comes before every 409, as for Submissions and verdicts.
- */
-type ReviseDraftRefusal =
-  | "DRAFT_NOT_FOUND"
-  | "REVISION_NOT_FOUND"
-  | "DRAFT_APPROVED"
-  | "REVISION_SUPERSEDED";
 
 /**
  * Revises a Draft: creates its next Revision, `UNSUBMITTED`, from the Draft data, provided the base
@@ -124,41 +111,9 @@ export async function reviseDraft(
     };
   }
 
-  return { outcome: await explainRefusal(database, draftId, baseRevisionId) };
-}
-
-/**
- * Reads why the guarded batch changed nothing. It reads on the same session as the batch, so on the
- * primary and at least as new as the batch.
- */
-async function explainRefusal(
-  database: DraftsStorage["database"],
-  draftId: DraftId,
-  baseRevisionId: RevisionId,
-): Promise<ReviseDraftRefusal> {
-  const [row] = await database
-    .select({
-      sendingStatus: drafts.sendingStatus,
-      latestRevisionId: drafts.latestRevisionId,
-      baseRevisionId: revisions.id,
-    })
-    .from(drafts)
-    .leftJoin(revisions, and(eq(revisions.id, baseRevisionId), eq(revisions.draftId, drafts.id)))
-    .where(eq(drafts.id, draftId));
-
-  if (row === undefined) {
-    return "DRAFT_NOT_FOUND";
-  }
-  if (row.baseRevisionId === null) {
-    return "REVISION_NOT_FOUND";
-  }
-  if (row.sendingStatus !== "NOT_SENT") {
-    return "DRAFT_APPROVED";
-  }
-  if (row.latestRevisionId === baseRevisionId) {
-    throw new Error(
-      `The revise of Draft ${draftId} changed nothing, although its base ${baseRevisionId} is the latest Revision of a NOT_SENT Draft.`,
-    );
-  }
-  return "REVISION_SUPERSEDED";
+  const refusedMutation: RefusedMutation = { draftId, revisionId: baseRevisionId };
+  return explainReviseRefusal(
+    refusedMutation,
+    await readRefusalSnapshot(database, refusedMutation),
+  );
 }

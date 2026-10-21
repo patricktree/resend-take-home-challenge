@@ -1,12 +1,13 @@
 import { Temporal } from "temporal-polyfill";
 import { test, vi } from "vitest";
 
-import { approveRevision } from "../src/approve-revision.ts";
-import { createDraft } from "../src/create-draft.ts";
-import { drizzleForSession, type DraftsStorage } from "../src/database.ts";
-import { consumeSendBatch } from "../src/send-consumer.ts";
-import { SEND_QUEUE_NAME, type SendQueueMessage } from "../src/send-queue.ts";
-import { submitRevision } from "../src/submit-revision.ts";
+import type { SendQueueMessage } from "../src/domain/send-queue-message.ts";
+import { approveRevision } from "../src/review/approve-revision.ts";
+import { createDraft } from "../src/review/create-draft.ts";
+import { submitRevision } from "../src/review/submit-revision.ts";
+import { consumeSendBatch } from "../src/send/send-consumer.ts";
+import { drizzleForSession, type DraftsStorage } from "../src/storage/database.ts";
+import { SEND_QUEUE_NAME } from "../src/worker/queue-names.ts";
 import { createRecordingSendQueue } from "./recording-send-queue.ts";
 import { useBindings, type TestBindings } from "./use-bindings.ts";
 
@@ -46,10 +47,9 @@ test("a deadline that passes while the body is read from R2 ends the Send FAILED
   const outcomes: string[] = [];
 
   await consumeSendBatch(createMessageBatch({ ...sendIntent, deadline }, outcomes), {
-    DB: bindings.DB,
-    REVISION_BODIES: slowRevisionBodies,
-    RESEND_BASE_URL: "http://127.0.0.1:9",
-    RESEND_API_KEY: "re_dummy",
+    database: drizzleForSession(bindings.DB, "first-primary").database,
+    revisionBodies: slowRevisionBodies,
+    resend: { baseUrl: "http://127.0.0.1:9", apiKey: "re_dummy" },
   });
 
   expect(fetchSpy).not.toHaveBeenCalled();

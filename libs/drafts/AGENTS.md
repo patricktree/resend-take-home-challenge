@@ -1,5 +1,18 @@
 # Drafts
 
+## Layout
+
+`src/index.ts` is the package's interface; `src/root-cause.ts` serves every log line, and `src/assert-unreachable.ts` every exhaustive switch. The folders:
+
+- `domain/`: the Draft types, status values and `OutgoingEmail` (`draft.ts`), the ids, the 23 h Send deadline, the Send Queue message and its schema (`send-queue-message.ts`), and the refusal precedence of revise, Submission and verdict (`refusals.ts`) as pure functions. It imports nothing else from the package but `assert-unreachable.ts`.
+- `storage/`: the D1 and R2 adapter: the Drizzle schema, `drizzleForSession()`, the row-to-domain mapping (`draft-rows.ts`), the one read behind every refusal (`refusal-snapshot.ts`), the R2 bodies, and the Send outbox (`send-outbox.ts`), which owns every write and query of the outbox columns after the Approval batch and builds Send Queue messages from rows. Nothing in `storage/` imports `send/`, which imports `storage/`.
+- `review/`: the use cases of the review flow. Each mutation keeps its guarded batch inline, with Drizzle and no repository port: the guard and the statement order are the use case.
+- `send/`: the Send pipeline: the Send Queue port and its batch limits (`send-queue.ts`), the Queue and DLQ consumers, the Send reconciler and the retry delay.
+- `resend/`: the Resend adapter: the `POST /emails` call with `Retry-After` parsing, and the classification of its result.
+- `worker/`: the Cloudflare glue: the env binding types, the queue names that must match `wrangler.jsonc`, and the `queue` and `scheduled` handlers, which build the consumers' and the reconciler's dependencies from the bindings. Only `index.ts` imports it.
+
+Tests stay flat in `test/`.
+
 ## Tests
 
 - Race tests that need a deterministic interleaving live in this suite (`test/`): `useBindings()` gives each test fresh D1 and R2 bindings in Wrangler's local test runtime, and `createHoldingD1Database()` wraps `DB` so a test holds a chosen statement or batch (`holdNext()`, then `release()`) while another use case commits. A held call also reveals its SQL, which `test/list-drafts.test.ts` and `test/send-reconciler.test.ts` run through `EXPLAIN QUERY PLAN` to pin their index use.
@@ -8,9 +21,9 @@
 
 ## Queries
 
-- A query meant to use a partial index must spell out the index's `WHERE` terms with literal values (see `IS_QUEUED` in `src/send-reconciler.ts`): SQLite does not match a bound parameter, such as the one `eq()` binds, against a partial index's `WHERE`.
-- Inside a D1 `batch()`, Drizzle maps a joined select by column name, so columns both tables have (such as `id`) overwrite each other; batch single-table selects instead (see `src/get-draft.ts`).
+- A query meant to use a partial index must spell out the index's `WHERE` terms with literal values (see `IS_QUEUED` in `src/storage/send-outbox.ts`): SQLite does not match a bound parameter, such as the one `eq()` binds, against a partial index's `WHERE`.
+- Inside a D1 `batch()`, Drizzle maps a joined select by column name, so columns both tables have (such as `id`) overwrite each other; batch single-table selects instead (see `src/review/get-draft.ts`).
 
 ## Migrations
 
-D1 migrations live in `migrations/`; every Wrangler config points `migrations_dir` there. They are generated from the Drizzle schema in `src/schema.ts`: after changing it, run `pnpm --filter '@resend-challenge/drafts' migrations:generate --name <change>` and commit the new SQL file with the updated `meta/` files; never edit a generated migration.
+D1 migrations live in `migrations/`; every Wrangler config points `migrations_dir` there. They are generated from the Drizzle schema in `src/storage/schema.ts`: after changing it, run `pnpm --filter '@resend-challenge/drafts' migrations:generate --name <change>` and commit the new SQL file with the updated `meta/` files; never edit a generated migration.

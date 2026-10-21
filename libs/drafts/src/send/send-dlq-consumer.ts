@@ -5,12 +5,12 @@
  * backstop would resolve these Sends anyway; the DLQ consumer is the fast path.
  */
 
+import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { z } from "zod";
 
-import { drizzleForSession } from "./database.ts";
-import { findRootCauseMessage } from "./root-cause.ts";
-import { recordFailed } from "./send-outcomes.ts";
-import { sendQueueMessageSchema } from "./send-queue.ts";
+import { sendQueueMessageSchema } from "../domain/send-queue-message.ts";
+import { findRootCauseMessage } from "../root-cause.ts";
+import { recordFailed } from "../storage/send-outbox.ts";
 
 /**
  * Consumes one batch of the Send DLQ: records `FAILED` / `OUTCOME_UNKNOWN` for each message's Send,
@@ -19,10 +19,8 @@ import { sendQueueMessageSchema } from "./send-queue.ts";
  */
 export async function consumeSendDlqBatch(
   batch: MessageBatch,
-  env: { DB: D1Database },
+  { database }: { database: DrizzleD1Database },
 ): Promise<void> {
-  const { database } = drizzleForSession(env.DB, "first-primary");
-
   for (const message of batch.messages) {
     const parsedMessage = sendQueueMessageSchema.safeParse(message.body);
     if (!parsedMessage.success) {

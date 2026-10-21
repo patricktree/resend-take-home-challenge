@@ -1,11 +1,11 @@
 import { and, eq } from "drizzle-orm";
 
-import type { DraftsStorage } from "./database.ts";
-import type { Revision } from "./draft.ts";
-import { toRevisionSummary } from "./draft.ts";
-import { isDraftId, isRevisionId } from "./ids.ts";
-import { getRevisionBody } from "./revision-bodies.ts";
-import { drafts, revisions } from "./schema.ts";
+import type { Revision } from "../domain/draft.ts";
+import { isDraftId, isRevisionId } from "../domain/ids.ts";
+import type { DraftsStorage } from "../storage/database.ts";
+import { toRevisionSummary } from "../storage/draft-rows.ts";
+import { getRevisionBody } from "../storage/revision-bodies.ts";
+import { drafts, revisions } from "../storage/schema.ts";
 
 export type GetRevisionResult =
   | { outcome: "FOUND"; revision: Revision }

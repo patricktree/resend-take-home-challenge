@@ -1,19 +1,25 @@
 import { and, eq } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 
-import type { DraftsStorage } from "./database.ts";
-import type { DraftSummary } from "./draft.ts";
-import { toDraftSummary } from "./draft.ts";
-import { isDraftId, isRevisionId } from "./ids.ts";
-import { drafts, revisions } from "./schema.ts";
-import { explainVerdictRefusal, isLatestAndPending, type VerdictRefusal } from "./verdicts.ts";
+import type { DraftSummary } from "../domain/draft.ts";
+import { isDraftId, isRevisionId } from "../domain/ids.ts";
+import {
+  explainVerdictRefusal,
+  type RefusedMutation,
+  type VerdictRefusal,
+} from "../domain/refusals.ts";
+import type { DraftsStorage } from "../storage/database.ts";
+import { toDraftSummary } from "../storage/draft-rows.ts";
+import { readRefusalSnapshot } from "../storage/refusal-snapshot.ts";
+import { drafts, revisions } from "../storage/schema.ts";
+import { isLatestAndPending } from "./verdict-guard.ts";
+
+export type RejectRevisionResult = { outcome: "REJECTED"; draft: DraftSummary } | VerdictRefusal;
 
 type RejectRevisionInput = {
   /** Optional; trimmed, and an empty or whitespace-only reason counts as absent. */
   reason?: string | undefined;
 };
-
-export type RejectRevisionResult = { outcome: "REJECTED"; draft: DraftSummary } | VerdictRefusal;
 
 /**
  * Rejects one Revision, the Draft's latest and `PENDING`, optionally with a reason. The Draft stays
@@ -40,25 +46,29 @@ export async function rejectRevision(
   const now = Temporal.Now.instant().epochMilliseconds;
   const rejectionReason = reason?.trim() || null;
 
-  const guard = isLatestAndPending(database, draftId, revisionId);
+  const isRevisionLatestAndPending = isLatestAndPending(database, draftId, revisionId);
   const [updatedDrafts, updatedRevisions] = await database.batch([
     database
       .update(drafts)
       .set({ lastActionAt: now })
-      .where(and(eq(drafts.id, draftId), guard))
+      .where(and(eq(drafts.id, draftId), isRevisionLatestAndPending))
       .returning(),
     // Leaving `PENDING` makes the guard false, so this statement runs last.
     database
       .update(revisions)
       .set({ reviewStatus: "REJECTED", decidedAt: now, rejectionReason })
-      .where(and(eq(revisions.id, revisionId), guard))
+      .where(and(eq(revisions.id, revisionId), isRevisionLatestAndPending))
       .returning(),
   ]);
 
   const [draftRow] = updatedDrafts;
   const [revisionRow] = updatedRevisions;
   if (draftRow === undefined || revisionRow === undefined) {
-    return explainVerdictRefusal(database, draftId, revisionId);
+    const refusedMutation: RefusedMutation = { draftId, revisionId };
+    return explainVerdictRefusal(
+      refusedMutation,
+      await readRefusalSnapshot(database, refusedMutation),
+    );
   }
 
   // The rejected Revision is the latest one, so its verdict is the Draft's last verdict.

@@ -1,16 +1,24 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
+import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { Temporal } from "temporal-polyfill";
 
-import type { DraftsStorage } from "./database.ts";
-import type { DraftSummary } from "./draft.ts";
-import { toDraftSummary } from "./draft.ts";
-import { isDraftId, isRevisionId, type DraftId } from "./ids.ts";
-import { revisionBodyKey } from "./revision-bodies.ts";
-import { findRootCauseMessage } from "./root-cause.ts";
-import { drafts, revisions } from "./schema.ts";
-import { computeSendDeadline } from "./send-deadline.ts";
-import { toSendQueueMessage, type SendQueue } from "./send-queue.ts";
-import { explainVerdictRefusal, isLatestAndPending, type VerdictRefusal } from "./verdicts.ts";
+import type { DraftSummary } from "../domain/draft.ts";
+import { isDraftId, isRevisionId, type DraftId } from "../domain/ids.ts";
+import {
+  explainVerdictRefusal,
+  type RefusedMutation,
+  type VerdictRefusal,
+} from "../domain/refusals.ts";
+import { computeSendDeadline } from "../domain/send-deadline.ts";
+import { findRootCauseMessage } from "../root-cause.ts";
+import type { SendQueue } from "../send/send-queue.ts";
+import type { DraftsStorage } from "../storage/database.ts";
+import { toDraftSummary } from "../storage/draft-rows.ts";
+import { readRefusalSnapshot } from "../storage/refusal-snapshot.ts";
+import { revisionBodyKey } from "../storage/revision-bodies.ts";
+import { drafts, revisions } from "../storage/schema.ts";
+import { recordHandOff, toSendQueueMessage } from "../storage/send-outbox.ts";
+import { isLatestAndPending } from "./verdict-guard.ts";
 
 /** Where an Approval hands its Send intent, and the sender it freezes into the outgoing email. */
 export type SendHandOff = {
@@ -66,7 +74,7 @@ export async function approveRevision(
     FROM ${revisions}
     WHERE ${revisions.id} = ${revisionId}
   )`;
-  const guard = isLatestAndPending(database, draftId, revisionId);
+  const isRevisionLatestAndPending = isLatestAndPending(database, draftId, revisionId);
   const [updatedDrafts, updatedRevisions] = await database.batch([
     database
       .update(drafts)
@@ -79,20 +87,24 @@ export async function approveRevision(
         deadline: computeSendDeadline(approvedAt),
         lastActionAt: now,
       })
-      .where(and(eq(drafts.id, draftId), guard))
+      .where(and(eq(drafts.id, draftId), isRevisionLatestAndPending))
       .returning(),
     // Leaving `PENDING` makes the guard false, so this statement runs last.
     database
       .update(revisions)
       .set({ reviewStatus: "APPROVED", decidedAt: now })
-      .where(and(eq(revisions.id, revisionId), guard))
+      .where(and(eq(revisions.id, revisionId), isRevisionLatestAndPending))
       .returning(),
   ]);
 
   const [draftRow] = updatedDrafts;
   const [revisionRow] = updatedRevisions;
   if (draftRow === undefined || revisionRow === undefined) {
-    return explainVerdictRefusal(database, draftId, revisionId);
+    const refusedMutation: RefusedMutation = { draftId, revisionId };
+    return explainVerdictRefusal(
+      refusedMutation,
+      await readRefusalSnapshot(database, refusedMutation),
+    );
   }
 
   await handOffSend(database, sendQueue, draftRow);
@@ -107,7 +119,7 @@ export async function approveRevision(
  * Approval has committed and the reconciler re-enqueues every Send without `enqueued_at`.
  */
 async function handOffSend(
-  database: DraftsStorage["database"],
+  database: DrizzleD1Database,
   sendQueue: SendQueue,
   draftRow: typeof drafts.$inferSelect,
 ): Promise<void> {
@@ -125,12 +137,7 @@ async function handOffSend(
   }
 
   try {
-    await database
-      .update(drafts)
-      .set({ enqueuedAt: Temporal.Now.instant().epochMilliseconds })
-      .where(
-        and(eq(drafts.id, draftId), eq(drafts.sendingStatus, "QUEUED"), isNull(drafts.enqueuedAt)),
-      );
+    await recordHandOff(database, [draftId]);
   } catch (error) {
     console.error(
       `Recording the Send Queue hand-off of Draft ${draftId} failed; the Send reconciler re-enqueues it, and the idempotency key absorbs the duplicate. ${findRootCauseMessage(error)}`,

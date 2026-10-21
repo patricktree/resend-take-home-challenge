@@ -5,12 +5,14 @@
  */
 
 import { and, asc, desc, eq, inArray, isNotNull, sql, type SQL } from "drizzle-orm";
+import type { DrizzleD1Database } from "drizzle-orm/d1";
 import buffer from "node:buffer";
 
-import type { DraftsStorage } from "./database.ts";
-import { toDraftSummary, type DraftSummary } from "./draft.ts";
-import { isDraftId, type DraftId } from "./ids.ts";
-import { drafts, revisions, type ReviewStatus, type SendingStatus } from "./schema.ts";
+import type { DraftSummary, ReviewStatus, SendingStatus } from "../domain/draft.ts";
+import { isDraftId, type DraftId } from "../domain/ids.ts";
+import type { DraftsStorage } from "../storage/database.ts";
+import { toDraftSummary } from "../storage/draft-rows.ts";
+import { drafts, revisions } from "../storage/schema.ts";
 
 /** A Draft's review status is its latest Revision's, which is never Superseded. */
 type DraftReviewStatus = Exclude<ReviewStatus, "SUPERSEDED">;
@@ -133,7 +135,7 @@ export async function listDrafts(
  * row, which keeps each item consistent.
  */
 async function readLastVerdictRows(
-  database: DraftsStorage["database"],
+  database: DrizzleD1Database,
   latestRevisionRows: (typeof revisions.$inferSelect)[],
 ): Promise<Map<DraftId, typeof revisions.$inferSelect>> {
   const lastVerdictRows = new Map<DraftId, typeof revisions.$inferSelect>();

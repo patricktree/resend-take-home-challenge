@@ -174,7 +174,7 @@ The repository follows cup's layout (`~/workspace/cup`), with package names unde
 | `qa/e2e`                 | Playwright e2e tests                                                                                                                                                                                     |
 | `terraform/`             | Infrastructure                                                                                                                                                                                           |
 
-Storage and the Send pipeline are one package because the outbox columns live on the Draft row: the Draft's invariants and the Send's conditional writes belong to one module.
+Storage and the Send pipeline are one package because the outbox columns live on the Draft row: the Draft's invariants and the Send's conditional writes belong to one module. Inside `libs/drafts`, `src/` has layer folders for the domain types and pure rules (`domain/`) and for the D1 and R2 adapter (`storage/`, with the Send outbox), feature folders for the use cases of the review flow (`review/`) and of the Send pipeline (`send/`), and adapter folders for Resend (`resend/`) and the Worker glue (`worker/`).
 
 ### Repository and tooling
 

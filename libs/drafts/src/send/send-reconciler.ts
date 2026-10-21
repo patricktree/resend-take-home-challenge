@@ -11,15 +11,18 @@
  * are absorbed by the idempotency key, under which every attempt sends the same frozen body.
  */
 
-import { and, asc, eq, isNull, lt, sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
-import assert from "node:assert/strict";
 import { Temporal } from "temporal-polyfill";
 
-import { findRootCauseMessage } from "./root-cause.ts";
-import { drafts } from "./schema.ts";
-import { recordFailed } from "./send-outcomes.ts";
-import { toSendQueueMessage, type SendQueue, type SendQueueMessage } from "./send-queue.ts";
+import type { SendQueueMessage } from "../domain/send-queue-message.ts";
+import { findRootCauseMessage } from "../root-cause.ts";
+import {
+  findExpiredSends,
+  findLostHandOffs,
+  recordFailed,
+  recordHandOff,
+} from "../storage/send-outbox.ts";
+import { QUEUE_BATCH_LIMITS, type SendQueue } from "./send-queue.ts";
 
 /** Where the Send reconciler reads and records Sends, and where it re-enqueues them. */
 export type SendReconcilerDependencies = {
@@ -45,26 +48,6 @@ const LOST_HAND_OFF_AFTER_MILLISECONDS = 60 * 1000;
 const BACKSTOP_AFTER_DEADLINE_MILLISECONDS = 60 * 60 * 1000;
 
 /**
- * Cloudflare Queues' limits of one `sendBatch()`
- * (https://developers.cloudflare.com/queues/platform/limits/): 100 messages and 256 KB in total,
- * with KB read as 1000 bytes, the stricter reading. Each message counts its body plus up to about
- * 100 bytes of internal metadata, reserved here. A message of the largest Draft data is about 17
- * KB, so 100 of them need several calls.
- */
-const QUEUE_BATCH_LIMITS = {
-  MESSAGES: 100,
-  BYTES: 256 * 1000,
-  METADATA_BYTES_PER_MESSAGE: 100,
-} as const;
-
-/**
- * `sending_status = 'QUEUED'` with the value inlined: SQLite uses a partial index only when the
- * query's terms imply the index's `WHERE` as written, and `eq()` would bind the value as a
- * parameter, which implies nothing.
- */
-const IS_QUEUED = sql`${drafts.sendingStatus} = 'QUEUED'`;
-
-/**
  * Runs one tick of the Send reconciler: both jobs, one after the other. The backstop runs even when
  * re-enqueueing failed, since it does not touch the Queue.
  */
@@ -88,18 +71,12 @@ async function reenqueueLostHandOffs(
 ): Promise<void> {
   const approvedBefore =
     Temporal.Now.instant().epochMilliseconds - LOST_HAND_OFF_AFTER_MILLISECONDS;
-  // The conditions and the order match the partial index `drafts_queued_not_enqueued_approved_at_index`.
-  const lostHandOffs = await database
-    .select()
-    .from(drafts)
-    .where(and(IS_QUEUED, isNull(drafts.enqueuedAt), lt(drafts.approvedAt, approvedBefore)))
-    .orderBy(asc(drafts.approvedAt))
-    .limit(ROWS_PER_JOB_AND_TICK);
+  const lostHandOffs = await findLostHandOffs(database, approvedBefore, ROWS_PER_JOB_AND_TICK);
   if (lostHandOffs.length === 0) {
     return;
   }
 
-  const chunks = chunkWithinQueueBatchLimits(lostHandOffs.map(toSendQueueMessage));
+  const chunks = chunkWithinQueueBatchLimits(lostHandOffs);
   for (const [index, chunk] of chunks.entries()) {
     try {
       // `json`, so that the size the limit counts is the size `measureBodyBytes()` measured.
@@ -112,30 +89,11 @@ async function reenqueueLostHandOffs(
       return;
     }
 
-    await recordHandOffs(database, chunk);
+    await recordHandOff(
+      database,
+      chunk.map(({ draftId }) => draftId),
+    );
   }
-}
-
-/**
- * Records the hand-off of re-enqueued Sends. One statement per Draft: D1 binds at most 100
- * parameters per statement. Each one is conditional like the Approval's own, in case a Send ended
- * in the meantime.
- */
-async function recordHandOffs(
-  database: DrizzleD1Database,
-  messages: SendQueueMessage[],
-): Promise<void> {
-  const enqueuedAt = Temporal.Now.instant().epochMilliseconds;
-  const [firstUpdate, ...otherUpdates] = messages.map(({ draftId }) =>
-    database
-      .update(drafts)
-      .set({ enqueuedAt })
-      .where(
-        and(eq(drafts.id, draftId), eq(drafts.sendingStatus, "QUEUED"), isNull(drafts.enqueuedAt)),
-      ),
-  );
-  assert(firstUpdate !== undefined, "A re-enqueued chunk has at least one Send.");
-  await database.batch([firstUpdate, ...otherUpdates]);
 }
 
 /**
@@ -179,15 +137,9 @@ function measureBodyBytes(message: SendQueueMessage): number {
 async function resolveExpiredSends(database: DrizzleD1Database): Promise<void> {
   const deadlineBefore =
     Temporal.Now.instant().epochMilliseconds - BACKSTOP_AFTER_DEADLINE_MILLISECONDS;
-  // The conditions and the order match the partial index `drafts_queued_deadline_index`.
-  const expiredSends = await database
-    .select({ id: drafts.id })
-    .from(drafts)
-    .where(and(IS_QUEUED, lt(drafts.deadline, deadlineBefore)))
-    .orderBy(asc(drafts.deadline))
-    .limit(ROWS_PER_JOB_AND_TICK);
+  const expiredSends = await findExpiredSends(database, deadlineBefore, ROWS_PER_JOB_AND_TICK);
 
-  for (const { id } of expiredSends) {
-    await recordFailed(database, id, { reason: "OUTCOME_UNKNOWN" });
+  for (const draftId of expiredSends) {
+    await recordFailed(database, draftId, { reason: "OUTCOME_UNKNOWN" });
   }
 }

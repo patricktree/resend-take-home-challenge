@@ -1,11 +1,11 @@
 import { Temporal } from "temporal-polyfill";
 
-import type { DraftsStorage } from "./database.ts";
-import type { DraftData, DraftSummary } from "./draft.ts";
-import { toDraftSummary } from "./draft.ts";
-import { createDraftId, createRevisionId } from "./ids.ts";
-import { putRevisionBody } from "./revision-bodies.ts";
-import { drafts, revisions } from "./schema.ts";
+import type { DraftData, DraftSummary } from "../domain/draft.ts";
+import { createDraftId, createRevisionId } from "../domain/ids.ts";
+import type { DraftsStorage } from "../storage/database.ts";
+import { toDraftSummary } from "../storage/draft-rows.ts";
+import { putRevisionBody } from "../storage/revision-bodies.ts";
+import { drafts, revisions } from "../storage/schema.ts";
 
 /**
  * Creates a Draft with its first Revision, `UNSUBMITTED`. Writes the body to R2 first, then inserts

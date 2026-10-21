@@ -1,11 +1,11 @@
 import { Temporal } from "temporal-polyfill";
 import { test } from "vitest";
 
-import { createDraft } from "../src/create-draft.ts";
-import { drizzleForSession, type DraftsStorage } from "../src/database.ts";
-import { rejectRevision } from "../src/reject-revision.ts";
-import { reviseDraft } from "../src/revise-draft.ts";
-import { submitRevision } from "../src/submit-revision.ts";
+import { createDraft } from "../src/review/create-draft.ts";
+import { rejectRevision } from "../src/review/reject-revision.ts";
+import { reviseDraft } from "../src/review/revise-draft.ts";
+import { submitRevision } from "../src/review/submit-revision.ts";
+import { drizzleForSession, type DraftsStorage } from "../src/storage/database.ts";
 import { createHoldingD1Database } from "./holding-d1-database.ts";
 import { useBindings, type TestBindings } from "./use-bindings.ts";
 

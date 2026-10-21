@@ -6,13 +6,13 @@ import { isDraftId, isRevisionId, type DraftId } from "../domain/ids.ts";
 import { explainVerdictRefusal, type VerdictRefusal } from "../domain/refusals.ts";
 import { computeSendDeadline } from "../domain/send-deadline.ts";
 import { findRootCauseMessage } from "../root-cause.ts";
-import { toSendQueueMessage, type SendQueue } from "../send/send-queue.ts";
+import type { SendQueue } from "../send/send-queue.ts";
 import type { DraftsStorage } from "../storage/database.ts";
 import { toDraftSummary } from "../storage/draft-rows.ts";
 import { readRefusalSnapshot } from "../storage/refusal-snapshot.ts";
 import { revisionBodyKey } from "../storage/revision-bodies.ts";
 import { drafts, revisions } from "../storage/schema.ts";
-import { recordHandOff } from "../storage/send-outbox.ts";
+import { recordHandOff, toSendQueueMessage } from "../storage/send-outbox.ts";
 import { isLatestAndPending } from "./verdict-guard.ts";
 
 /** Where an Approval hands its Send intent, and the sender it freezes into the outgoing email. */

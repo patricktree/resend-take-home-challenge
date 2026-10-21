@@ -21,12 +21,7 @@ import {
   recordFailed,
   recordHandOff,
 } from "../storage/send-outbox.ts";
-import {
-  QUEUE_BATCH_LIMITS,
-  toSendQueueMessage,
-  type SendQueue,
-  type SendQueueMessage,
-} from "./send-queue.ts";
+import { QUEUE_BATCH_LIMITS, type SendQueue, type SendQueueMessage } from "./send-queue.ts";
 
 /** Where the Send reconciler reads and records Sends, and where it re-enqueues them. */
 export type SendReconcilerDependencies = {
@@ -80,7 +75,7 @@ async function reenqueueLostHandOffs(
     return;
   }
 
-  const chunks = chunkWithinQueueBatchLimits(lostHandOffs.map(toSendQueueMessage));
+  const chunks = chunkWithinQueueBatchLimits(lostHandOffs);
   for (const [index, chunk] of chunks.entries()) {
     try {
       // `json`, so that the size the limit counts is the size `measureBodyBytes()` measured.

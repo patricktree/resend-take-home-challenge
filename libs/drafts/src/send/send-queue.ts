@@ -7,7 +7,6 @@ import { z } from "zod";
 
 import type { OutgoingEmail } from "../domain/draft.ts";
 import { isDraftId, type DraftId } from "../domain/ids.ts";
-import type { drafts } from "../storage/schema.ts";
 
 export type SendQueueMessage = z.infer<typeof sendQueueMessageSchema>;
 
@@ -61,16 +60,3 @@ export const sendQueueMessageSchema = z.strictObject({
   /** No Resend call may be made after it: `approved_at + 23 h`, in milliseconds since the epoch. */
   deadline: z.int().positive(),
 });
-
-/**
- * Builds the Send Queue message of an approved Draft from its frozen outbox columns. Throws when
- * the outbox is incomplete or malformed, which the `CHECK` constraints of `drafts` rule out.
- */
-export function toSendQueueMessage(draftRow: typeof drafts.$inferSelect): SendQueueMessage {
-  return sendQueueMessageSchema.parse({
-    draftId: draftRow.id,
-    idempotencyKey: draftRow.idempotencyKey,
-    outgoingEmail: draftRow.outgoingEmail,
-    deadline: draftRow.deadline,
-  });
-}

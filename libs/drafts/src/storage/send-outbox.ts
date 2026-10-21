@@ -14,6 +14,7 @@ import assert from "node:assert/strict";
 import { Temporal } from "temporal-polyfill";
 
 import type { DraftId } from "../domain/ids.ts";
+import { sendQueueMessageSchema, type SendQueueMessage } from "../send/send-queue.ts";
 import { drafts } from "./schema.ts";
 
 export type SendFailure =
@@ -118,21 +119,22 @@ export async function recordFailed(
 }
 
 /**
- * The approved Sends whose hand-off was never recorded, approved before `approvedBefore`, oldest
- * first, at most `limit`. The conditions and the order match the partial index
- * `drafts_queued_not_enqueued_approved_at_index`.
+ * The Send intents of the approved Sends whose hand-off was never recorded, approved before
+ * `approvedBefore`, oldest first, at most `limit`. The conditions and the order match the partial
+ * index `drafts_queued_not_enqueued_approved_at_index`.
  */
 export async function findLostHandOffs(
   database: DrizzleD1Database,
   approvedBefore: number,
   limit: number,
-): Promise<Array<typeof drafts.$inferSelect>> {
-  return database
+): Promise<SendQueueMessage[]> {
+  const rows = await database
     .select()
     .from(drafts)
     .where(and(IS_QUEUED, isNull(drafts.enqueuedAt), lt(drafts.approvedAt, approvedBefore)))
     .orderBy(asc(drafts.approvedAt))
     .limit(limit);
+  return rows.map(toSendQueueMessage);
 }
 
 /**
@@ -152,4 +154,17 @@ export async function findExpiredSends(
     .orderBy(asc(drafts.deadline))
     .limit(limit);
   return rows.map(({ id }) => id);
+}
+
+/**
+ * Builds the Send Queue message of an approved Draft from its frozen outbox columns. Throws when
+ * the outbox is incomplete or malformed, which the `CHECK` constraints of `drafts` rule out.
+ */
+export function toSendQueueMessage(draftRow: typeof drafts.$inferSelect): SendQueueMessage {
+  return sendQueueMessageSchema.parse({
+    draftId: draftRow.id,
+    idempotencyKey: draftRow.idempotencyKey,
+    outgoingEmail: draftRow.outgoingEmail,
+    deadline: draftRow.deadline,
+  });
 }

@@ -5,6 +5,7 @@
 
 import { and, desc, eq, isNotNull } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
+import type { RunnableQuery } from "drizzle-orm/runnable-query";
 import { Temporal } from "temporal-polyfill";
 
 import type { DraftSummary, LastVerdict, RevisionSummary, Sending } from "../domain/draft.ts";
@@ -34,7 +35,10 @@ export function toDraftSummary(
  * Selects the row of the Draft's last verdict: its Revision with the highest number that has a
  * verdict. Selects nothing while there is none.
  */
-export function selectLastVerdictRow(database: DrizzleD1Database, draftId: DraftId) {
+export function selectLastVerdictRow(
+  database: DrizzleD1Database,
+  draftId: DraftId,
+): RunnableQuery<Array<typeof revisions.$inferSelect>, "sqlite"> {
   return database
     .select()
     .from(revisions)

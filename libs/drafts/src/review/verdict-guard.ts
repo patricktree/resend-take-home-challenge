@@ -4,7 +4,7 @@
  * refused is `explainVerdictRefusal()` in `domain/refusals.ts`.
  */
 
-import { and, eq, exists } from "drizzle-orm";
+import { and, eq, exists, type SQL } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 
 import type { DraftId, RevisionId } from "../domain/ids.ts";
@@ -18,7 +18,7 @@ export function isLatestAndPending(
   database: DrizzleD1Database,
   draftId: DraftId,
   revisionId: RevisionId,
-) {
+): SQL {
   return exists(
     database
       .select({ id: drafts.id })

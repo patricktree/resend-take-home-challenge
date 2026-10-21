@@ -10,8 +10,6 @@ import type { DraftId, RevisionId } from "./ids.ts";
 
 export type SendingStatus = (typeof SENDING_STATUSES)[number];
 
-export type FailureReason = (typeof FAILURE_REASONS)[number];
-
 export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
 
 export const SENDING_STATUSES = ["NOT_SENT", "QUEUED", "SENT", "FAILED"] as const;
@@ -98,7 +96,7 @@ export type DraftSummary = {
 export type Draft = Omit<DraftSummary, "latestRevision"> & { latestRevision: Revision };
 
 type SendingFailure = {
-  reason: FailureReason;
+  reason: (typeof FAILURE_REASONS)[number];
   resendErrorName?: string;
   resendErrorMessage?: string;
 };

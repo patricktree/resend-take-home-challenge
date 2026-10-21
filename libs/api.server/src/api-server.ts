@@ -4,6 +4,7 @@ import { HTTPException } from "hono/http-exception";
 import crypto from "node:crypto";
 
 import { createApiContractApp, ERROR_CODE, REVIEWER_ONLY_ROUTES } from "@draft-approval/api.routes";
+import { findRootCause } from "@draft-approval/drafts";
 
 import type { ApiServerHonoEnvironment } from "#src/api-server-environment.ts";
 import { authenticate, requireReviewer } from "#src/authentication.ts";
@@ -40,6 +41,7 @@ export function createApiServer(): Hono<ApiServerHonoEnvironment> {
       );
     }
 
+    // Only the root cause: wrapping errors, such as Drizzle's, carry SQL parameters.
     console.error(findRootCause(error));
     return jsonError(context, 500, ERROR_CODE.INTERNAL_ERROR, "An internal error occurred.");
   });
@@ -98,17 +100,4 @@ function describeUnreadableRequestBody(error: Error): string | undefined {
       return undefined;
     }
   }
-}
-
-/**
- * Error reporting logs only the innermost cause, the error that actually went wrong: wrapping
- * errors add no diagnosis, and some (such as Drizzle's) carry SQL parameters, which must not be
- * logged.
- */
-function findRootCause(error: Error): unknown {
-  let cause: unknown = error;
-  while (cause instanceof Error && cause.cause !== undefined) {
-    cause = cause.cause;
-  }
-  return cause;
 }

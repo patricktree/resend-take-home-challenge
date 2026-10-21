@@ -16,13 +16,6 @@ import { jsonError } from "#src/http-errors.ts";
 
 export type Role = (typeof ROLE)[keyof typeof ROLE];
 
-type TokenConfiguration = {
-  agentToken: string;
-  /** Absent only in local development. */
-  reviewerToken: string | undefined;
-  acceptsLocalTokens: boolean;
-};
-
 export const ROLE = {
   AGENT: "AGENT",
   REVIEWER: "REVIEWER",
@@ -120,6 +113,23 @@ export function resolveRole(
   return resolvedRole;
 }
 
+/** Extracts the token of an `Authorization: Bearer <token>` header; the scheme is case-insensitive. */
+export function parseBearerToken(authorizationHeader: string | undefined): string | undefined {
+  if (authorizationHeader === undefined) {
+    return undefined;
+  }
+
+  const match = /^Bearer +(\S+)$/i.exec(authorizationHeader);
+  return match?.[1];
+}
+
+type TokenConfiguration = {
+  agentToken: string;
+  /** Absent only in local development. */
+  reviewerToken: string | undefined;
+  acceptsLocalTokens: boolean;
+};
+
 /**
  * Reads the token configuration for one request from the Worker's environment.
  *
@@ -149,16 +159,6 @@ function readTokenConfiguration(
     reviewerToken,
     acceptsLocalTokens: isLocalDevelopment && LOCAL_HOSTS.has(new URL(requestUrl).hostname),
   };
-}
-
-/** Extracts the token of an `Authorization: Bearer <token>` header; the scheme is case-insensitive. */
-export function parseBearerToken(authorizationHeader: string | undefined): string | undefined {
-  if (authorizationHeader === undefined) {
-    return undefined;
-  }
-
-  const match = /^Bearer +(\S+)$/i.exec(authorizationHeader);
-  return match?.[1];
 }
 
 function computeDigest(token: string): Buffer {

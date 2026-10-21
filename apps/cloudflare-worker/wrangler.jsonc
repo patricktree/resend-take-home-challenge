@@ -28,8 +28,8 @@
     {
       "binding": "DB",
       "database_name": "resend-challenge",
-      // PLACEHOLDER until the first deploy: replace with `terraform -chdir=terraform output -raw d1_database_id`.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      // From `terraform -chdir=terraform output -raw d1_database_id`.
+      "database_id": "564f0979-34b2-4aa5-9a7c-0b99671807b0",
       "migrations_dir": "../../libs/email-drafts/migrations",
     },
   ],

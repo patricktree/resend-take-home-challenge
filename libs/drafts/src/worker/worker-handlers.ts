@@ -1,15 +1,14 @@
-import { consumeSendBatch, type SendPipelineEnvironment } from "../send/send-consumer.ts";
+/*
+ * The Worker's `queue` and `scheduled` handlers: they build what the Send pipeline needs from the
+ * bindings, each on a fresh D1 session for writes, and call into `send/`.
+ */
+
+import { consumeSendBatch } from "../send/send-consumer.ts";
 import { consumeSendDlqBatch } from "../send/send-dlq-consumer.ts";
-import { SEND_DLQ_NAME, SEND_QUEUE_NAME, type SendQueue } from "../send/send-queue.ts";
 import { reconcileSends } from "../send/send-reconciler.ts";
 import { drizzleForSession } from "../storage/database.ts";
-
-/** The Worker bindings the Send reconciler reads. */
-export type SendReconcilerEnvironment = {
-  DB: D1Database;
-  /** The Send Queue's producer binding; the reconciler re-enqueues lost hand-offs to it. */
-  SEND_QUEUE: SendQueue;
-};
+import type { SendPipelineEnvironment, SendReconcilerEnvironment } from "./environment.ts";
+import { SEND_DLQ_NAME, SEND_QUEUE_NAME } from "./queue-names.ts";
 
 /** Handles a batch from the Send Queue or the Send DLQ, dispatching on `batch.queue`. */
 export async function handleQueueBatch(
@@ -17,11 +16,17 @@ export async function handleQueueBatch(
   env: SendPipelineEnvironment,
 ): Promise<void> {
   if (batch.queue === SEND_QUEUE_NAME) {
-    await consumeSendBatch(batch, env);
+    await consumeSendBatch(batch, {
+      database: drizzleForSession(env.DB, "first-primary").database,
+      revisionBodies: env.REVISION_BODIES,
+      resend: { baseUrl: env.RESEND_BASE_URL, apiKey: env.RESEND_API_KEY },
+    });
     return;
   }
   if (batch.queue === SEND_DLQ_NAME) {
-    await consumeSendDlqBatch(batch, env);
+    await consumeSendDlqBatch(batch, {
+      database: drizzleForSession(env.DB, "first-primary").database,
+    });
     return;
   }
   throw new Error(`No consumer handles batches of the queue "${batch.queue}".`);

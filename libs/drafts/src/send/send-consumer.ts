@@ -5,6 +5,7 @@
  * request, and Queue batches are not stable across retries.
  */
 
+import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 
@@ -12,20 +13,22 @@ import { isPastSendDeadline } from "../domain/send-deadline.ts";
 import { classifyResendCall } from "../resend/classify-resend-call.ts";
 import { postEmail, type ResendConnection } from "../resend/post-email.ts";
 import { findRootCauseMessage } from "../root-cause.ts";
-import { drizzleForSession } from "../storage/database.ts";
 import { getRevisionBodyAt } from "../storage/revision-bodies.ts";
 import { hasSendEnded, recordFailed, recordSent } from "../storage/send-outbox.ts";
 import { sendQueueMessageSchema, type SendQueueMessage } from "./send-queue.ts";
 import { computeRetryDelaySeconds } from "./send-retry-delay.ts";
 
-/** The Worker bindings, vars and secrets the Send pipeline reads. */
-export type SendPipelineEnvironment = {
-  DB: D1Database;
-  REVISION_BODIES: R2Bucket;
-  /** Resend's API origin; tests point it at a stub. */
-  RESEND_BASE_URL: string;
-  /** A secret; a Worker without it retries every Send until the deadline ends it. */
-  RESEND_API_KEY?: string;
+/** What the Send Queue consumer reads, records and calls; `worker/` builds it from the bindings. */
+export type SendPipeline = {
+  /** A database session that starts with `"first-primary"`, since the consumer records outcomes. */
+  database: DrizzleD1Database;
+  revisionBodies: R2Bucket;
+  resend: {
+    /** `RESEND_BASE_URL`; tests point it at a stub. */
+    baseUrl: string;
+    /** `RESEND_API_KEY`; without it, every Send attempt is retried until the deadline ends it. */
+    apiKey: string | undefined;
+  };
 };
 
 /**
@@ -40,25 +43,16 @@ const MINIMUM_INVOCATION_MILLISECONDS = 1000;
  * returns once they have settled and at least 1.0 s has passed. Settles every message itself: a
  * final result is recorded and acked, a retryable one is retried with a backoff.
  */
-export async function consumeSendBatch(
-  batch: MessageBatch,
-  env: SendPipelineEnvironment,
-): Promise<void> {
-  const { database } = drizzleForSession(env.DB, "first-primary");
+export async function consumeSendBatch(batch: MessageBatch, pipeline: SendPipeline): Promise<void> {
   const pacing = new Promise((resolve) => setTimeout(resolve, MINIMUM_INVOCATION_MILLISECONDS));
 
   await Promise.all([
     pacing,
-    ...batch.messages.map((message) => consumeSendMessage(message, { database, env })),
+    ...batch.messages.map((message) => consumeSendMessage(message, pipeline)),
   ]);
 }
 
-type SendContext = {
-  database: ReturnType<typeof drizzleForSession>["database"];
-  env: SendPipelineEnvironment;
-};
-
-async function consumeSendMessage(message: Message, context: SendContext): Promise<void> {
+async function consumeSendMessage(message: Message, pipeline: SendPipeline): Promise<void> {
   const parsedMessage = sendQueueMessageSchema.safeParse(message.body);
   if (!parsedMessage.success) {
     // Without a frozen email there is nothing that could ever be sent; the Send reconciler's
@@ -72,7 +66,7 @@ async function consumeSendMessage(message: Message, context: SendContext): Promi
   const sendIntent = parsedMessage.data;
 
   try {
-    await attemptSend(message, sendIntent, context);
+    await attemptSend(message, sendIntent, pipeline);
   } catch (error) {
     console.error(
       `Sending Draft ${sendIntent.draftId} failed; the Send Queue delivers it again. ${findRootCauseMessage(error)}`,
@@ -85,7 +79,7 @@ async function consumeSendMessage(message: Message, context: SendContext): Promi
 async function attemptSend(
   message: Message,
   { draftId, idempotencyKey, outgoingEmail, deadline }: SendQueueMessage,
-  { database, env }: SendContext,
+  { database, revisionBodies, resend }: SendPipeline,
 ): Promise<void> {
   // A duplicate of an ended Send never reaches Resend: whether Resend replays a refusal under the
   // same key is unverified, so a `REJECTED_BY_RESEND` ("definitely not sent") must not be retried.
@@ -95,7 +89,7 @@ async function attemptSend(
     return;
   }
 
-  const body = await getRevisionBodyAt(env.REVISION_BODIES, outgoingEmail.bodyKey);
+  const body = await getRevisionBodyAt(revisionBodies, outgoingEmail.bodyKey);
   // Right before the call, after every read: no Resend call is ever made after the deadline.
   if (isPastSendDeadline(deadline, Temporal.Now.instant().epochMilliseconds)) {
     await recordFailed(database, draftId, { reason: "OUTCOME_UNKNOWN" });
@@ -103,7 +97,7 @@ async function attemptSend(
     return;
   }
 
-  const call = await postEmail(readResendConnection(env), idempotencyKey, {
+  const call = await postEmail(readResendConnection(resend), idempotencyKey, {
     from: outgoingEmail.from,
     to: outgoingEmail.to,
     subject: outgoingEmail.subject,
@@ -156,9 +150,9 @@ function retryLater(
   });
 }
 
-function readResendConnection(env: SendPipelineEnvironment): ResendConnection {
-  if (env.RESEND_API_KEY === undefined || env.RESEND_API_KEY === "") {
+function readResendConnection({ baseUrl, apiKey }: SendPipeline["resend"]): ResendConnection {
+  if (apiKey === undefined || apiKey === "") {
     throw new Error("RESEND_API_KEY is not configured.");
   }
-  return { baseUrl: env.RESEND_BASE_URL, apiKey: env.RESEND_API_KEY };
+  return { baseUrl, apiKey };
 }

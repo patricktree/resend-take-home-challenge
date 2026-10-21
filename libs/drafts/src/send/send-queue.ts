@@ -20,12 +20,6 @@ export type SendQueue = {
   sendBatch(messages: Iterable<MessageSendRequest<SendQueueMessage>>): Promise<unknown>;
 };
 
-/** The Send Queue, as named in wrangler.jsonc. */
-export const SEND_QUEUE_NAME = "resend-challenge-send";
-
-/** The Send Queue's dead-letter queue, as named in wrangler.jsonc. */
-export const SEND_DLQ_NAME = "resend-challenge-send-dlq";
-
 /**
  * Cloudflare Queues' limits of one `sendBatch()`
  * (https://developers.cloudflare.com/queues/platform/limits/): 100 messages and 256 KB in total,

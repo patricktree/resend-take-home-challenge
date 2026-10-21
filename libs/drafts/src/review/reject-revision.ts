@@ -3,7 +3,11 @@ import { Temporal } from "temporal-polyfill";
 
 import type { DraftSummary } from "../domain/draft.ts";
 import { isDraftId, isRevisionId } from "../domain/ids.ts";
-import { explainVerdictRefusal, type VerdictRefusal } from "../domain/refusals.ts";
+import {
+  explainVerdictRefusal,
+  type RefusedMutation,
+  type VerdictRefusal,
+} from "../domain/refusals.ts";
 import type { DraftsStorage } from "../storage/database.ts";
 import { toDraftSummary } from "../storage/draft-rows.ts";
 import { readRefusalSnapshot } from "../storage/refusal-snapshot.ts";
@@ -60,9 +64,10 @@ export async function rejectRevision(
   const [draftRow] = updatedDrafts;
   const [revisionRow] = updatedRevisions;
   if (draftRow === undefined || revisionRow === undefined) {
+    const refusedMutation: RefusedMutation = { draftId, revisionId };
     return explainVerdictRefusal(
-      { draftId, revisionId },
-      await readRefusalSnapshot(database, draftId, revisionId),
+      refusedMutation,
+      await readRefusalSnapshot(database, refusedMutation),
     );
   }
 

@@ -4,7 +4,11 @@ import { Temporal } from "temporal-polyfill";
 
 import type { DraftSummary } from "../domain/draft.ts";
 import { isDraftId, isRevisionId, type DraftId } from "../domain/ids.ts";
-import { explainVerdictRefusal, type VerdictRefusal } from "../domain/refusals.ts";
+import {
+  explainVerdictRefusal,
+  type RefusedMutation,
+  type VerdictRefusal,
+} from "../domain/refusals.ts";
 import { computeSendDeadline } from "../domain/send-deadline.ts";
 import { findRootCauseMessage } from "../root-cause.ts";
 import type { SendQueue } from "../send/send-queue.ts";
@@ -96,9 +100,10 @@ export async function approveRevision(
   const [draftRow] = updatedDrafts;
   const [revisionRow] = updatedRevisions;
   if (draftRow === undefined || revisionRow === undefined) {
+    const refusedMutation: RefusedMutation = { draftId, revisionId };
     return explainVerdictRefusal(
-      { draftId, revisionId },
-      await readRefusalSnapshot(database, draftId, revisionId),
+      refusedMutation,
+      await readRefusalSnapshot(database, refusedMutation),
     );
   }
 

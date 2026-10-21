@@ -3,7 +3,11 @@ import { Temporal } from "temporal-polyfill";
 
 import type { DraftData, DraftSummary } from "../domain/draft.ts";
 import { createRevisionId, isDraftId, isRevisionId } from "../domain/ids.ts";
-import { explainReviseRefusal, type ReviseRefusal } from "../domain/refusals.ts";
+import {
+  explainReviseRefusal,
+  type RefusedMutation,
+  type ReviseRefusal,
+} from "../domain/refusals.ts";
 import type { DraftsStorage } from "../storage/database.ts";
 import { selectLastVerdictRow, toDraftSummary } from "../storage/draft-rows.ts";
 import { readRefusalSnapshot } from "../storage/refusal-snapshot.ts";
@@ -107,8 +111,9 @@ export async function reviseDraft(
     };
   }
 
+  const refusedMutation: RefusedMutation = { draftId, revisionId: baseRevisionId };
   return explainReviseRefusal(
-    { draftId, revisionId: baseRevisionId },
-    await readRefusalSnapshot(database, draftId, baseRevisionId),
+    refusedMutation,
+    await readRefusalSnapshot(database, refusedMutation),
   );
 }

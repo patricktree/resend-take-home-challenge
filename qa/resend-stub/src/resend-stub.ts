@@ -53,8 +53,11 @@ export type ResendStub = {
   respondNext(response: ScriptedResponse): void;
   /** Never answers the next request, as an unresponsive Resend would; it sends nothing. */
   hangNext(): void;
-  /** Holds the next request open until the test releases it. */
-  holdNext(): HeldRequest;
+  /**
+   * Holds the next request open until the test releases it; then answers it with `response` instead
+   * of the ledger, if given, as a Resend that refuses a request after a while.
+   */
+  holdNext(response?: ScriptedResponse): HeldRequest;
   close(): Promise<void>;
 };
 
@@ -66,7 +69,12 @@ export function resendError(status: number, name: string, message: string): Scri
 type Override =
   | { kind: "RESPOND"; response: ScriptedResponse }
   | { kind: "HANG" }
-  | { kind: "HOLD"; markReceived(): void; released: Promise<void> };
+  | {
+      kind: "HOLD";
+      markReceived(): void;
+      released: Promise<void>;
+      response: ScriptedResponse | undefined;
+    };
 
 type LedgerEntry = { email: unknown } & ({ state: "IN_FLIGHT" } | { state: "SENT"; id: string });
 
@@ -108,6 +116,12 @@ export async function startResendStub(): Promise<ResendStub> {
     if (override?.kind === "HANG") {
       return;
     }
+    if (override?.kind === "HOLD" && override.response !== undefined) {
+      override.markReceived();
+      await override.released;
+      respond(response, override.response);
+      return;
+    }
     const hold = override;
 
     const entry = idempotencyKey === undefined ? undefined : ledger.get(idempotencyKey);
@@ -146,10 +160,15 @@ export async function startResendStub(): Promise<ResendStub> {
     hangNext: () => {
       overrides.push({ kind: "HANG" });
     },
-    holdNext: () => {
+    holdNext: (response) => {
       const received = Promise.withResolvers<void>();
       const released = Promise.withResolvers<void>();
-      overrides.push({ kind: "HOLD", markReceived: received.resolve, released: released.promise });
+      overrides.push({
+        kind: "HOLD",
+        markReceived: received.resolve,
+        released: released.promise,
+        response,
+      });
       return { received: received.promise, release: released.resolve };
     },
     close: async () => {

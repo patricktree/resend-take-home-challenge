@@ -17,6 +17,24 @@ export type SendFailure =
   | { reason: "OUTCOME_UNKNOWN" };
 
 /**
+ * Whether the Draft's Send has ended, `SENT` or `FAILED` with either reason. Throws when the Draft
+ * has no row, which a Send intent's Draft always has.
+ */
+export async function hasSendEnded(
+  database: DrizzleD1Database,
+  draftId: DraftId,
+): Promise<boolean> {
+  const [row] = await database
+    .select({ sendingStatus: drafts.sendingStatus })
+    .from(drafts)
+    .where(eq(drafts.id, draftId));
+  if (row === undefined) {
+    throw new Error(`The Draft ${draftId} of a Send intent has no row.`);
+  }
+  return row.sendingStatus === "SENT" || row.sendingStatus === "FAILED";
+}
+
+/**
  * Records `SENT` with Resend's email id, when the Send is still `QUEUED` or ended as `FAILED` /
  * `OUTCOME_UNKNOWN` (then clearing the failure); otherwise changes nothing.
  */

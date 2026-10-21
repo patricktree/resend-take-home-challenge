@@ -88,6 +88,27 @@ test.for(OUTCOME_UNKNOWN_PATHS)(
 );
 
 test.for(OUTCOME_UNKNOWN_PATHS)(
+  "late refusal ‖ FAILED / OUTCOME_UNKNOWN from $name: Resend refusing the attempt in flight never overrides OUTCOME_UNKNOWN",
+  async ({ recordOutcomeUnknown }, { expect, onTestFinished }) => {
+    const { resendStub, worker } = await useSendPipeline({ onTestFinished });
+    const { draft, message } = await createApprovedDraft(worker);
+    const held = resendStub.holdNext(resendError(422, "validation_error", "Invalid."));
+    const delivery = deliverSendQueueBatch(worker, [{ body: message }]);
+    await held.received;
+
+    await recordOutcomeUnknown(worker, message);
+    held.release();
+
+    expect(await delivery).toStrictEqual([{ id: "message-0", outcome: "ACK" }]);
+    expect(await getSending(worker, draft.id)).toStrictEqual({
+      status: "FAILED",
+      failure: { reason: "OUTCOME_UNKNOWN" },
+    });
+    await expectExactlyOneEmailPerSentDraft(worker, resendStub);
+  },
+);
+
+test.for(OUTCOME_UNKNOWN_PATHS)(
   "FAILED / OUTCOME_UNKNOWN from $name never overrides SENT",
   async ({ recordOutcomeUnknown }, { expect, onTestFinished }) => {
     const { resendStub, worker } = await useSendPipeline({ onTestFinished });

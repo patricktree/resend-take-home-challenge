@@ -88,23 +88,49 @@ test("an Approval's message reaches the Send Queue consumer through real Queue d
   await expectExactlyOneEmailPerSentDraft(worker, resendStub);
 });
 
-test("a redelivery after the Send went out replays the same key and body: Resend returns the original id and sends nothing new", async ({
-  expect,
-  onTestFinished,
-}) => {
-  const { resendStub, worker } = await useSendPipeline({ onTestFinished });
-  const { draft, message } = await createApprovedDraft(worker);
-  await deliverSendQueueBatch(worker, [{ body: message }]);
-  const sent = await getSending(worker, draft.id);
+test.for([
+  {
+    name: "SENT",
+    endedSending: { status: "SENT" },
+    endSend: async (worker: TestWorker, _stub: ResendStub, message: SendQueueMessage) => {
+      await deliverSendQueueBatch(worker, [{ body: message }]);
+    },
+  },
+  {
+    name: "FAILED / REJECTED_BY_RESEND",
+    endedSending: { status: "FAILED", failure: { reason: "REJECTED_BY_RESEND" } },
+    endSend: async (worker: TestWorker, stub: ResendStub, message: SendQueueMessage) => {
+      stub.respondNext(resendError(422, "validation_error", "Invalid `to` field."));
+      await deliverSendQueueBatch(worker, [{ body: message }]);
+    },
+  },
+  {
+    name: "FAILED / OUTCOME_UNKNOWN",
+    endedSending: { status: "FAILED", failure: { reason: "OUTCOME_UNKNOWN" } },
+    endSend: async (worker: TestWorker, _stub: ResendStub, message: SendQueueMessage) => {
+      await deliverSendQueueBatch(worker, [
+        { body: { ...message, deadline: Temporal.Now.instant().epochMilliseconds - 1000 } },
+      ]);
+    },
+  },
+])(
+  "a duplicate message for a Send that ended $name is acked without calling Resend, and the Send keeps its outcome",
+  async ({ endedSending, endSend }, { expect, onTestFinished }) => {
+    const { resendStub, worker } = await useSendPipeline({ onTestFinished });
+    const { draft, message } = await createApprovedDraft(worker);
+    await endSend(worker, resendStub, message);
+    const ended = await getSending(worker, draft.id);
+    expect(ended).toMatchObject(endedSending);
+    const resendRequestCount = resendStub.requests.length;
 
-  const handlings = await deliverSendQueueBatch(worker, [{ body: message, attempts: 2 }]);
+    const handlings = await deliverSendQueueBatch(worker, [{ body: message, attempts: 2 }]);
 
-  expect(handlings).toStrictEqual([{ id: "message-0", outcome: "ACK" }]);
-  expect(resendStub.requests).toHaveLength(2);
-  expect(resendStub.requests[1]?.body).toStrictEqual(resendStub.requests[0]?.body);
-  expect(await getSending(worker, draft.id)).toStrictEqual(sent);
-  await expectExactlyOneEmailPerSentDraft(worker, resendStub);
-});
+    expect(handlings).toStrictEqual([{ id: "message-0", outcome: "ACK" }]);
+    expect(resendStub.requests).toHaveLength(resendRequestCount);
+    expect(await getSending(worker, draft.id)).toStrictEqual(ended);
+    await expectExactlyOneEmailPerSentDraft(worker, resendStub);
+  },
+);
 
 test.for([400, 401, 403, 404, 405, 422])(
   "a %i from Resend is final: the Draft becomes FAILED / REJECTED_BY_RESEND with Resend's error name and message",
@@ -369,14 +395,14 @@ test("the same message delivered twice at once sends one email: the overlapping 
   expect(sent).toStrictEqual({ status: "SENT", emailId: resendStub.emails[0]?.id });
   await expectExactlyOneEmailPerSentDraft(worker, resendStub);
 
-  // The retried attempt replays the key and body, and Resend answers with the original id.
+  // The retried attempt finds the Send ended and never reaches Resend.
   const retriedDelivery = await deliverSendQueueBatch(worker, [
     { id: "message-a", body: message, attempts: 2 },
   ]);
 
   expect(retriedDelivery).toStrictEqual([{ id: "message-a", outcome: "ACK" }]);
   expect(await getSending(worker, draft.id)).toStrictEqual(sent);
-  expect(resendStub.requests).toHaveLength(3);
+  expect(resendStub.requests).toHaveLength(2);
   await expectExactlyOneEmailPerSentDraft(worker, resendStub);
 });
 
@@ -418,86 +444,6 @@ test("just before the deadline Resend is still called", async ({ expect, onTestF
   expect(await getSending(worker, draft.id)).toStrictEqual({
     status: "SENT",
     emailId: resendStub.emails[0]?.id,
-  });
-  await expectExactlyOneEmailPerSentDraft(worker, resendStub);
-});
-
-test("a late SENT overrides FAILED / OUTCOME_UNKNOWN and clears the failure", async ({
-  expect,
-  onTestFinished,
-}) => {
-  const { resendStub, worker } = await useSendPipeline({ onTestFinished });
-  const { draft, message } = await createApprovedDraft(worker);
-  await deliverSendQueueBatch(worker, [
-    { body: { ...message, deadline: Temporal.Now.instant().epochMilliseconds - 1000 } },
-  ]);
-
-  const handlings = await deliverSendQueueBatch(worker, [{ body: message, attempts: 2 }]);
-
-  expect(handlings).toStrictEqual([{ id: "message-0", outcome: "ACK" }]);
-  expect(await getSending(worker, draft.id)).toStrictEqual({
-    status: "SENT",
-    emailId: resendStub.emails[0]?.id,
-  });
-  const failureColumns = await readFailureColumns(worker, draft.id);
-  expect(failureColumns).toStrictEqual({
-    failure_reason: null,
-    resend_error_name: null,
-    resend_error_message: null,
-  });
-  await expectExactlyOneEmailPerSentDraft(worker, resendStub);
-});
-
-test.for([
-  {
-    name: "the deadline",
-    setUp: (_stub: ResendStub, message: SendQueueMessage) => ({
-      ...message,
-      deadline: Temporal.Now.instant().epochMilliseconds - 1000,
-    }),
-  },
-  {
-    name: "Resend refusing the request",
-    setUp: (stub: ResendStub, message: SendQueueMessage) => {
-      stub.respondNext(resendError(422, "validation_error", "Invalid."));
-      return message;
-    },
-  },
-])(
-  "a FAILED outcome from $name never overrides SENT",
-  async ({ setUp }, { expect, onTestFinished }) => {
-    const { resendStub, worker } = await useSendPipeline({ onTestFinished });
-    const { draft, message } = await createApprovedDraft(worker);
-    await deliverSendQueueBatch(worker, [{ body: message }]);
-    const sent = await getSending(worker, draft.id);
-
-    const handlings = await deliverSendQueueBatch(worker, [
-      { body: setUp(resendStub, message), attempts: 2 },
-    ]);
-
-    expect(handlings).toStrictEqual([{ id: "message-0", outcome: "ACK" }]);
-    expect(sent).toMatchObject({ status: "SENT" });
-    expect(await getSending(worker, draft.id)).toStrictEqual(sent);
-    await expectExactlyOneEmailPerSentDraft(worker, resendStub);
-  },
-);
-
-test("Resend refusing the request never overrides FAILED / OUTCOME_UNKNOWN", async ({
-  expect,
-  onTestFinished,
-}) => {
-  const { resendStub, worker } = await useSendPipeline({ onTestFinished });
-  const { draft, message } = await createApprovedDraft(worker);
-  await deliverSendQueueBatch(worker, [
-    { body: { ...message, deadline: Temporal.Now.instant().epochMilliseconds - 1000 } },
-  ]);
-  resendStub.respondNext(resendError(422, "validation_error", "Invalid."));
-
-  await deliverSendQueueBatch(worker, [{ body: message, attempts: 2 }]);
-
-  expect(await getSending(worker, draft.id)).toStrictEqual({
-    status: "FAILED",
-    failure: { reason: "OUTCOME_UNKNOWN" },
   });
   await expectExactlyOneEmailPerSentDraft(worker, resendStub);
 });

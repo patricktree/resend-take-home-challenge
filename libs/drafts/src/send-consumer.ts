@@ -14,7 +14,7 @@ import { postEmail, type ResendConnection } from "#src/resend-client.ts";
 import { getRevisionBodyAt } from "#src/revision-bodies.ts";
 import { findRootCauseMessage } from "#src/root-cause.ts";
 import { isPastSendDeadline } from "#src/send-deadline.ts";
-import { recordFailed, recordSent } from "#src/send-outcomes.ts";
+import { hasSendEnded, recordFailed, recordSent } from "#src/send-outcomes.ts";
 import { sendQueueMessageSchema, type SendQueueMessage } from "#src/send-queue.ts";
 import { computeRetryDelaySeconds } from "#src/send-retry-delay.ts";
 
@@ -87,13 +87,22 @@ async function attemptSend(
   { draftId, idempotencyKey, outgoingEmail, deadline }: SendQueueMessage,
   { database, env }: SendContext,
 ): Promise<void> {
+  // A duplicate of an ended Send never reaches Resend: whether Resend replays a refusal under the
+  // same key is unverified, so a `REJECTED_BY_RESEND` ("definitely not sent") must not be retried.
+  // An attempt already in flight when the Send ends still records a late `SENT`.
+  if (await hasSendEnded(database, draftId)) {
+    message.ack();
+    return;
+  }
+
+  const body = await getRevisionBodyAt(env.REVISION_BODIES, outgoingEmail.bodyKey);
+  // Right before the call, after every read: no Resend call is ever made after the deadline.
   if (isPastSendDeadline(deadline, Temporal.Now.instant().epochMilliseconds)) {
     await recordFailed(database, draftId, { reason: "OUTCOME_UNKNOWN" });
     message.ack();
     return;
   }
 
-  const body = await getRevisionBodyAt(env.REVISION_BODIES, outgoingEmail.bodyKey);
   const call = await postEmail(readResendConnection(env), idempotencyKey, {
     from: outgoingEmail.from,
     to: outgoingEmail.to,

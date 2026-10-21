@@ -159,14 +159,14 @@ test("reconciler re-enqueue ‖ consumer: the re-enqueued message and the origin
   const sent = await getSending(worker, draft.id);
   expect(sent).toStrictEqual({ status: "SENT", emailId: resendStub.emails[0]?.id });
 
-  // The retried re-enqueued message replays the key and body; Resend sends nothing new.
+  // The retried re-enqueued message finds the Send ended and never reaches Resend.
   const retriedDelivery = await deliverSendQueueBatch(worker, [
     { id: "reenqueued", body: reenqueuedMessage, attempts: 2 },
   ]);
 
   expect(retriedDelivery).toStrictEqual([{ id: "reenqueued", outcome: "ACK" }]);
   expect(await getSending(worker, draft.id)).toStrictEqual(sent);
-  expect(resendStub.requests).toHaveLength(3);
+  expect(resendStub.requests).toHaveLength(2);
   await expectExactlyOneEmailPerSentDraft(worker, resendStub);
 });
 

@@ -2,8 +2,8 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 
 import type { DraftsStorage } from "./database.ts";
+import { toDraftSummary } from "./draft-rows.ts";
 import type { DraftSummary } from "./draft.ts";
-import { toDraftSummary } from "./draft.ts";
 import { isDraftId, isRevisionId, type DraftId } from "./ids.ts";
 import { revisionBodyKey } from "./revision-bodies.ts";
 import { findRootCauseMessage } from "./root-cause.ts";

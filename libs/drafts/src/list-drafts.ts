@@ -8,7 +8,8 @@ import { and, asc, desc, eq, inArray, isNotNull, sql, type SQL } from "drizzle-o
 import buffer from "node:buffer";
 
 import type { DraftsStorage } from "./database.ts";
-import { toDraftSummary, type DraftSummary } from "./draft.ts";
+import { toDraftSummary } from "./draft-rows.ts";
+import type { DraftSummary } from "./draft.ts";
 import { isDraftId, type DraftId } from "./ids.ts";
 import { drafts, revisions, type ReviewStatus, type SendingStatus } from "./schema.ts";
 

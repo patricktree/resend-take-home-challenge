@@ -1,8 +1,8 @@
 import { Temporal } from "temporal-polyfill";
 
 import type { DraftsStorage } from "./database.ts";
+import { toDraftSummary } from "./draft-rows.ts";
 import type { DraftData, DraftSummary } from "./draft.ts";
-import { toDraftSummary } from "./draft.ts";
 import { createDraftId, createRevisionId } from "./ids.ts";
 import { putRevisionBody } from "./revision-bodies.ts";
 import { drafts, revisions } from "./schema.ts";

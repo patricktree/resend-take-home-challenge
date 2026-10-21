@@ -2,8 +2,8 @@ import { and, eq } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 
 import type { DraftsStorage } from "./database.ts";
+import { toDraftSummary } from "./draft-rows.ts";
 import type { DraftSummary } from "./draft.ts";
-import { toDraftSummary } from "./draft.ts";
 import { isDraftId, isRevisionId } from "./ids.ts";
 import { drafts, revisions } from "./schema.ts";
 import { explainVerdictRefusal, isLatestAndPending, type VerdictRefusal } from "./verdicts.ts";

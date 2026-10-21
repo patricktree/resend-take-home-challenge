@@ -23,7 +23,10 @@ type RetryDelayInput = {
 const INITIAL_BACKOFF_MILLISECONDS = 1000;
 const MAXIMUM_BACKOFF_MILLISECONDS = 60 * 60 * 1000;
 const MAXIMUM_JITTER_MILLISECONDS = 1000;
-/** Cloudflare Queues accept a `delaySeconds` of at most 12 h. */
+/**
+ * Cloudflare Queues accept a `delaySeconds` of at most 12 h. The backoff stops at 1 h, so only a
+ * longer `Retry-After` (for example on a daily-quota 429) reaches this cap.
+ */
 const MAXIMUM_QUEUE_DELAY_SECONDS = 12 * 60 * 60;
 
 const MONTH_NAMES = [

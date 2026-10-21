@@ -11,13 +11,16 @@
  * are absorbed by the idempotency key, under which every attempt sends the same frozen body.
  */
 
-import { and, asc, isNull, lt, sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { Temporal } from "temporal-polyfill";
 
 import { findRootCauseMessage } from "../root-cause.ts";
-import { drafts } from "../storage/schema.ts";
-import { recordFailed, recordHandOff } from "../storage/send-outbox.ts";
+import {
+  findExpiredSends,
+  findLostHandOffs,
+  recordFailed,
+  recordHandOff,
+} from "../storage/send-outbox.ts";
 import {
   QUEUE_BATCH_LIMITS,
   toSendQueueMessage,
@@ -49,13 +52,6 @@ const LOST_HAND_OFF_AFTER_MILLISECONDS = 60 * 1000;
 const BACKSTOP_AFTER_DEADLINE_MILLISECONDS = 60 * 60 * 1000;
 
 /**
- * `sending_status = 'QUEUED'` with the value inlined: SQLite uses a partial index only when the
- * query's terms imply the index's `WHERE` as written, and `eq()` would bind the value as a
- * parameter, which implies nothing.
- */
-const IS_QUEUED = sql`${drafts.sendingStatus} = 'QUEUED'`;
-
-/**
  * Runs one tick of the Send reconciler: both jobs, one after the other. The backstop runs even when
  * re-enqueueing failed, since it does not touch the Queue.
  */
@@ -79,13 +75,7 @@ async function reenqueueLostHandOffs(
 ): Promise<void> {
   const approvedBefore =
     Temporal.Now.instant().epochMilliseconds - LOST_HAND_OFF_AFTER_MILLISECONDS;
-  // The conditions and the order match the partial index `drafts_queued_not_enqueued_approved_at_index`.
-  const lostHandOffs = await database
-    .select()
-    .from(drafts)
-    .where(and(IS_QUEUED, isNull(drafts.enqueuedAt), lt(drafts.approvedAt, approvedBefore)))
-    .orderBy(asc(drafts.approvedAt))
-    .limit(ROWS_PER_JOB_AND_TICK);
+  const lostHandOffs = await findLostHandOffs(database, approvedBefore, ROWS_PER_JOB_AND_TICK);
   if (lostHandOffs.length === 0) {
     return;
   }
@@ -151,15 +141,9 @@ function measureBodyBytes(message: SendQueueMessage): number {
 async function resolveExpiredSends(database: DrizzleD1Database): Promise<void> {
   const deadlineBefore =
     Temporal.Now.instant().epochMilliseconds - BACKSTOP_AFTER_DEADLINE_MILLISECONDS;
-  // The conditions and the order match the partial index `drafts_queued_deadline_index`.
-  const expiredSends = await database
-    .select({ id: drafts.id })
-    .from(drafts)
-    .where(and(IS_QUEUED, lt(drafts.deadline, deadlineBefore)))
-    .orderBy(asc(drafts.deadline))
-    .limit(ROWS_PER_JOB_AND_TICK);
+  const expiredSends = await findExpiredSends(database, deadlineBefore, ROWS_PER_JOB_AND_TICK);
 
-  for (const { id } of expiredSends) {
-    await recordFailed(database, id, { reason: "OUTCOME_UNKNOWN" });
+  for (const draftId of expiredSends) {
+    await recordFailed(database, draftId, { reason: "OUTCOME_UNKNOWN" });
   }
 }

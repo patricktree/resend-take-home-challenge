@@ -8,7 +8,7 @@
  * wins, except that a late `SENT` overrides `OUTCOME_UNKNOWN`. No write sets `last_action_at`.
  */
 
-import { and, eq, isNull, or } from "drizzle-orm";
+import { and, asc, eq, isNull, lt, or, sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import assert from "node:assert/strict";
 import { Temporal } from "temporal-polyfill";
@@ -21,6 +21,13 @@ export type SendFailure =
   | { reason: "REJECTED_BY_RESEND"; resendErrorName?: string; resendErrorMessage?: string }
   /** The Send ended without an answer from Resend: the email may have gone out. */
   | { reason: "OUTCOME_UNKNOWN" };
+
+/**
+ * `sending_status = 'QUEUED'` with the value inlined: SQLite uses a partial index only when the
+ * query's terms imply the index's `WHERE` as written, and `eq()` would bind the value as a
+ * parameter, which implies nothing.
+ */
+const IS_QUEUED = sql`${drafts.sendingStatus} = 'QUEUED'`;
 
 /**
  * Records that the Sends' Queue messages have been sent: sets `enqueued_at` on each Draft that is
@@ -108,4 +115,41 @@ export async function recordFailed(
         failure.reason === "REJECTED_BY_RESEND" ? (failure.resendErrorMessage ?? null) : null,
     })
     .where(and(eq(drafts.id, draftId), eq(drafts.sendingStatus, "QUEUED")));
+}
+
+/**
+ * The approved Sends whose hand-off was never recorded, approved before `approvedBefore`, oldest
+ * first, at most `limit`. The conditions and the order match the partial index
+ * `drafts_queued_not_enqueued_approved_at_index`.
+ */
+export async function findLostHandOffs(
+  database: DrizzleD1Database,
+  approvedBefore: number,
+  limit: number,
+): Promise<Array<typeof drafts.$inferSelect>> {
+  return database
+    .select()
+    .from(drafts)
+    .where(and(IS_QUEUED, isNull(drafts.enqueuedAt), lt(drafts.approvedAt, approvedBefore)))
+    .orderBy(asc(drafts.approvedAt))
+    .limit(limit);
+}
+
+/**
+ * The Drafts of the Sends still `QUEUED` whose deadline is before `deadlineBefore`, the earliest
+ * deadline first, at most `limit`. The conditions and the order match the partial index
+ * `drafts_queued_deadline_index`.
+ */
+export async function findExpiredSends(
+  database: DrizzleD1Database,
+  deadlineBefore: number,
+  limit: number,
+): Promise<DraftId[]> {
+  const rows = await database
+    .select({ id: drafts.id })
+    .from(drafts)
+    .where(and(IS_QUEUED, lt(drafts.deadline, deadlineBefore)))
+    .orderBy(asc(drafts.deadline))
+    .limit(limit);
+  return rows.map(({ id }) => id);
 }

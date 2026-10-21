@@ -15,7 +15,6 @@ import {
   DRAFT_DATA,
   getDraft,
   getSending,
-  readFailureColumns,
   useSendPipeline,
 } from "#test/use-send-pipeline.ts";
 import { deliverSendQueueBatch, useWorker, type TestWorker } from "#test/use-worker.ts";

@@ -1,35 +1,17 @@
 import { and, eq, exists } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 
-import type { DraftSummary, Verdict } from "../domain/draft.ts";
-import { isDraftId, isRevisionId, type DraftId, type RevisionId } from "../domain/ids.ts";
+import type { DraftSummary } from "../domain/draft.ts";
+import { isDraftId, isRevisionId } from "../domain/ids.ts";
+import { explainSubmissionRefusal, type SubmissionRefusal } from "../domain/refusals.ts";
 import type { DraftsStorage } from "../storage/database.ts";
 import { selectLastVerdictRow, toDraftSummary } from "../storage/draft-rows.ts";
+import { readRefusalSnapshot } from "../storage/refusal-snapshot.ts";
 import { drafts, revisions } from "../storage/schema.ts";
 
 export type SubmitRevisionResult =
   | { outcome: "SUBMITTED"; draft: DraftSummary }
-  | { outcome: "REVISION_ALREADY_DECIDED"; existingVerdict: Verdict }
-  | { outcome: SubmitRevisionRefusal };
-
-/**
- * Why a Submission changed nothing, besides `REVISION_ALREADY_DECIDED`, which carries the existing
- * verdict. In order of precedence (a malformed id counts as not found and is refused before
- * anything is read):
- *
- * - `DRAFT_NOT_FOUND`: no Draft has this id;
- * - `REVISION_NOT_FOUND`: the Revision is not one of the Draft's Revisions;
- * - `DRAFT_APPROVED`: the Draft is approved and accepts no Submission, also of its approved Revision;
- * - `REVISION_SUPERSEDED`: the Revision is not the Draft's latest;
- * - `REVISION_ALREADY_DECIDED`: the Revision has a verdict;
- * - `REVISION_ALREADY_SUBMITTED`: the Revision is already `PENDING`.
- */
-type SubmitRevisionRefusal =
-  | "DRAFT_NOT_FOUND"
-  | "REVISION_NOT_FOUND"
-  | "DRAFT_APPROVED"
-  | "REVISION_SUPERSEDED"
-  | "REVISION_ALREADY_SUBMITTED";
+  | SubmissionRefusal;
 
 /**
  * Submits one Revision for review: it becomes `PENDING`, and with it the Draft, provided it is the
@@ -92,62 +74,8 @@ export async function submitRevision(
     };
   }
 
-  return explainRefusal(database, draftId, revisionId);
-}
-
-/**
- * Reads why the guarded batch changed nothing. It reads on the same session as the batch, so on the
- * primary and at least as new as the batch.
- */
-async function explainRefusal(
-  database: DraftsStorage["database"],
-  draftId: DraftId,
-  revisionId: RevisionId,
-): Promise<Exclude<SubmitRevisionResult, { outcome: "SUBMITTED" }>> {
-  const [row] = await database
-    .select({
-      sendingStatus: drafts.sendingStatus,
-      latestRevisionId: drafts.latestRevisionId,
-      revisionReviewStatus: revisions.reviewStatus,
-    })
-    .from(drafts)
-    .leftJoin(revisions, and(eq(revisions.id, revisionId), eq(revisions.draftId, drafts.id)))
-    .where(eq(drafts.id, draftId));
-
-  if (row === undefined) {
-    return { outcome: "DRAFT_NOT_FOUND" };
-  }
-  if (row.revisionReviewStatus === null) {
-    return { outcome: "REVISION_NOT_FOUND" };
-  }
-  if (row.sendingStatus !== "NOT_SENT") {
-    return { outcome: "DRAFT_APPROVED" };
-  }
-  if (row.latestRevisionId !== revisionId) {
-    return { outcome: "REVISION_SUPERSEDED" };
-  }
-
-  switch (row.revisionReviewStatus) {
-    case "APPROVED":
-    case "REJECTED": {
-      return { outcome: "REVISION_ALREADY_DECIDED", existingVerdict: row.revisionReviewStatus };
-    }
-    case "PENDING": {
-      return { outcome: "REVISION_ALREADY_SUBMITTED" };
-    }
-    case "UNSUBMITTED":
-    case "SUPERSEDED": {
-      throw new Error(
-        `The Submission of Revision ${revisionId} changed nothing, although it is the latest Revision of the NOT_SENT Draft ${draftId} and ${row.revisionReviewStatus}.`,
-      );
-    }
-    default: {
-      return assertUnreachable(row.revisionReviewStatus);
-    }
-  }
-}
-
-/** Fails to compile when a switch misses a case, and throws if an unexpected value arrives anyway. */
-function assertUnreachable(value: never): never {
-  throw new Error(`Unexpected value: ${JSON.stringify(value)}`);
+  return explainSubmissionRefusal(
+    { draftId, revisionId },
+    await readRefusalSnapshot(database, draftId, revisionId),
+  );
 }

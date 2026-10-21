@@ -10,12 +10,12 @@ import { readRefusalSnapshot } from "../storage/refusal-snapshot.ts";
 import { drafts, revisions } from "../storage/schema.ts";
 import { isLatestAndPending } from "./verdict-guard.ts";
 
+export type RejectRevisionResult = { outcome: "REJECTED"; draft: DraftSummary } | VerdictRefusal;
+
 type RejectRevisionInput = {
   /** Optional; trimmed, and an empty or whitespace-only reason counts as absent. */
   reason?: string | undefined;
 };
-
-export type RejectRevisionResult = { outcome: "REJECTED"; draft: DraftSummary } | VerdictRefusal;
 
 /**
  * Rejects one Revision, the Draft's latest and `PENDING`, optionally with a reason. The Draft stays

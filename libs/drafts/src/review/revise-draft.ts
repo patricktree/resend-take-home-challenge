@@ -10,10 +10,10 @@ import { readRefusalSnapshot } from "../storage/refusal-snapshot.ts";
 import { putRevisionBody } from "../storage/revision-bodies.ts";
 import { drafts, revisions } from "../storage/schema.ts";
 
+export type ReviseDraftResult = { outcome: "REVISED"; draft: DraftSummary } | ReviseRefusal;
+
 /** The Draft data of the new Revision and the Revision it builds on. */
 type ReviseDraftInput = DraftData & { baseRevisionId: string };
-
-export type ReviseDraftResult = { outcome: "REVISED"; draft: DraftSummary } | ReviseRefusal;
 
 /**
  * Revises a Draft: creates its next Revision, `UNSUBMITTED`, from the Draft data, provided the base

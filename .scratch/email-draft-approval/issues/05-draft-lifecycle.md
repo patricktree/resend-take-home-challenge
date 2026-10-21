@@ -10,7 +10,7 @@ What are the states of a Draft and of a Revision, and which transitions are allo
 
 ## Answer
 
-Resolved by grilling with Patrick on 2026-10-20.
+Resolved in a grilling session with the repository owner on 2026-10-20.
 
 ### Review status
 

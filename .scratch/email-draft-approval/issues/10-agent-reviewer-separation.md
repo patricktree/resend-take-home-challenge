@@ -16,7 +16,7 @@ How is it enforced that an Agent can never approve a Draft or trigger a Send wit
 
 ## Answer
 
-Resolved by grilling with Patrick on 2026-10-20.
+Resolved in a grilling session with the repository owner on 2026-10-20.
 
 ### Credentials
 

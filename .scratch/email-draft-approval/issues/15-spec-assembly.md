@@ -6,7 +6,7 @@ Blocked by: 14
 
 ## Question
 
-How is the final, build-ready spec assembled from the resolved tickets? Settle the layout of `.scratch/email-draft-approval/spec.md` (the tracker's spec location): which sections, in which order, at which level of detail; where each ticket's decisions land and how the "Revises"/"Refines" notes between tickets are folded in, so the spec states only the final decision; how the mandatory "Demo simplifications" and "Future increments" sections and the "Known limitations" are laid out; whether the spec links back to tickets and `research/*.md` or stands alone; and how glossary terms are used and linked. Resolving this ticket means writing `spec.md` and confirming with Patrick that nothing is left to decide before implementation starts.
+How is the final, build-ready spec assembled from the resolved tickets? Settle the layout of `.scratch/email-draft-approval/spec.md` (the tracker's spec location): which sections, in which order, at which level of detail; where each ticket's decisions land and how the "Revises"/"Refines" notes between tickets are folded in, so the spec states only the final decision; how the mandatory "Demo simplifications" and "Future increments" sections and the "Known limitations" are laid out; whether the spec links back to tickets and `research/*.md` or stands alone; and how glossary terms are used and linked. Resolving this ticket means writing `spec.md` and confirming with the repository owner that nothing is left to decide before implementation starts.
 
 ## Comments
 
@@ -18,7 +18,7 @@ How is the final, build-ready spec assembled from the resolved tickets? Settle t
 
 ## Answer
 
-Resolved by grilling with Patrick on 2026-10-20. The spec is [spec.md](../spec.md); Patrick confirmed nothing is left to decide before implementation.
+Resolved in a grilling session with the repository owner on 2026-10-20. The spec is [spec.md](../spec.md); the repository owner confirmed nothing is left to decide before implementation.
 
 ### Layout
 

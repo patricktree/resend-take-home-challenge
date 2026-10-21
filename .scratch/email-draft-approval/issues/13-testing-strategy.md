@@ -26,7 +26,7 @@ Which tests prove the system's guarantees, and at which level? Settle the integr
 
 ## Answer
 
-Resolved by grilling with Patrick on 2026-10-20. The test mechanics from [11](11-cloudflare-app-structure.md) stand (Wrangler's `createTestHarness`, `/__test/queue` and `/__test/dlq`, one real Miniflare delivery test, a `node:http` Resend stub, Docker Playwright against `wrangler dev`), as do the scenarios collected in the Comments above. This ticket settles how races are forced, how the stub behaves, isolation, time, and what each level covers.
+Resolved in a grilling session with the repository owner on 2026-10-20. The test mechanics from [11](11-cloudflare-app-structure.md) stand (Wrangler's `createTestHarness`, `/__test/queue` and `/__test/dlq`, one real Miniflare delivery test, a `node:http` Resend stub, Docker Playwright against `wrangler dev`), as do the scenarios collected in the Comments above. This ticket settles how races are forced, how the stub behaves, isolation, time, and what each level covers.
 
 ### Levels
 

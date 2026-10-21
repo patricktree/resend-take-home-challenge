@@ -18,7 +18,7 @@ How is the system laid out on Cloudflare? Settle: D1 vs Durable Objects (or both
 
 ## Answer
 
-Resolved by grilling with Patrick on 2026-10-20. Earlier tickets fixed storage (07: D1 as the single source of truth, Revision bodies in R2, no Durable Objects, one Queue + DLQ, a Send reconciler cron, D1 read replication via the Sessions API), the API (09) and same-origin serving plus the token model (10). This ticket settles the physical layout around them.
+Resolved in a grilling session with the repository owner on 2026-10-20. Earlier tickets fixed storage (07: D1 as the single source of truth, Revision bodies in R2, no Durable Objects, one Queue + DLQ, a Send reconciler cron, D1 read replication via the Sessions API), the API (09) and same-origin serving plus the token model (10). This ticket settles the physical layout around them.
 
 ### One Worker
 

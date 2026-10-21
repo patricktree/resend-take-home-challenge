@@ -1,13 +1,12 @@
 /*
  * The Resend adapter: one `POST /emails` with plain `fetch`, no SDK, against `RESEND_BASE_URL`, so
  * that tests point it at a stub (spec section 9, "Queue consumer"). The Send Queue consumer is its
- * only caller.
+ * only caller. It also reads the `Retry-After` header, so the retry policy gets plain seconds.
  */
 
 import { Temporal } from "temporal-polyfill";
 
 import type { ResendCall } from "./resend-call-classification.ts";
-import { parseRetryAfterSeconds } from "./send-retry-delay.ts";
 
 /** Where and as whom the adapter calls Resend. */
 export type ResendConnection = {
@@ -27,6 +26,26 @@ export type ResendEmail = {
 };
 
 const RESEND_TIMEOUT_MILLISECONDS = 10_000;
+
+const MONTH_NAMES = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
+
+/** An IMF-fixdate, such as `Wed, 21 Oct 2026 07:28:00 GMT`. */
+const IMF_FIXDATE_PATTERN = new RegExp(
+  `^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), (\\d{2}) (${MONTH_NAMES.join("|")}) (\\d{4}) (\\d{2}):(\\d{2}):(\\d{2}) GMT$`,
+);
 
 /**
  * Calls `POST /emails` once under the idempotency key, with a 10 s timeout that covers the response
@@ -79,6 +98,53 @@ export async function postEmail(
     body: parseResponseBody(responseText),
     ...(retryAfterSeconds === undefined ? {} : { retryAfterSeconds }),
   };
+}
+
+/**
+ * Reads a `Retry-After` header (https://www.rfc-editor.org/rfc/rfc9110#field.retry-after):
+ * delta-seconds, or an HTTP date in the IMF-fixdate format that senders must use; `undefined` when
+ * it is unreadable. Resend's own 429s carry delta-seconds, but every retryable response is read
+ * here, also a 429 or 503 from a proxy or load balancer in front of Resend, and RFC 9110 allows
+ * either form, so both are handled.
+ */
+export function parseRetryAfterSeconds(value: string, now: number): number | undefined {
+  const trimmedValue = value.trim();
+  if (/^\d+$/.test(trimmedValue)) {
+    return Number.parseInt(trimmedValue, 10);
+  }
+
+  const date = parseImfFixdate(trimmedValue);
+  if (date === undefined) {
+    return undefined;
+  }
+  return Math.max(0, Math.ceil((date.epochMilliseconds - now) / 1000));
+}
+
+function parseImfFixdate(value: string): Temporal.Instant | undefined {
+  const match = IMF_FIXDATE_PATTERN.exec(value);
+  if (match === null) {
+    return undefined;
+  }
+
+  const [, day, monthName, year, hour, minute, second] = match;
+  try {
+    return Temporal.PlainDateTime.from(
+      {
+        year: Number(year),
+        month: MONTH_NAMES.findIndex((name) => name === monthName) + 1,
+        day: Number(day),
+        hour: Number(hour),
+        minute: Number(minute),
+        second: Number(second),
+      },
+      { overflow: "reject" },
+    )
+      .toZonedDateTime("UTC")
+      .toInstant();
+  } catch {
+    // An impossible date, such as 31 Feb.
+    return undefined;
+  }
 }
 
 function parseResponseBody(text: string): unknown {

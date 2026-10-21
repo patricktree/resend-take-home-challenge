@@ -85,6 +85,8 @@ Hosts configured through JSON take the same URL and header, for example:
 
 The host then lists six tools: `create_draft`, `get_draft`, `list_drafts`, `revise_draft`, `submit_draft` and `get_revision`. The server instructions describe the lifecycle, including handing the `reviewUrl` to the human. No tool approves, rejects or sends: only the Reviewer does that, in the Review UI. Locally, use `http://localhost:5173/mcp` with the local Agent token `agent_local-development-only`.
 
+MCP clients that run in a web page, such as web-based hosts or the MCP Inspector in direct mode, can call `/mcp` from any origin: it answers the CORS preflight and sends `Access-Control-Allow-Origin: *`, never with credentials. `/api` and `/app` send no CORS headers.
+
 ### With the CLI
 
 The `resend-challenge` CLI needs nothing but Node 24: no `pnpm install` and no build. Run its committed single-file bundle with `node` from the repository root. It reads the Agent token from `RESEND_CHALLENGE_TOKEN`, which is required, and calls production unless `--api-url` or `RESEND_CHALLENGE_API_URL` points it at another API origin, such as `http://localhost:5173` with the local Agent token. It has no command to approve or reject: only the Reviewer decides, in the Review UI. `node apps/cli/bundle/resend-challenge.mjs --help` and `--help` on every command describe the options.

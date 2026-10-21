@@ -16,7 +16,13 @@ import { runOnDatabaseSession } from "./database-session.ts";
 import { DRAFT_HANDLERS } from "./draft-handlers.ts";
 import type { HttpAppHonoEnvironment } from "./http-app-environment.ts";
 import { jsonError } from "./http-errors.ts";
-import { createMcpEndpoint, MCP_PATH, requireAgent } from "./mcp-endpoint.ts";
+import {
+  addMcpCorsHeaders,
+  answerMcpPreflight,
+  createMcpEndpoint,
+  MCP_PATH,
+  requireAgent,
+} from "./mcp-endpoint.ts";
 import { mountReviewUi } from "./review-ui.ts";
 
 export type { HttpAppEnvironment } from "./http-app-environment.ts";
@@ -79,7 +85,8 @@ export function createHttpApp(): Hono<HttpAppHonoEnvironment> {
   app.use("/api/v1/*", runOnDatabaseSession);
   app.route("/", createApiContractApp<HttpAppHonoEnvironment>(DRAFT_HANDLERS));
 
-  app.all(MCP_PATH, authenticate, requireAgent, createMcpEndpoint(app));
+  app.options(MCP_PATH, answerMcpPreflight);
+  app.all(MCP_PATH, addMcpCorsHeaders, authenticate, requireAgent, createMcpEndpoint(app));
 
   return app;
 }

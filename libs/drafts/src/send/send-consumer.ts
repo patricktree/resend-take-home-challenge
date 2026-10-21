@@ -14,7 +14,7 @@ import { postEmail, type ResendConnection } from "../resend/post-email.ts";
 import { findRootCauseMessage } from "../root-cause.ts";
 import { drizzleForSession } from "../storage/database.ts";
 import { getRevisionBodyAt } from "../storage/revision-bodies.ts";
-import { hasSendEnded, recordFailed, recordSent } from "../storage/send-outcomes.ts";
+import { hasSendEnded, recordFailed, recordSent } from "../storage/send-outbox.ts";
 import { sendQueueMessageSchema, type SendQueueMessage } from "./send-queue.ts";
 import { computeRetryDelaySeconds } from "./send-retry-delay.ts";
 

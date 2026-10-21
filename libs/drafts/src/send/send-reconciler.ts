@@ -18,7 +18,7 @@ import { Temporal } from "temporal-polyfill";
 
 import { findRootCauseMessage } from "../root-cause.ts";
 import { drafts } from "../storage/schema.ts";
-import { recordFailed } from "../storage/send-outcomes.ts";
+import { recordFailed } from "../storage/send-outbox.ts";
 import {
   QUEUE_BATCH_LIMITS,
   toSendQueueMessage,

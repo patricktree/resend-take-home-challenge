@@ -9,7 +9,7 @@ import { z } from "zod";
 
 import { findRootCauseMessage } from "../root-cause.ts";
 import { drizzleForSession } from "../storage/database.ts";
-import { recordFailed } from "../storage/send-outcomes.ts";
+import { recordFailed } from "../storage/send-outbox.ts";
 import { sendQueueMessageSchema } from "./send-queue.ts";
 
 /**

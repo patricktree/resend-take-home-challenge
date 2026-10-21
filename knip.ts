@@ -29,7 +29,7 @@ const config: KnipConfig = {
       ],
     },
     "libs/email-drafts": {
-      /* Wrangler loads the drafts suite's test Worker entry point from test/wrangler.test.jsonc. */
+      /* Wrangler loads the email-drafts suite's test Worker entry point from test/wrangler.test.jsonc. */
       entry: ["test/worker.ts"],
     },
   },

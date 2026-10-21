@@ -1,5 +1,5 @@
 /*
- * The test runtime's entry point (see wrangler.test.jsonc). The drafts suite calls the use cases
+ * The test runtime's entry point (see wrangler.test.jsonc). The email-drafts suite calls the use cases
  * from Node on the bindings the runtime exposes, so the Worker itself serves nothing.
  */
 export default {

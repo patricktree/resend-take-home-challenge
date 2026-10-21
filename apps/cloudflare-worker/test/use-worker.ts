@@ -5,8 +5,8 @@ import { z } from "zod";
 
 import type { SendQueueMessage } from "@resend-challenge/drafts";
 
-import type * as testWorkerModule from "#test/worker.ts";
-import type { SendQueueCall } from "#test/worker.ts";
+import type * as testWorkerModule from "./worker.ts";
+import type { SendQueueCall } from "./worker.ts";
 
 export type TestWorker = WorkerHandle<TestWorkerEnvironment, typeof testWorkerModule>;
 

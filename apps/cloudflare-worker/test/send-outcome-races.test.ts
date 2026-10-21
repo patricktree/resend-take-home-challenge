@@ -11,20 +11,20 @@ import { test } from "vitest";
 import type { SendQueueMessage } from "@resend-challenge/drafts";
 import { resendError } from "@resend-challenge/resend-stub";
 
-import { expectExactlyOneEmailPerSentDraft } from "#test/use-resend-stub.ts";
+import { expectExactlyOneEmailPerSentDraft } from "./use-resend-stub.ts";
 import {
   createApprovedDraft,
   getSending,
   readFailureColumns,
   useSendPipeline,
-} from "#test/use-send-pipeline.ts";
+} from "./use-send-pipeline.ts";
 import {
   deliverSendDlqBatch,
   deliverSendQueueBatch,
   readSendQueueCalls,
   runCronTick,
   type TestWorker,
-} from "#test/use-worker.ts";
+} from "./use-worker.ts";
 
 const HOUR_MILLISECONDS = 60 * 60 * 1000;
 

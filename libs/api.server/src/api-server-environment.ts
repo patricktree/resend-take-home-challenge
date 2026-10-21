@@ -1,6 +1,6 @@
 import type { DraftsStorage, SendQueue } from "@resend-challenge/drafts";
 
-import type { Role } from "#src/authentication.ts";
+import type { Role } from "./authentication.ts";
 
 /** The Worker bindings and vars the API server reads. */
 export type ApiServerEnvironment = {

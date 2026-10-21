@@ -6,12 +6,12 @@ import React from "react";
 import { ApiError } from "@resend-challenge/api.client";
 import type { DraftResponse } from "@resend-challenge/api.routes";
 
-import { assertUnreachable } from "#src/assert-unreachable.ts";
-import { localTimeLabel, reviewStatusLabel, sendingStatusLabel } from "#src/draft-labels.ts";
-import { draftQuery } from "#src/draft-queries.ts";
-import { ErrorMessage } from "#src/error-message.tsx";
-import { rootRoute } from "#src/root-route.tsx";
-import { VerdictControls } from "#src/verdict-controls.tsx";
+import { assertUnreachable } from "./assert-unreachable.ts";
+import { localTimeLabel, reviewStatusLabel, sendingStatusLabel } from "./draft-labels.ts";
+import { draftQuery } from "./draft-queries.ts";
+import { ErrorMessage } from "./error-message.tsx";
+import { rootRoute } from "./root-route.tsx";
+import { VerdictControls } from "./verdict-controls.tsx";
 
 type DraftViewProps = {
   draftId: string;

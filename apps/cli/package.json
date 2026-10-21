@@ -6,10 +6,6 @@
     "resend-challenge": "./src/cli.ts"
   },
   "type": "module",
-  "imports": {
-    "#src/*": "./src/*",
-    "#test/*.ts": "./test/*.ts"
-  },
   "exports": {
     "./package.json": "./package.json"
   },
@@ -21,7 +17,7 @@
     "start": "node ./src/cli.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "turbo:build": "prepare-declaration-build --declaration-output-dir ./dist/types --build-info-file ./dist/tsconfig.build.tsbuildinfo --source-package-json ./src/package.json && tsc --build ./tsconfig.json",
+    "turbo:build": "del-cli --dot=true \"dist/types\" \"dist/tsconfig.build.tsbuildinfo\" && tsc --build ./tsconfig.json",
     "turbo:lint": "oxlint .",
     "turbo:lint:fix": "pnpm run turbo:lint --fix",
     "turbo:test": "pnpm run test"
@@ -37,7 +33,6 @@
     "@patricktree-stack/config-typescript": "workspace:*",
     "@patricktree-stack/config-vitest": "workspace:*",
     "@resend-challenge/config-oxlint": "workspace:*",
-    "@resend-challenge/prepare-declaration-build": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "jsonc-parser": "^3.3.1",

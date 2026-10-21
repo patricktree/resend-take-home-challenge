@@ -1,12 +1,7 @@
 import { LOCAL_AGENT_TOKEN } from "@resend-challenge/api.routes";
 
-import { expect, test } from "#test-e2e/fixtures.ts";
-import {
-  createDraftData,
-  createPendingDraft,
-  enterToken,
-  openReviewUi,
-} from "#test-e2e/review-ui.ts";
+import { expect, test } from "./fixtures.ts";
+import { createDraftData, createPendingDraft, enterToken, openReviewUi } from "./review-ui.ts";
 
 test("an Agent token is refused before any request", async ({ page }) => {
   const apiRequests: string[] = [];

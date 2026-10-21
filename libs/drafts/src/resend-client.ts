@@ -6,8 +6,8 @@
 
 import { Temporal } from "temporal-polyfill";
 
-import type { ResendCall } from "#src/resend-call-classification.ts";
-import { parseRetryAfterSeconds } from "#src/send-retry-delay.ts";
+import type { ResendCall } from "./resend-call-classification.ts";
+import { parseRetryAfterSeconds } from "./send-retry-delay.ts";
 
 /** Where and as whom the adapter calls Resend. */
 export type ResendConnection = {

@@ -1,7 +1,7 @@
 import { Temporal } from "temporal-polyfill";
 import { expect, test } from "vitest";
 
-import { createDraftId, createRevisionId } from "#src/ids.ts";
+import { createDraftId, createRevisionId } from "../src/ids.ts";
 
 const UUID_V7_PATTERN = "[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
 

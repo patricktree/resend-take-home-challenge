@@ -2,7 +2,7 @@ import { Temporal } from "temporal-polyfill";
 
 import type { DraftSummaryResponse } from "@resend-challenge/api.routes";
 
-import { assertUnreachable } from "#src/assert-unreachable.ts";
+import { assertUnreachable } from "./assert-unreachable.ts";
 
 type Sending = DraftSummaryResponse["sending"];
 

@@ -7,10 +7,10 @@
 import { and, asc, desc, eq, inArray, isNotNull, sql, type SQL } from "drizzle-orm";
 import buffer from "node:buffer";
 
-import type { DraftsStorage } from "#src/database.ts";
-import { toDraftSummary, type DraftSummary } from "#src/draft.ts";
-import { isDraftId, type DraftId } from "#src/ids.ts";
-import { drafts, revisions, type ReviewStatus, type SendingStatus } from "#src/schema.ts";
+import type { DraftsStorage } from "./database.ts";
+import { toDraftSummary, type DraftSummary } from "./draft.ts";
+import { isDraftId, type DraftId } from "./ids.ts";
+import { drafts, revisions, type ReviewStatus, type SendingStatus } from "./schema.ts";
 
 /** A Draft's review status is its latest Revision's, which is never Superseded. */
 type DraftReviewStatus = Exclude<ReviewStatus, "SUPERSEDED">;

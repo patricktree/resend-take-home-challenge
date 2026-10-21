@@ -1,18 +1,12 @@
 import { and, eq, exists, inArray, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 
-import type { DraftsStorage } from "#src/database.ts";
-import type { DraftData, DraftSummary } from "#src/draft.ts";
-import { selectLastVerdictRow, toDraftSummary } from "#src/draft.ts";
-import {
-  createRevisionId,
-  isDraftId,
-  isRevisionId,
-  type DraftId,
-  type RevisionId,
-} from "#src/ids.ts";
-import { putRevisionBody } from "#src/revision-bodies.ts";
-import { drafts, revisions } from "#src/schema.ts";
+import type { DraftsStorage } from "./database.ts";
+import type { DraftData, DraftSummary } from "./draft.ts";
+import { selectLastVerdictRow, toDraftSummary } from "./draft.ts";
+import { createRevisionId, isDraftId, isRevisionId, type DraftId, type RevisionId } from "./ids.ts";
+import { putRevisionBody } from "./revision-bodies.ts";
+import { drafts, revisions } from "./schema.ts";
 
 /** The Draft data of the new Revision and the Revision it builds on. */
 type ReviseDraftInput = DraftData & { baseRevisionId: string };

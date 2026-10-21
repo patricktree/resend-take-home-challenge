@@ -1,10 +1,5 @@
-import { expect, test } from "#test-e2e/fixtures.ts";
-import {
-  createDraftData,
-  createPendingDraft,
-  openDraftPage,
-  openReviewUi,
-} from "#test-e2e/review-ui.ts";
+import { expect, test } from "./fixtures.ts";
+import { createDraftData, createPendingDraft, openDraftPage, openReviewUi } from "./review-ui.ts";
 
 test("the Reviewer approves a Pending Draft and sees its email sent", async ({
   page,

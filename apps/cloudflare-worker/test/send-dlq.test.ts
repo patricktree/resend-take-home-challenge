@@ -1,8 +1,8 @@
 import { test } from "vitest";
 
-import { expectExactlyOneEmailPerSentDraft } from "#test/use-resend-stub.ts";
-import { createApprovedDraft, getSending, useSendPipeline } from "#test/use-send-pipeline.ts";
-import { deliverSendDlqBatch } from "#test/use-worker.ts";
+import { expectExactlyOneEmailPerSentDraft } from "./use-resend-stub.ts";
+import { createApprovedDraft, getSending, useSendPipeline } from "./use-send-pipeline.ts";
+import { deliverSendDlqBatch } from "./use-worker.ts";
 
 test("a message in the dead-letter queue makes its Send FAILED / OUTCOME_UNKNOWN without calling Resend, and is acked", async ({
   expect,

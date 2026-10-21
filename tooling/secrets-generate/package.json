@@ -3,9 +3,6 @@
   "private": true,
   "description": "`pnpm secrets:generate`: creates the Agent and Reviewer tokens, commits the Agent token to the config and sets the Reviewer token as a Worker secret",
   "type": "module",
-  "imports": {
-    "#src/*": "./src/*"
-  },
   "exports": {
     "./package.json": "./package.json"
   },
@@ -18,7 +15,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "turbo:build": "prepare-declaration-build --declaration-output-dir ./dist/types --build-info-file ./dist/tsconfig.build.tsbuildinfo --source-package-json ./src/package.json && tsc --build ./tsconfig.json",
+    "turbo:build": "del-cli --dot=true \"dist/types\" \"dist/tsconfig.build.tsbuildinfo\" && tsc --build ./tsconfig.json",
     "turbo:lint": "oxlint .",
     "turbo:lint:fix": "pnpm run turbo:lint --fix",
     "turbo:test": "pnpm run test"
@@ -30,7 +27,6 @@
     "@patricktree-stack/config-typescript": "workspace:*",
     "@patricktree-stack/config-vitest": "workspace:*",
     "@resend-challenge/config-oxlint": "workspace:*",
-    "@resend-challenge/prepare-declaration-build": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "@vitest/coverage-v8": "catalog:",

@@ -1,21 +1,20 @@
 import { Temporal } from "temporal-polyfill";
 import { test, vi } from "vitest";
 
-import { approveRevision } from "#src/approve-revision.ts";
-import { createDraft } from "#src/create-draft.ts";
-import { drizzleForSession, type DraftsStorage } from "#src/database.ts";
-import type { DraftData } from "#src/draft.ts";
-import { createDraftId, createRevisionId, type DraftId } from "#src/ids.ts";
-import { revisionBodyKey } from "#src/revision-bodies.ts";
-import { drafts, revisions } from "#src/schema.ts";
-import { computeSendDeadline } from "#src/send-deadline.ts";
-import type { OutgoingEmail, SendQueue } from "#src/send-queue.ts";
-import { reconcileSends } from "#src/send-reconciler.ts";
-import { submitRevision } from "#src/submit-revision.ts";
-
-import { createHoldingD1Database } from "#test/holding-d1-database.ts";
-import { createFailingSendQueue, createRecordingSendQueue } from "#test/recording-send-queue.ts";
-import { useBindings, type TestBindings } from "#test/use-bindings.ts";
+import { approveRevision } from "../src/approve-revision.ts";
+import { createDraft } from "../src/create-draft.ts";
+import { drizzleForSession, type DraftsStorage } from "../src/database.ts";
+import type { DraftData } from "../src/draft.ts";
+import { createDraftId, createRevisionId, type DraftId } from "../src/ids.ts";
+import { revisionBodyKey } from "../src/revision-bodies.ts";
+import { drafts, revisions } from "../src/schema.ts";
+import { computeSendDeadline } from "../src/send-deadline.ts";
+import type { OutgoingEmail, SendQueue } from "../src/send-queue.ts";
+import { reconcileSends } from "../src/send-reconciler.ts";
+import { submitRevision } from "../src/submit-revision.ts";
+import { createHoldingD1Database } from "./holding-d1-database.ts";
+import { createFailingSendQueue, createRecordingSendQueue } from "./recording-send-queue.ts";
+import { useBindings, type TestBindings } from "./use-bindings.ts";
 
 const DRAFT_DATA = {
   to: ["ada@example.com"],

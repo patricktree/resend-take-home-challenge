@@ -13,12 +13,7 @@ import {
   type DraftSummaryResponse,
 } from "@resend-challenge/api.routes";
 
-import {
-  TEST_AGENT_TOKEN,
-  TEST_REVIEWER_TOKEN,
-  useWorker,
-  type TestWorker,
-} from "#test/use-worker.ts";
+import { TEST_AGENT_TOKEN, TEST_REVIEWER_TOKEN, useWorker, type TestWorker } from "./use-worker.ts";
 
 const LOCAL_MCP_URL = "http://localhost/mcp";
 const PRODUCTION_MCP_URL = "https://resend-challenge.patricktree.me/mcp";

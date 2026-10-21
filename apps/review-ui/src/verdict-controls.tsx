@@ -5,11 +5,11 @@ import React from "react";
 import { ApiError } from "@resend-challenge/api.client";
 import type { DraftResponse } from "@resend-challenge/api.routes";
 
-import { getApiClient } from "#src/api-client.ts";
-import { DSButton } from "#src/design-system/button.tsx";
-import { textFieldStyles } from "#src/design-system/text-field.ts";
-import { draftQuery, invalidateDraftQueries } from "#src/draft-queries.ts";
-import { ErrorMessage } from "#src/error-message.tsx";
+import { getApiClient } from "./api-client.ts";
+import { DSButton } from "./design-system/button.tsx";
+import { textFieldStyles } from "./design-system/text-field.ts";
+import { draftQuery, invalidateDraftQueries } from "./draft-queries.ts";
+import { ErrorMessage } from "./error-message.tsx";
 
 type VerdictControlsProps = {
   /** A Pending Draft; render the controls keyed by its latest Revision id, so they reset with it. */

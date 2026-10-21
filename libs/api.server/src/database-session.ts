@@ -3,7 +3,7 @@ import { createMiddleware } from "hono/factory";
 import { READ_BOOKMARK_HEADER } from "@resend-challenge/api.routes";
 import { drizzleForSession } from "@resend-challenge/drafts";
 
-import type { ApiServerHonoEnvironment } from "#src/api-server-environment.ts";
+import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
 
 /**
  * Runs the request on a D1 session and sets `draftsStorage` on it. Writes start the session on the

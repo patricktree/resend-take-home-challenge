@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import url from "node:url";
 
-import { generateSecrets } from "#src/secrets-generate.ts";
+import { generateSecrets } from "./secrets-generate.ts";
 
 const REPOSITORY_ROOT = url.fileURLToPath(new URL("../../..", import.meta.url));
 // The Worker package's own Wrangler, so the secret lands on the Worker its wrangler.jsonc names.

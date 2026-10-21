@@ -2,8 +2,8 @@ import type { Page } from "@playwright/test";
 
 import { LOCAL_AGENT_TOKEN } from "@resend-challenge/api.routes";
 
-import { expect, test } from "#test-e2e/fixtures.ts";
-import { createDraftData, createPendingDraft, openDraftPage } from "#test-e2e/review-ui.ts";
+import { expect, test } from "./fixtures.ts";
+import { createDraftData, createPendingDraft, openDraftPage } from "./review-ui.ts";
 
 test("a verdict on a Revision the Agent replaced is refused inline and not recorded", async ({
   page,

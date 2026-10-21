@@ -1,5 +1,5 @@
-import { expect, test } from "#test-e2e/fixtures.ts";
-import { createDraftData, createPendingDraft, enterToken } from "#test-e2e/review-ui.ts";
+import { expect, test } from "./fixtures.ts";
+import { createDraftData, createPendingDraft, enterToken } from "./review-ui.ts";
 
 test("the Review UI runs under its Content-Security-Policy without a violation", async ({
   page,

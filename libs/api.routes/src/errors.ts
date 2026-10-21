@@ -1,6 +1,6 @@
 import { z } from "@hono/zod-openapi";
 
-import { verdictSchema } from "#src/drafts.ts";
+import { verdictSchema } from "./drafts.ts";
 
 export type ErrorCode = (typeof ERROR_CODE)[keyof typeof ERROR_CODE];
 

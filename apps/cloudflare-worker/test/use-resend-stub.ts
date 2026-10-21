@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { startResendStub, type ResendStub } from "@resend-challenge/resend-stub";
 
-import type { TestWorker } from "#test/use-worker.ts";
+import type { TestWorker } from "./use-worker.ts";
 
 /** The dummy `RESEND_API_KEY` secret of every test Worker that sends through a Resend stub. */
 export const TEST_RESEND_API_KEY = "re_test-dummy-resend-api-key";

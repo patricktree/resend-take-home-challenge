@@ -2,7 +2,7 @@ import { infiniteQueryOptions, type QueryClient, queryOptions } from "@tanstack/
 
 import type { ListDraftsQuery } from "@resend-challenge/api.routes";
 
-import { getApiClient } from "#src/api-client.ts";
+import { getApiClient } from "./api-client.ts";
 
 /** The query of one of the two lists, Pending or Decided. */
 export type DraftListQuery = ReturnType<typeof createDraftListQuery>;

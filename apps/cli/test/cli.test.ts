@@ -5,8 +5,8 @@ import path from "node:path";
 import url from "node:url";
 import { test } from "vitest";
 
-import { getUnreachableUrl, useApiStub, type StubResponse } from "#test/api-stub.ts";
-import { readProductionVar } from "#test/production-config.ts";
+import { getUnreachableUrl, useApiStub, type StubResponse } from "./api-stub.ts";
+import { readProductionVar } from "./production-config.ts";
 
 const CLI_PATH = url.fileURLToPath(new URL("../src/cli.ts", import.meta.url));
 

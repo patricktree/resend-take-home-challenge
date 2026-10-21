@@ -1,9 +1,9 @@
 import { css } from "@linaria/core";
 import React from "react";
 
-import { DSButton } from "#src/design-system/button.tsx";
-import { textFieldStyles } from "#src/design-system/text-field.ts";
-import { storeReviewerToken } from "#src/reviewer-session.ts";
+import { DSButton } from "./design-system/button.tsx";
+import { textFieldStyles } from "./design-system/text-field.ts";
+import { storeReviewerToken } from "./reviewer-session.ts";
 
 type TokenScreenProps = {
   /** Whether the API answered 401 to the token that was stored last. */

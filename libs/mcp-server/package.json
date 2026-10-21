@@ -3,9 +3,6 @@
   "private": true,
   "description": "The MCP server: the six Agent tools on the typed client",
   "type": "module",
-  "imports": {
-    "#src/*": "./src/*"
-  },
   "exports": {
     "./package.json": "./package.json",
     ".": {
@@ -18,7 +15,7 @@
     "clean": "del-cli --dot=true \"dist\" \"*.tsbuildinfo\"",
     "lint": "turbo run turbo:lint",
     "lint:fix": "turbo run turbo:lint:fix",
-    "turbo:build": "prepare-declaration-build --declaration-output-dir ./dist/types --build-info-file ./dist/tsconfig.build.tsbuildinfo --source-package-json ./src/package.json && tsc --build ./tsconfig.json",
+    "turbo:build": "del-cli --dot=true \"dist/types\" \"dist/tsconfig.build.tsbuildinfo\" && tsc --build ./tsconfig.json",
     "turbo:lint": "oxlint .",
     "turbo:lint:fix": "pnpm run turbo:lint --fix"
   },
@@ -31,7 +28,6 @@
   "devDependencies": {
     "@patricktree-stack/config-typescript": "workspace:*",
     "@resend-challenge/config-oxlint": "workspace:*",
-    "@resend-challenge/prepare-declaration-build": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "oxlint": "catalog:",

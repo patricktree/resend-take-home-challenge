@@ -13,16 +13,16 @@ import {
   sendingStatusSchema,
 } from "@resend-challenge/api.routes";
 
-import { toErrorEnvelope } from "#src/cli-error.ts";
-import { createClient, ENVIRONMENT_VARIABLE } from "#src/connection.ts";
+import { toErrorEnvelope } from "./cli-error.ts";
+import { createClient, ENVIRONMENT_VARIABLE } from "./connection.ts";
 import {
   formatDraft,
   formatDraftList,
   formatDraftSummary,
   formatRevision,
-} from "#src/human-output.ts";
-import { parseInput, readBody } from "#src/input.ts";
-import { PRODUCTION_API_URL } from "#src/production.ts";
+} from "./human-output.ts";
+import { parseInput, readBody } from "./input.ts";
+import { PRODUCTION_API_URL } from "./production.ts";
 
 /** Commander signals help output through these codes; they are not failures. */
 const HELP_ERROR_CODES = new Set(["commander.helpDisplayed", "commander.help"]);

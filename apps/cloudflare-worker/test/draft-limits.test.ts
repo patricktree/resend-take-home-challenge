@@ -2,7 +2,7 @@ import { test } from "vitest";
 
 import { LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN } from "@resend-challenge/api.routes";
 
-import { useWorker } from "#test/use-worker.ts";
+import { useWorker } from "./use-worker.ts";
 
 const REVISION_PATH =
   "/api/v1/drafts/drf_00000000-0000-7000-8000-000000000000/revisions/rev_00000000-0000-7000-8000-000000000000";

@@ -15,8 +15,8 @@ import {
 import type { SendQueueMessage } from "@resend-challenge/drafts";
 import type { ResendStub } from "@resend-challenge/resend-stub";
 
-import { resendStubWorkerOptions, useResendStub } from "#test/use-resend-stub.ts";
-import { readSentSendQueueMessages, useWorker, type TestWorker } from "#test/use-worker.ts";
+import { resendStubWorkerOptions, useResendStub } from "./use-resend-stub.ts";
+import { readSentSendQueueMessages, useWorker, type TestWorker } from "./use-worker.ts";
 
 /** The Draft that `createApprovedDraft()` creates. */
 export const DRAFT_DATA = {

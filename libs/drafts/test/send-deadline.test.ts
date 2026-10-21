@@ -1,7 +1,7 @@
 import { Temporal } from "temporal-polyfill";
 import { expect, test } from "vitest";
 
-import { computeSendDeadline, isPastSendDeadline } from "#src/send-deadline.ts";
+import { computeSendDeadline, isPastSendDeadline } from "../src/send-deadline.ts";
 
 test("the deadline of a Send is 23 h after its Approval", () => {
   const approvedAt = Temporal.Instant.from("2026-10-21T08:15:30.250Z");

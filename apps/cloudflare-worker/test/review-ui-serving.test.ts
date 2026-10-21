@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import { test } from "vitest";
 
-import { useWorker } from "#test/use-worker.ts";
+import { useWorker } from "./use-worker.ts";
 
 /** The test runtime's stand-in for the built Review UI (wrangler.test.jsonc, `assets`). */
 const FIXTURE_INDEX_HTML = await fs.readFile(

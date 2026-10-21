@@ -12,7 +12,7 @@ import {
   type DraftSummaryResponse,
 } from "@resend-challenge/api.routes";
 
-import { useWorker, type TestWorker } from "#test/use-worker.ts";
+import { useWorker, type TestWorker } from "./use-worker.ts";
 
 const AGENT_HEADERS = {
   Authorization: `Bearer ${LOCAL_AGENT_TOKEN}`,

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test, type TestContext } from "vitest";
 
-import { resendError, startResendStub, type ResendStub } from "#src/resend-stub.ts";
+import { resendError, startResendStub, type ResendStub } from "../src/resend-stub.ts";
 
 const EMAIL = {
   from: "drafts@example.com",

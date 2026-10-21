@@ -4,7 +4,7 @@ import type { z } from "zod";
 
 import { ERROR_CODE } from "@resend-challenge/api.routes";
 
-import { CliError } from "#src/cli-error.ts";
+import { CliError } from "./cli-error.ts";
 
 /** The command-line names of the request fields, so a validation message names what to fix. */
 const ARGUMENT_NAMES: Record<string, string> = {

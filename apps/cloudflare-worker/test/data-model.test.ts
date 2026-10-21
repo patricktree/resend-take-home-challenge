@@ -1,6 +1,6 @@
 import { test } from "vitest";
 
-import { useWorker } from "#test/use-worker.ts";
+import { useWorker } from "./use-worker.ts";
 
 /*
  * The CHECK constraints and indexes of the D1 schema (spec section 5), exercised with raw SQL on

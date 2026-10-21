@@ -1,8 +1,7 @@
 import { test } from "vitest";
 
-import { PRODUCTION_API_URL, PUBLIC_AGENT_TOKEN } from "#src/production.ts";
-
-import { readProductionVar } from "#test/production-config.ts";
+import { PRODUCTION_API_URL, PUBLIC_AGENT_TOKEN } from "../src/production.ts";
+import { readProductionVar } from "./production-config.ts";
 
 // Constant checks against the production config, without any network access.
 test("the built-in API URL is the production Worker's PUBLIC_BASE_URL", async ({ expect }) => {

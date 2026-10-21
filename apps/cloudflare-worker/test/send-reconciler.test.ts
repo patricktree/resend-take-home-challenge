@@ -1,14 +1,14 @@
 import { Temporal } from "temporal-polyfill";
 import { test } from "vitest";
 
-import { expectExactlyOneEmailPerSentDraft } from "#test/use-resend-stub.ts";
-import { createApprovedDraft, getSending, useSendPipeline } from "#test/use-send-pipeline.ts";
+import { expectExactlyOneEmailPerSentDraft } from "./use-resend-stub.ts";
+import { createApprovedDraft, getSending, useSendPipeline } from "./use-send-pipeline.ts";
 import {
   deliverSendQueueBatch,
   readSendQueueCalls,
   runCronTick,
   type TestWorker,
-} from "#test/use-worker.ts";
+} from "./use-worker.ts";
 
 const SECOND_MILLISECONDS = 1000;
 

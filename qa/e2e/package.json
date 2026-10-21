@@ -3,9 +3,6 @@
   "private": true,
   "description": "Playwright e2e tests of the review flow",
   "type": "module",
-  "imports": {
-    "#test-e2e/*.ts": "./test-e2e/*.ts"
-  },
   "scripts": {
     "clean": "del-cli --dot=true \"*.tsbuildinfo\" \"playwright-output\"",
     "test:e2e": "turbo run turbo:build --filter=@resend-challenge/e2e... --output-logs=errors-only && playwright test",

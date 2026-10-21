@@ -1,7 +1,7 @@
 import { test } from "vitest";
 import { z } from "zod";
 
-import { useWorker } from "#test/use-worker.ts";
+import { useWorker } from "./use-worker.ts";
 
 /** The parts of an OpenAPI document the tests read. */
 const openApiDocumentSchema = z.object({

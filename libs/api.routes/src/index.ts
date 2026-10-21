@@ -6,7 +6,7 @@ export {
   type ApiContractApp,
   type ApiContractEnvironment,
   type ApiHandlers,
-} from "#src/api-contract.ts";
+} from "./api-contract.ts";
 export {
   draftDataRequestSchema,
   draftListSchema,
@@ -27,12 +27,12 @@ export {
   type RejectionRequest,
   type ReviseRequest,
   type RevisionResponse,
-} from "#src/drafts.ts";
+} from "./drafts.ts";
 export {
   ERROR_CODE,
   errorResponseSchema,
   type ErrorCode,
   type ErrorExtras,
   type ErrorResponse,
-} from "#src/errors.ts";
-export { LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN } from "#src/local-tokens.ts";
+} from "./errors.ts";
+export { LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN } from "./local-tokens.ts";

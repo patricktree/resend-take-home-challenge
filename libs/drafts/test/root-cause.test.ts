@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { findRootCause, findRootCauseMessage } from "#src/root-cause.ts";
+import { findRootCause, findRootCauseMessage } from "../src/root-cause.ts";
 
 test("the root cause is the innermost cause, never a wrapping error that carries SQL parameters", () => {
   const rootCause = new Error("D1_ERROR: UNIQUE constraint failed");

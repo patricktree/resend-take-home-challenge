@@ -1,9 +1,9 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import React from "react";
 
-import { AppShell } from "#src/app-shell.tsx";
-import { useReviewerSession } from "#src/reviewer-session.ts";
-import { TokenScreen } from "#src/token-screen.tsx";
+import { AppShell } from "./app-shell.tsx";
+import { useReviewerSession } from "./reviewer-session.ts";
+import { TokenScreen } from "./token-screen.tsx";
 
 export const rootRoute = createRootRoute({ component: RootLayout });
 

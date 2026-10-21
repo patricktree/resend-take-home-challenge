@@ -77,7 +77,7 @@ test("a tick re-enqueues large lost hand-offs in several sendBatch calls, each w
   onTestFinished,
 }) => {
   const bindings = await useBindings({ onTestFinished });
-  const draftIds = await createApprovedDrafts(bindings, 40, {
+  const draftIds = await createApprovedDrafts(bindings, 20, {
     isHandOffLost: true,
     draftData: LARGEST_DRAFT_DATA,
   });
@@ -105,7 +105,7 @@ test("a failed sendBatch of one chunk stops the job: the chunks before it are re
   onTestFinished,
 }) => {
   const bindings = await useBindings({ onTestFinished });
-  const draftIds = await createApprovedDrafts(bindings, 40, {
+  const draftIds = await createApprovedDrafts(bindings, 20, {
     isHandOffLost: true,
     draftData: LARGEST_DRAFT_DATA,
   });

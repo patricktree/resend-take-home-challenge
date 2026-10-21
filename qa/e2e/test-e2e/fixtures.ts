@@ -1,6 +1,6 @@
 import { test as base, type TestInfo } from "@playwright/test";
 import childProcess from "node:child_process";
-import { once } from "node:events";
+import events from "node:events";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -40,8 +40,8 @@ const WRANGLER_BIN = path.join(E2E_DIRECTORY, "node_modules/.bin/wrangler");
 
 /** Wrangler prints this once the Worker listens; with `--port 0` it names the port the OS chose. */
 const READY_LINE_PATTERN = /Ready on http:\/\/127\.0\.0\.1:(?<port>\d+)/;
-const WRANGLER_START_TIMEOUT_MS = 30_000;
-const WRANGLER_STOP_TIMEOUT_MS = 10_000;
+const WRANGLER_START_TIMEOUT_MILLISECONDS = 30_000;
+const WRANGLER_STOP_TIMEOUT_MILLISECONDS = 10_000;
 
 /** The dummy `RESEND_API_KEY` of every test Worker; only the test's Resend stub receives it. */
 const TEST_RESEND_API_KEY = "re_e2e-dummy-resend-api-key";
@@ -193,7 +193,7 @@ async function waitForReadyPort(
 
   const timeout = setTimeout(
     () => reject(new Error(`wrangler dev did not get ready:\n${output.join("")}`)),
-    WRANGLER_START_TIMEOUT_MS,
+    WRANGLER_START_TIMEOUT_MILLISECONDS,
   );
   const handleOutput = (): void => {
     const port = READY_LINE_PATTERN.exec(util.stripVTControlCharacters(output.join("")))?.groups?.[
@@ -222,11 +222,11 @@ async function stopProcessGroup(childProcessToStop: childProcess.ChildProcess): 
     return;
   }
 
-  const exited = once(childProcessToStop, "exit");
+  const exited = events.once(childProcessToStop, "exit");
   killProcessGroup(childProcessToStop, "SIGTERM");
   const forceKill = setTimeout(
     () => killProcessGroup(childProcessToStop, "SIGKILL"),
-    WRANGLER_STOP_TIMEOUT_MS,
+    WRANGLER_STOP_TIMEOUT_MILLISECONDS,
   );
   await exited;
   clearTimeout(forceKill);

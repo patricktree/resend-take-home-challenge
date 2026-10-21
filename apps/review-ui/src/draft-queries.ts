@@ -21,7 +21,7 @@ export const pendingDraftsQuery = createDraftListQuery("pending", PENDING_LIST_Q
 export const decidedDraftsQuery = createDraftListQuery("decided", DECIDED_LIST_QUERY);
 
 /** How often the Draft page reads the Draft again while its Send is `QUEUED`. */
-const SENDING_POLL_INTERVAL_MS = 3000;
+const SENDING_POLL_INTERVAL_MILLISECONDS = 3000;
 
 export function draftQuery(draftId: string) {
   return queryOptions({
@@ -29,7 +29,7 @@ export function draftQuery(draftId: string) {
     queryFn: () => getApiClient().getDraft(draftId),
     // Polls until the Send leaves `QUEUED` ("Sending…"), then stops.
     refetchInterval: (query) =>
-      query.state.data?.sending.status === "QUEUED" ? SENDING_POLL_INTERVAL_MS : false,
+      query.state.data?.sending.status === "QUEUED" ? SENDING_POLL_INTERVAL_MILLISECONDS : false,
   });
 }
 

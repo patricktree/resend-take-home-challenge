@@ -261,9 +261,6 @@ importers:
       del-cli:
         specifier: ^8.0.1
         version: 8.0.1
-      eslint-plugin-react-you-might-not-need-an-effect:
-        specifier: ^1.0.2
-        version: 1.0.2
       knip:
         specifier: ^6.41.0
         version: 6.42.1

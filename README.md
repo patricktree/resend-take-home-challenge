@@ -4,7 +4,7 @@ A gate between Agents that compose emails and the human Reviewer who must approv
 
 One Cloudflare Worker at <https://resend-challenge.patricktree.me> serves the HTTP API under `/api/v1`, the MCP server at `/mcp` and the Review UI under `/app`. It keeps Drafts in D1 and Revision bodies in R2, hands approved Drafts to a Cloudflare Queue whose consumer calls Resend, and runs a Send reconciler every minute. The published OpenAPI document is served at `/api/openapi.json`.
 
-## Act as an Agent
+## Act as an Agent via MCP
 
 The Agent token is public by design, so you can act as an Agent without any setup: `agent_placeholder-run-pnpm-secrets-generate`. If it starts with `agent_placeholder`, the production tokens have not been generated yet. Nothing is sent without the Reviewer token, which is never committed.
 
@@ -49,7 +49,7 @@ Hosts configured through JSON take the same URL and header, for example:
 
 The host then lists six tools: `create_draft`, `get_draft`, `list_drafts`, `revise_draft`, `submit_draft` and `get_revision`. The server instructions describe the lifecycle. No tool approves, rejects or sends: only the Reviewer does that, in the Review UI. Locally, use `http://localhost:5173/mcp` with the local Agent token `agent_local-development-only`.
 
-### Act as an Agent with the CLI
+## Act as an Agent with the CLI
 
 After `pnpm install` (see [AGENTS.md](AGENTS.md#environment-setup)), run the `draft-approval` CLI from the repository root. It calls production with the public Agent token unless you set `DRAFT_APPROVAL_TOKEN`, and `--api-url` or `DRAFT_APPROVAL_API_URL` points it at another API origin, such as `http://localhost:5173` with the local Agent token. It has no command to approve or reject: only the Reviewer decides, in the Review UI. `pnpm draft-approval --help` and `--help` on every command describe the options.
 
@@ -151,7 +151,7 @@ These steps need Patrick's Cloudflare and Resend accounts, so no agent runs them
   Success: `init` reports `Terraform has been successfully initialized!`, the plan creates 4 resources (D1 database, R2 bucket, two Queues), and `apply` ends with `Apply complete! Resources: 4 added, 0 changed, 0 destroyed.`
 
 - [ ] **Copy the outputs into `wrangler.jsonc`.** Run `terraform -chdir=terraform output -raw d1_database_id` and replace the placeholder `00000000-0000-0000-0000-000000000000` in `d1_databases[0].database_id` of [`apps/cloudflare-worker/wrangler.jsonc`](apps/cloudflare-worker/wrangler.jsonc) with it; drop the word PLACEHOLDER from the comment above it. The other bindings refer to resources by name: check that `terraform -chdir=terraform output` shows `d1_database_name = "draft-approval"`, `revision_bodies_bucket_name = "draft-approval-revision-bodies"`, `send_queue_name = "draft-approval-send"` and `send_dlq_name = "draft-approval-send-dlq"`, the names `wrangler.jsonc` uses. Commit the change.
-- [ ] **Create the Resend sending domain.** In the Resend dashboard, go to **Domains > Add Domain**, enter `resend-challenge.patricktree.me` and choose the region `eu-west-1` (Ireland), the region the earlier Terraform code used, close to the operator. Leave the other options at their defaults. Success: the domain appears under **Domains**, and its page lists the DNS records to add.
+- [ ] **Create the Resend sending domain.** In the Resend dashboard, go to **Domains > Add Domain**, enter `resend-challenge.patricktree.me` and choose the region `eu-west-1` (Ireland). Leave the other options at their defaults. Success: the domain appears under **Domains**, and its page lists the DNS records to add.
 - [ ] **Add the sending domain's DNS records.** In the Cloudflare dashboard, open the zone `patricktree.me`, go to **DNS > Records** and choose **Add record** once for each record the Resend domain page lists, typically an MX and an SPF TXT record on `send.resend-challenge` and a DKIM TXT record on `resend._domainkey.resend-challenge`. Copy each record's type, name, value and priority from the Resend domain page, not from this README, enter the name as Resend shows it (Cloudflare appends `.patricktree.me`), keep the TTL at **Auto** and set each record to **DNS only**, never proxied. Alternatively, choose **Sign in to Cloudflare** on the Resend domain page, which adds the records through Domain Connect once you authorize Resend's access to the zone. Success: **DNS > Records** shows every record from the Resend domain page under its full name, such as `send.resend-challenge.patricktree.me`, with the values unchanged.
 - [ ] **Wait for the Resend domain verification.** On the Resend domain page, choose **Verify DNS Records**. Resend keeps checking on its own; verification often takes minutes, and Resend allows up to 72 hours for DNS propagation. Success: **Domains** in the Resend dashboard shows `resend-challenge.patricktree.me` as **Verified**.
 - [ ] **Create the Worker's Resend API key.** In the Resend dashboard, go to **API Keys > Create API Key**, choose **Sending access** and the domain `resend-challenge.patricktree.me`. Resend shows the key only once; keep it for the step **Set the Resend API key**.
@@ -159,7 +159,7 @@ These steps need Patrick's Cloudflare and Resend accounts, so no agent runs them
 - [ ] **Set the Resend API key.** Run `pnpm --filter '@draft-approval/cloudflare-worker' exec wrangler secret put RESEND_API_KEY` and paste the sending-only key when Wrangler asks for it. Success: Wrangler prints `Success! Uploaded secret RESEND_API_KEY`.
 - [ ] **Apply the D1 migrations.** Run `pnpm --filter '@draft-approval/cloudflare-worker' run migrations:apply:remote` and confirm. Success: Wrangler lists every migration in `libs/drafts/migrations` with status ✅.
 - [ ] **Deploy the Worker.** Run `pnpm --filter '@draft-approval/cloudflare-worker' run deploy`, which builds the Worker with the Review UI as its static assets and runs `wrangler deploy`. Success: Wrangler lists the triggers `resend-challenge.patricktree.me (custom domain)`, `schedule: * * * * *`, `Producer for draft-approval-send`, `Consumer for draft-approval-send` and `Consumer for draft-approval-send-dlq`. A first deploy of the custom domain can take a few minutes to serve.
-- [ ] **Verify production.** Create and get a Draft with the public Agent token, as in [Act as an Agent](#act-as-an-agent): creating answers `201`, getting answers `200` with the body. Then check that production refuses the local tokens and redirects the root:
+- [ ] **Verify production.** Create and get a Draft with the public Agent token, as in [Act as an Agent via MCP](#act-as-an-agent-via-mcp): creating answers `201`, getting answers `200` with the body. Then check that production refuses the local tokens and redirects the root:
 
   ```sh
   curl -sS -o /dev/null -w '%{http_code}\n' https://resend-challenge.patricktree.me/api/v1/drafts/drf_00000000-0000-7000-8000-000000000000 \

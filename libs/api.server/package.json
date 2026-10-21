@@ -28,7 +28,6 @@
   "dependencies": {
     "@modelcontextprotocol/client": "catalog:mcp",
     "@modelcontextprotocol/server": "catalog:mcp",
-    "@resend-challenge/api.client": "workspace:*",
     "@resend-challenge/api.routes": "workspace:*",
     "@resend-challenge/drafts": "workspace:*",
     "@resend-challenge/mcp-server": "workspace:*",

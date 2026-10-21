@@ -17,6 +17,9 @@ import {
   sendingStatusSchema,
 } from "@resend-challenge/api.routes";
 
+/** Re-exported so the `/mcp` endpoint can build the client without depending on the client package. */
+export { ApiClient } from "@resend-challenge/api.client";
+
 export type ResendChallengeMcpServerOptions = {
   /**
    * The typed client every tool calls the API through. It carries the caller's own token, so a tool

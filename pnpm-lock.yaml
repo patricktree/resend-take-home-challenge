@@ -605,9 +605,6 @@ importers:
       '@modelcontextprotocol/server':
         specifier: catalog:mcp
         version: 2.3.1
-      '@resend-challenge/api.client':
-        specifier: workspace:*
-        version: link:../api.client
       '@resend-challenge/api.routes':
         specifier: workspace:*
         version: link:../api.routes

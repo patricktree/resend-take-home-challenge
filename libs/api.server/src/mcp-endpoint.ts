@@ -2,9 +2,8 @@ import { createMcpHandler } from "agents/mcp/server";
 import type { Context, Hono } from "hono";
 import { createMiddleware } from "hono/factory";
 
-import { ApiClient } from "@resend-challenge/api.client";
 import { ERROR_CODE } from "@resend-challenge/api.routes";
-import { createResendChallengeMcpServer } from "@resend-challenge/mcp-server";
+import { ApiClient, createResendChallengeMcpServer } from "@resend-challenge/mcp-server";
 
 import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
 import { parseBearerToken, ROLE } from "./authentication.ts";

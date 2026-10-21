@@ -1,6 +1,6 @@
 import { ApiClient } from "@resend-challenge/api.client";
 
-import { readReviewerSession } from "#src/reviewer-session.ts";
+import { readReviewerSession } from "./reviewer-session.ts";
 
 let cachedClient: { token: string; client: ApiClient } | undefined;
 

@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { sendingStatusLabel } from "#src/draft-labels.ts";
+import { sendingStatusLabel } from "../src/draft-labels.ts";
 
 // The expected labels are the table of spec section 11, "Sending status labels".
 

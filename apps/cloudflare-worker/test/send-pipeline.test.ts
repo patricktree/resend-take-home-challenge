@@ -9,15 +9,15 @@ import {
   resendStubWorkerOptions,
   TEST_RESEND_API_KEY,
   useResendStub,
-} from "#test/use-resend-stub.ts";
+} from "./use-resend-stub.ts";
 import {
   createApprovedDraft,
   DRAFT_DATA,
   getDraft,
   getSending,
   useSendPipeline,
-} from "#test/use-send-pipeline.ts";
-import { deliverSendQueueBatch, useWorker, type TestWorker } from "#test/use-worker.ts";
+} from "./use-send-pipeline.ts";
+import { deliverSendQueueBatch, useWorker, type TestWorker } from "./use-worker.ts";
 
 /** `RESEND_FROM` of test/wrangler.test.jsonc. */
 const RESEND_FROM = "drafts@resend-challenge.patricktree.me";

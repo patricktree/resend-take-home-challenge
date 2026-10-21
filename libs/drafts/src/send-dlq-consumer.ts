@@ -7,10 +7,10 @@
 
 import { z } from "zod";
 
-import { drizzleForSession } from "#src/database.ts";
-import { findRootCauseMessage } from "#src/root-cause.ts";
-import { recordFailed } from "#src/send-outcomes.ts";
-import { sendQueueMessageSchema } from "#src/send-queue.ts";
+import { drizzleForSession } from "./database.ts";
+import { findRootCauseMessage } from "./root-cause.ts";
+import { recordFailed } from "./send-outcomes.ts";
+import { sendQueueMessageSchema } from "./send-queue.ts";
 
 /**
  * Consumes one batch of the Send DLQ: records `FAILED` / `OUTCOME_UNKNOWN` for each message's Send,

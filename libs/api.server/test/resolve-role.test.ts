@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 
 import { LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN } from "@resend-challenge/api.routes";
 
-import { resolveRole } from "#src/authentication.ts";
+import { resolveRole } from "../src/authentication.ts";
 
 const AGENT_TOKEN = "agent_configured-agent-token";
 const REVIEWER_TOKEN = "reviewer_configured-reviewer-token";

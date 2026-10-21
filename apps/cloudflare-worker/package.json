@@ -3,10 +3,6 @@
   "private": true,
   "description": "The Worker entry: fetch (API), queue and scheduled handlers, Wrangler and Vite configuration, integration tests",
   "type": "module",
-  "imports": {
-    "#src/*": "./src/*",
-    "#test/*.ts": "./test/*.ts"
-  },
   "exports": {
     "./package.json": "./package.json",
     ".": {
@@ -26,7 +22,7 @@
     "migrations:apply:remote": "wrangler d1 migrations apply DB --remote",
     "test": "vitest run",
     "test:watch": "vitest",
-    "turbo:build": "prepare-declaration-build --declaration-output-dir ./dist/types --build-info-file ./dist/tsconfig.build.tsbuildinfo --source-package-json ./src/package.json && tsc --build ./tsconfig.json && vite build",
+    "turbo:build": "del-cli --dot=true \"dist/types\" \"dist/tsconfig.build.tsbuildinfo\" && tsc --build ./tsconfig.json && vite build",
     "turbo:cf-typegen": "pnpm run cf-typegen",
     "turbo:lint": "oxlint .",
     "turbo:lint:fix": "pnpm run turbo:lint --fix",
@@ -44,7 +40,6 @@
     "@resend-challenge/api.client": "workspace:*",
     "@resend-challenge/api.routes": "workspace:*",
     "@resend-challenge/config-oxlint": "workspace:*",
-    "@resend-challenge/prepare-declaration-build": "workspace:*",
     "@resend-challenge/resend-stub": "workspace:*",
     "@resend-challenge/review-ui": "workspace:*",
     "@types/node": "catalog:",

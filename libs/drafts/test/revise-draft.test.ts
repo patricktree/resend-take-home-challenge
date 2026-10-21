@@ -1,14 +1,13 @@
 import { test } from "vitest";
 
-import { approveRevision } from "#src/approve-revision.ts";
-import { createDraft } from "#src/create-draft.ts";
-import { drizzleForSession, type DraftsStorage } from "#src/database.ts";
-import { reviseDraft } from "#src/revise-draft.ts";
-import { submitRevision } from "#src/submit-revision.ts";
-
-import { createHoldingD1Database } from "#test/holding-d1-database.ts";
-import { createRecordingSendQueue } from "#test/recording-send-queue.ts";
-import { useBindings, type TestBindings } from "#test/use-bindings.ts";
+import { approveRevision } from "../src/approve-revision.ts";
+import { createDraft } from "../src/create-draft.ts";
+import { drizzleForSession, type DraftsStorage } from "../src/database.ts";
+import { reviseDraft } from "../src/revise-draft.ts";
+import { submitRevision } from "../src/submit-revision.ts";
+import { createHoldingD1Database } from "./holding-d1-database.ts";
+import { createRecordingSendQueue } from "./recording-send-queue.ts";
+import { useBindings, type TestBindings } from "./use-bindings.ts";
 
 const DRAFT_DATA = {
   to: ["ada@example.com"],

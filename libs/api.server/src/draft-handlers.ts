@@ -26,8 +26,8 @@ import {
   type RevisionSummary,
 } from "@resend-challenge/drafts";
 
-import type { ApiServerHonoEnvironment } from "#src/api-server-environment.ts";
-import { jsonError } from "#src/http-errors.ts";
+import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
+import { jsonError } from "./http-errors.ts";
 
 export const DRAFT_HANDLERS: ApiHandlers<ApiServerHonoEnvironment> = {
   createDraft: async (context) => {

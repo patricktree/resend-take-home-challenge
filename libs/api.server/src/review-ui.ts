@@ -1,7 +1,7 @@
 import type { Context, Hono } from "hono";
 import { createMiddleware } from "hono/factory";
 
-import type { ApiServerHonoEnvironment } from "#src/api-server-environment.ts";
+import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
 
 /**
  * The Review UI's browser hardening (spec section 7). `frame-ancestors 'none'` keeps any page from

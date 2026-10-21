@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 
-import { expect, test } from "#test-e2e/fixtures.ts";
-import { createDraftData, createPendingDraft, openReviewUi } from "#test-e2e/review-ui.ts";
+import { expect, test } from "./fixtures.ts";
+import { createDraftData, createPendingDraft, openReviewUi } from "./review-ui.ts";
 
 /** The API's default page size, which the lists use. */
 const PAGE_SIZE = 50;

@@ -2,8 +2,8 @@ import { css } from "@linaria/core";
 import { Link } from "@tanstack/react-router";
 import React from "react";
 
-import { DSButton } from "#src/design-system/button.tsx";
-import { signOut } from "#src/query-client.ts";
+import { DSButton } from "./design-system/button.tsx";
+import { signOut } from "./query-client.ts";
 
 type AppShellProps = {
   children: React.ReactNode;

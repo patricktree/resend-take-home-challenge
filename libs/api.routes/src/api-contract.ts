@@ -11,8 +11,8 @@ import {
   reviseRequestSchema,
   revisionParamsSchema,
   revisionSchema,
-} from "#src/drafts.ts";
-import { ERROR_CODE, errorResponseSchema, type ErrorResponse } from "#src/errors.ts";
+} from "./drafts.ts";
+import { ERROR_CODE, errorResponseSchema, type ErrorResponse } from "./errors.ts";
 
 /** What the contract needs from the app's environment: the request id of every error envelope. */
 export type ApiContractEnvironment = { Variables: { requestId: string } };

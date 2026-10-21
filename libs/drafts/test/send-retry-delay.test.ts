@@ -1,7 +1,7 @@
 import { Temporal } from "temporal-polyfill";
 import { expect, test } from "vitest";
 
-import { computeRetryDelaySeconds, parseRetryAfterSeconds } from "#src/send-retry-delay.ts";
+import { computeRetryDelaySeconds, parseRetryAfterSeconds } from "../src/send-retry-delay.ts";
 
 const NOW = Temporal.Instant.from("2026-10-21T08:00:00.000Z").epochMilliseconds;
 

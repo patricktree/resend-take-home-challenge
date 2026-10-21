@@ -1,8 +1,8 @@
 import { ApiClient } from "@resend-challenge/api.client";
 import { ERROR_CODE } from "@resend-challenge/api.routes";
 
-import { CLI_ERROR_CODE, CliError } from "#src/cli-error.ts";
-import { PRODUCTION_API_URL, PUBLIC_AGENT_TOKEN } from "#src/production.ts";
+import { CLI_ERROR_CODE, CliError } from "./cli-error.ts";
+import { PRODUCTION_API_URL, PUBLIC_AGENT_TOKEN } from "./production.ts";
 
 export const ENVIRONMENT_VARIABLE = {
   TOKEN: "RESEND_CHALLENGE_TOKEN",

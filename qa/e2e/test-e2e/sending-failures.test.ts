@@ -1,7 +1,7 @@
 import { resendError } from "@resend-challenge/resend-stub";
 
-import { expect, test } from "#test-e2e/fixtures.ts";
-import { createDraftData, createPendingDraft, openDraftPage } from "#test-e2e/review-ui.ts";
+import { expect, test } from "./fixtures.ts";
+import { createDraftData, createPendingDraft, openDraftPage } from "./review-ui.ts";
 
 /** More attempts than the Queue's backoff (1 s, 2 s, 4 s, …) makes within one test. */
 const RETRYABLE_ANSWER_COUNT = 20;

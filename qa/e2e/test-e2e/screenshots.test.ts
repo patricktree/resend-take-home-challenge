@@ -7,13 +7,8 @@
 
 import type { Page } from "@playwright/test";
 
-import { expect, test } from "#test-e2e/fixtures.ts";
-import {
-  createDraftData,
-  createPendingDraft,
-  openDraftPage,
-  openReviewUi,
-} from "#test-e2e/review-ui.ts";
+import { expect, test } from "./fixtures.ts";
+import { createDraftData, createPendingDraft, openDraftPage, openReviewUi } from "./review-ui.ts";
 
 /** 10:30 in the tests' time zone, Europe/Vienna (playwright.config.ts). */
 const PINNED_TIMESTAMP = "2026-10-19T08:30:00.000Z";

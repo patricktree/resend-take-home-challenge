@@ -3,10 +3,6 @@
   "private": true,
   "description": "The Draft domain: storage, use cases and the Send pipeline (Queue consumer, DLQ consumer, Send reconciler)",
   "type": "module",
-  "imports": {
-    "#src/*": "./src/*",
-    "#test/*.ts": "./test/*.ts"
-  },
   "exports": {
     "./package.json": "./package.json",
     ".": {
@@ -24,7 +20,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "turbo:build": "prepare-declaration-build --declaration-output-dir ./dist/types --build-info-file ./dist/tsconfig.build.tsbuildinfo --source-package-json ./src/package.json && tsc --build ./tsconfig.json",
+    "turbo:build": "del-cli --dot=true \"dist/types\" \"dist/tsconfig.build.tsbuildinfo\" && tsc --build ./tsconfig.json",
     "turbo:cf-typegen": "pnpm run cf-typegen",
     "turbo:lint": "oxlint .",
     "turbo:lint:fix": "pnpm run turbo:lint --fix",
@@ -40,7 +36,6 @@
     "@patricktree-stack/config-typescript": "workspace:*",
     "@patricktree-stack/config-vitest": "workspace:*",
     "@resend-challenge/config-oxlint": "workspace:*",
-    "@resend-challenge/prepare-declaration-build": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "@vitest/coverage-v8": "catalog:",

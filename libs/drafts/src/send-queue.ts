@@ -5,8 +5,8 @@
 
 import { z } from "zod";
 
-import { isDraftId, type DraftId } from "#src/ids.ts";
-import type { drafts } from "#src/schema.ts";
+import { isDraftId, type DraftId } from "./ids.ts";
+import type { drafts } from "./schema.ts";
 
 /** The email an Approval freezes on the Draft row; the Send sends exactly this, with the body. */
 export type OutgoingEmail = z.infer<typeof outgoingEmailSchema>;

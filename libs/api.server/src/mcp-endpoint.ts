@@ -6,9 +6,9 @@ import { ApiClient } from "@resend-challenge/api.client";
 import { ERROR_CODE } from "@resend-challenge/api.routes";
 import { createResendChallengeMcpServer } from "@resend-challenge/mcp-server";
 
-import type { ApiServerHonoEnvironment } from "#src/api-server-environment.ts";
-import { parseBearerToken, ROLE } from "#src/authentication.ts";
-import { jsonError } from "#src/http-errors.ts";
+import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
+import { parseBearerToken, ROLE } from "./authentication.ts";
+import { jsonError } from "./http-errors.ts";
 
 /** The path of the MCP server, Streamable HTTP. */
 export const MCP_PATH = "/mcp";

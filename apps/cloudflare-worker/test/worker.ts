@@ -24,7 +24,7 @@ import {
   type SendQueueMessage,
 } from "@resend-challenge/drafts";
 
-import productionWorker from "#src/index.ts";
+import productionWorker from "../src/index.ts";
 
 /** What the `queue()` handler did to one message; use-worker.ts parses the same shape. */
 type MessageHandling = {

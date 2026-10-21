@@ -4,8 +4,8 @@
  * orphaned object that nothing references.
  */
 
-import type { RevisionBody } from "#src/draft.ts";
-import type { RevisionId } from "#src/ids.ts";
+import type { RevisionBody } from "./draft.ts";
+import type { RevisionId } from "./ids.ts";
 
 export async function putRevisionBody(
   revisionBodies: R2Bucket,

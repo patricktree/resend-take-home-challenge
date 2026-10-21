@@ -8,11 +8,8 @@ import {
   OPENAPI_DOCUMENT_PATH,
 } from "@resend-challenge/api.routes";
 
-import type {
-  ApiServerEnvironment,
-  ApiServerHonoEnvironment,
-} from "#src/api-server-environment.ts";
-import { jsonError } from "#src/http-errors.ts";
+import type { ApiServerEnvironment, ApiServerHonoEnvironment } from "./api-server-environment.ts";
+import { jsonError } from "./http-errors.ts";
 
 export type Role = (typeof ROLE)[keyof typeof ROLE];
 

@@ -4,7 +4,7 @@ import util from "node:util";
 import { ApiError, ApiClient } from "@resend-challenge/api.client";
 import { LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN } from "@resend-challenge/api.routes";
 
-import { seedDrafts } from "#src/seed.ts";
+import { seedDrafts } from "./seed.ts";
 
 /** Where `pnpm dev` serves the Worker. */
 const DEFAULT_BASE_URL = "http://localhost:5173";

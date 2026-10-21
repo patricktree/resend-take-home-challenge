@@ -5,16 +5,16 @@ import React from "react";
 
 import type { DraftSummaryResponse } from "@resend-challenge/api.routes";
 
-import { DSButton } from "#src/design-system/button.tsx";
+import { DSButton } from "./design-system/button.tsx";
 import {
   localTimeLabel,
   reviewStatusLabel,
   sendingStatusLabel,
   shortRecipientsLabel,
-} from "#src/draft-labels.ts";
-import { decidedDraftsQuery, type DraftListQuery, pendingDraftsQuery } from "#src/draft-queries.ts";
-import { ErrorMessage } from "#src/error-message.tsx";
-import { rootRoute } from "#src/root-route.tsx";
+} from "./draft-labels.ts";
+import { decidedDraftsQuery, type DraftListQuery, pendingDraftsQuery } from "./draft-queries.ts";
+import { ErrorMessage } from "./error-message.tsx";
+import { rootRoute } from "./root-route.tsx";
 
 type DraftListProps = {
   heading: string;

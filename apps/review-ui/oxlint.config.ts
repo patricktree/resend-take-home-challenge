@@ -15,7 +15,7 @@ export default defineConfig({
       {
         name: "fetch",
         message:
-          "Call the API through `ApiClient` (#src/api-client.ts), which sends the stored Reviewer token.",
+          "Call the API through `ApiClient` (`src/api-client.ts`), which sends the stored Reviewer token.",
       },
     ],
   },

@@ -1,12 +1,12 @@
 import { and, eq } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 
-import type { DraftsStorage } from "#src/database.ts";
-import type { DraftSummary } from "#src/draft.ts";
-import { toDraftSummary } from "#src/draft.ts";
-import { isDraftId, isRevisionId } from "#src/ids.ts";
-import { drafts, revisions } from "#src/schema.ts";
-import { explainVerdictRefusal, isLatestAndPending, type VerdictRefusal } from "#src/verdicts.ts";
+import type { DraftsStorage } from "./database.ts";
+import type { DraftSummary } from "./draft.ts";
+import { toDraftSummary } from "./draft.ts";
+import { isDraftId, isRevisionId } from "./ids.ts";
+import { drafts, revisions } from "./schema.ts";
+import { explainVerdictRefusal, isLatestAndPending, type VerdictRefusal } from "./verdicts.ts";
 
 type RejectRevisionInput = {
   /** Optional; trimmed, and an empty or whitespace-only reason counts as absent. */

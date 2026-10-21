@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { onTestFinished, test } from "vitest";
 
-import { generateSecrets } from "#src/secrets-generate.ts";
+import { generateSecrets } from "../src/secrets-generate.ts";
 
 const AGENT_TOKEN_PATTERN = /^agent_[\w-]{43}$/;
 const REVIEWER_TOKEN_PATTERN = /^reviewer_[\w-]{43}$/;

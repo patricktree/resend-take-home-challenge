@@ -1,10 +1,10 @@
 import { createRouter, type ErrorComponentProps } from "@tanstack/react-router";
 import React from "react";
 
-import { decidedListRoute, pendingListRoute } from "#src/draft-lists.tsx";
-import { draftRoute } from "#src/draft-page.tsx";
-import { ErrorMessage } from "#src/error-message.tsx";
-import { rootRoute } from "#src/root-route.tsx";
+import { decidedListRoute, pendingListRoute } from "./draft-lists.tsx";
+import { draftRoute } from "./draft-page.tsx";
+import { ErrorMessage } from "./error-message.tsx";
+import { rootRoute } from "./root-route.tsx";
 
 export const router = createRouter({
   basepath: "/app",

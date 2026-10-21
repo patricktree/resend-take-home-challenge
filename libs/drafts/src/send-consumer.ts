@@ -8,15 +8,15 @@
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 
-import { drizzleForSession } from "#src/database.ts";
-import { classifyResendCall } from "#src/resend-call-classification.ts";
-import { postEmail, type ResendConnection } from "#src/resend-client.ts";
-import { getRevisionBodyAt } from "#src/revision-bodies.ts";
-import { findRootCauseMessage } from "#src/root-cause.ts";
-import { isPastSendDeadline } from "#src/send-deadline.ts";
-import { hasSendEnded, recordFailed, recordSent } from "#src/send-outcomes.ts";
-import { sendQueueMessageSchema, type SendQueueMessage } from "#src/send-queue.ts";
-import { computeRetryDelaySeconds } from "#src/send-retry-delay.ts";
+import { drizzleForSession } from "./database.ts";
+import { classifyResendCall } from "./resend-call-classification.ts";
+import { postEmail, type ResendConnection } from "./resend-client.ts";
+import { getRevisionBodyAt } from "./revision-bodies.ts";
+import { findRootCauseMessage } from "./root-cause.ts";
+import { isPastSendDeadline } from "./send-deadline.ts";
+import { hasSendEnded, recordFailed, recordSent } from "./send-outcomes.ts";
+import { sendQueueMessageSchema, type SendQueueMessage } from "./send-queue.ts";
+import { computeRetryDelaySeconds } from "./send-retry-delay.ts";
 
 /** The Worker bindings, vars and secrets the Send pipeline reads. */
 export type SendPipelineEnvironment = {

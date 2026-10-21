@@ -2,8 +2,8 @@ import { and, desc, eq, isNotNull } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { Temporal } from "temporal-polyfill";
 
-import type { DraftId, RevisionId } from "#src/ids.ts";
-import { revisions, type drafts, type FailureReason, type ReviewStatus } from "#src/schema.ts";
+import type { DraftId, RevisionId } from "./ids.ts";
+import { revisions, type drafts, type FailureReason, type ReviewStatus } from "./schema.ts";
 
 /** The body of a Revision; an object so that a later `html` becomes a sibling field. */
 export type RevisionBody = { plainText: string };

@@ -361,9 +361,6 @@ importers:
       '@resend-challenge/config-oxlint':
         specifier: workspace:*
         version: link:../../tooling/config-oxlint
-      '@resend-challenge/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../../tooling/prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -419,9 +416,6 @@ importers:
       '@resend-challenge/config-oxlint':
         specifier: workspace:*
         version: link:../../tooling/config-oxlint
-      '@resend-challenge/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../../tooling/prepare-declaration-build
       '@resend-challenge/resend-stub':
         specifier: workspace:*
         version: link:../../qa/resend-stub
@@ -501,9 +495,6 @@ importers:
       '@resend-challenge/config-oxlint':
         specifier: workspace:*
         version: link:../../tooling/config-oxlint
-      '@resend-challenge/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../../tooling/prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -556,9 +547,6 @@ importers:
       '@resend-challenge/config-oxlint':
         specifier: workspace:*
         version: link:../../tooling/config-oxlint
-      '@resend-challenge/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../../tooling/prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -593,9 +581,6 @@ importers:
       '@resend-challenge/config-oxlint':
         specifier: workspace:*
         version: link:../../tooling/config-oxlint
-      '@resend-challenge/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../../tooling/prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -651,9 +636,6 @@ importers:
       '@resend-challenge/config-oxlint':
         specifier: workspace:*
         version: link:../../tooling/config-oxlint
-      '@resend-challenge/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../../tooling/prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -706,9 +688,6 @@ importers:
       '@resend-challenge/config-oxlint':
         specifier: workspace:*
         version: link:../../tooling/config-oxlint
-      '@resend-challenge/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../../tooling/prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -761,9 +740,6 @@ importers:
       '@resend-challenge/config-oxlint':
         specifier: workspace:*
         version: link:../../tooling/config-oxlint
-      '@resend-challenge/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../../tooling/prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -836,9 +812,6 @@ importers:
       '@resend-challenge/config-oxlint':
         specifier: workspace:*
         version: link:../../tooling/config-oxlint
-      '@resend-challenge/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../../tooling/prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -879,52 +852,6 @@ importers:
         specifier: 'catalog:'
         version: 7.0.2004
 
-  tooling/prepare-declaration-build:
-    dependencies:
-      '@commander-js/extra-typings':
-        specifier: ^15.0.0
-        version: 15.0.0(commander@15.0.0)
-      commander:
-        specifier: ^15.0.0
-        version: 15.0.0
-    devDependencies:
-      '@patricktree-stack/config-typescript':
-        specifier: workspace:*
-        version: link:../../.patricktree-stack/tooling/config-typescript
-      '@patricktree-stack/config-vitest':
-        specifier: workspace:*
-        version: link:../../.patricktree-stack/tooling/config-vitest
-      '@patricktree-stack/test-utils-node':
-        specifier: workspace:*
-        version: link:../../.patricktree-stack/qa-utils/test-utils-node
-      '@resend-challenge/config-oxlint':
-        specifier: workspace:*
-        version: link:../config-oxlint
-      '@types/node':
-        specifier: 'catalog:'
-        version: 26.6.5
-      '@typescript/native':
-        specifier: 'catalog:'
-        version: typescript@7.0.2
-      '@vitest/coverage-v8':
-        specifier: 'catalog:'
-        version: 4.1.11(vitest@4.1.11)
-      oxlint:
-        specifier: 'catalog:'
-        version: 1.89.0(oxlint-tsgolint@7.0.2004)
-      oxlint-tsgolint:
-        specifier: 'catalog:'
-        version: 7.0.2004
-      typescript:
-        specifier: 'catalog:'
-        version: '@typescript/typescript6@6.0.2'
-      vite:
-        specifier: 'catalog:'
-        version: 8.3.4(@types/node@26.6.5)
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.11(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(vite@8.3.4(@types/node@26.6.5))
-
   tooling/secrets-generate:
     dependencies:
       jsonc-parser:
@@ -940,9 +867,6 @@ importers:
       '@resend-challenge/config-oxlint':
         specifier: workspace:*
         version: link:../config-oxlint
-      '@resend-challenge/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -983,9 +907,6 @@ importers:
       '@resend-challenge/config-oxlint':
         specifier: workspace:*
         version: link:../config-oxlint
-      '@resend-challenge/prepare-declaration-build':
-        specifier: workspace:*
-        version: link:../prepare-declaration-build
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5

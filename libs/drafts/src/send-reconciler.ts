@@ -16,10 +16,10 @@ import type { DrizzleD1Database } from "drizzle-orm/d1";
 import assert from "node:assert/strict";
 import { Temporal } from "temporal-polyfill";
 
-import { findRootCauseMessage } from "#src/root-cause.ts";
-import { drafts } from "#src/schema.ts";
-import { recordFailed } from "#src/send-outcomes.ts";
-import { toSendQueueMessage, type SendQueue, type SendQueueMessage } from "#src/send-queue.ts";
+import { findRootCauseMessage } from "./root-cause.ts";
+import { drafts } from "./schema.ts";
+import { recordFailed } from "./send-outcomes.ts";
+import { toSendQueueMessage, type SendQueue, type SendQueueMessage } from "./send-queue.ts";
 
 /** Where the Send reconciler reads and records Sends, and where it re-enqueues them. */
 export type SendReconcilerDependencies = {

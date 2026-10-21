@@ -2,7 +2,7 @@ import { test } from "vitest";
 
 import { LOCAL_AGENT_TOKEN } from "@resend-challenge/api.routes";
 
-import { TEST_AGENT_TOKEN, useWorker } from "#test/use-worker.ts";
+import { TEST_AGENT_TOKEN, useWorker } from "./use-worker.ts";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 

@@ -1,17 +1,16 @@
 import { Temporal } from "temporal-polyfill";
 import { test, vi } from "vitest";
 
-import { approveRevision } from "#src/approve-revision.ts";
-import { createDraft } from "#src/create-draft.ts";
-import { drizzleForSession, type DraftsStorage } from "#src/database.ts";
-import { rejectRevision } from "#src/reject-revision.ts";
-import { reviseDraft } from "#src/revise-draft.ts";
-import { sendQueueMessageSchema } from "#src/send-queue.ts";
-import { submitRevision } from "#src/submit-revision.ts";
-
-import { createHoldingD1Database } from "#test/holding-d1-database.ts";
-import { createFailingSendQueue, createRecordingSendQueue } from "#test/recording-send-queue.ts";
-import { useBindings, type TestBindings } from "#test/use-bindings.ts";
+import { approveRevision } from "../src/approve-revision.ts";
+import { createDraft } from "../src/create-draft.ts";
+import { drizzleForSession, type DraftsStorage } from "../src/database.ts";
+import { rejectRevision } from "../src/reject-revision.ts";
+import { reviseDraft } from "../src/revise-draft.ts";
+import { sendQueueMessageSchema } from "../src/send-queue.ts";
+import { submitRevision } from "../src/submit-revision.ts";
+import { createHoldingD1Database } from "./holding-d1-database.ts";
+import { createFailingSendQueue, createRecordingSendQueue } from "./recording-send-queue.ts";
+import { useBindings, type TestBindings } from "./use-bindings.ts";
 
 const DRAFT_DATA = {
   to: ["ada@example.com", "grace@example.com"],

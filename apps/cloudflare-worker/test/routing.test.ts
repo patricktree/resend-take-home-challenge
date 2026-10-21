@@ -2,7 +2,7 @@ import { test } from "vitest";
 
 import { LOCAL_AGENT_TOKEN } from "@resend-challenge/api.routes";
 
-import { useWorker } from "#test/use-worker.ts";
+import { useWorker } from "./use-worker.ts";
 
 const AUTHORIZATION = { Authorization: `Bearer ${LOCAL_AGENT_TOKEN}` };
 

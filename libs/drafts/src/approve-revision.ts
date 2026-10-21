@@ -1,16 +1,16 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 
-import type { DraftsStorage } from "#src/database.ts";
-import type { DraftSummary } from "#src/draft.ts";
-import { toDraftSummary } from "#src/draft.ts";
-import { isDraftId, isRevisionId, type DraftId } from "#src/ids.ts";
-import { revisionBodyKey } from "#src/revision-bodies.ts";
-import { findRootCauseMessage } from "#src/root-cause.ts";
-import { drafts, revisions } from "#src/schema.ts";
-import { computeSendDeadline } from "#src/send-deadline.ts";
-import { toSendQueueMessage, type SendQueue } from "#src/send-queue.ts";
-import { explainVerdictRefusal, isLatestAndPending, type VerdictRefusal } from "#src/verdicts.ts";
+import type { DraftsStorage } from "./database.ts";
+import type { DraftSummary } from "./draft.ts";
+import { toDraftSummary } from "./draft.ts";
+import { isDraftId, isRevisionId, type DraftId } from "./ids.ts";
+import { revisionBodyKey } from "./revision-bodies.ts";
+import { findRootCauseMessage } from "./root-cause.ts";
+import { drafts, revisions } from "./schema.ts";
+import { computeSendDeadline } from "./send-deadline.ts";
+import { toSendQueueMessage, type SendQueue } from "./send-queue.ts";
+import { explainVerdictRefusal, isLatestAndPending, type VerdictRefusal } from "./verdicts.ts";
 
 /** Where an Approval hands its Send intent, and the sender it freezes into the outgoing email. */
 export type SendHandOff = {

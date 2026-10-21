@@ -1,6 +1,6 @@
 import { test } from "vitest";
 
-import { useWorker } from "#test/use-worker.ts";
+import { useWorker } from "./use-worker.ts";
 
 test("the D1 migrations are applied before the test starts", async ({ expect, onTestFinished }) => {
   const worker = await useWorker({ onTestFinished });

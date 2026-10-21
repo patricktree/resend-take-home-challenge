@@ -1,4 +1,4 @@
-import type { SendQueue, SendQueueMessage } from "#src/send-queue.ts";
+import type { SendQueue, SendQueueMessage } from "../src/send-queue.ts";
 
 /** A Send Queue test double that records every message sent to it. */
 export type RecordingSendQueue = SendQueue & {

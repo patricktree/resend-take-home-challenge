@@ -2,7 +2,7 @@ import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
 
 import { ApiError } from "@resend-challenge/api.client";
 
-import { clearReviewerToken, rejectReviewerToken } from "#src/reviewer-session.ts";
+import { clearReviewerToken, rejectReviewerToken } from "./reviewer-session.ts";
 
 export const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError: handleUnauthenticated }),

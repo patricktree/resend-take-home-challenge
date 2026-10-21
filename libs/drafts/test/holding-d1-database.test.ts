@@ -1,7 +1,7 @@
 import { test } from "vitest";
 
-import { createHoldingD1Database } from "#test/holding-d1-database.ts";
-import { useBindings } from "#test/use-bindings.ts";
+import { createHoldingD1Database } from "./holding-d1-database.ts";
+import { useBindings } from "./use-bindings.ts";
 
 test("a held statement runs only once the test releases it", async ({ expect, onTestFinished }) => {
   const { DB } = await useBindings({ onTestFinished });

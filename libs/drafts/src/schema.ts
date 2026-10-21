@@ -10,8 +10,8 @@
 import { sql, type SQL } from "drizzle-orm";
 import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
-import type { DraftId, RevisionId } from "#src/ids.ts";
-import type { OutgoingEmail } from "#src/send-queue.ts";
+import type { DraftId, RevisionId } from "./ids.ts";
+import type { OutgoingEmail } from "./send-queue.ts";
 
 export type SendingStatus = (typeof SENDING_STATUSES)[number];
 

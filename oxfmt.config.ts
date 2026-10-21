@@ -22,30 +22,12 @@ export default defineConfig({
         groupName: "resend-challenge-packages",
         elementNamePattern: ["@resend-challenge/**"],
       },
-      /* create a group for subpath imports = internal dependencies */
-      {
-        groupName: "subpath-imports",
-        elementNamePattern: ["#src/**"],
-      },
-      /* create a group for subpath imports for test modules */
-      {
-        groupName: "subpath-imports-test-modules",
-        elementNamePattern: ["#test/**"],
-      },
-      /* create a group for subpath imports for E2E test modules */
-      {
-        groupName: "subpath-imports-test-modules-e2e",
-        elementNamePattern: ["#test-e2e/**"],
-      },
     ],
     groups: [
       ["value-builtin", "type-builtin", "value-external", "type-external"],
       ["value-external", "type-external"],
       ["value-internal", "type-internal"],
       "resend-challenge-packages",
-      "subpath-imports",
-      "subpath-imports-test-modules",
-      "subpath-imports-test-modules-e2e",
       ["value-parent", "type-parent", "value-sibling", "type-sibling", "value-index", "type-index"],
       "unknown",
     ],

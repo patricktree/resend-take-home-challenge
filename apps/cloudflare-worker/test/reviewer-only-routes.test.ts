@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { LOCAL_AGENT_TOKEN } from "@resend-challenge/api.routes";
 
-import { useWorker } from "#test/use-worker.ts";
+import { useWorker } from "./use-worker.ts";
 
 const UNKNOWN_IDS: Record<string, string> = {
   draftId: "drf_00000000-0000-7000-8000-000000000000",

@@ -10,15 +10,15 @@ import {
 } from "@resend-challenge/api.routes";
 import { findRootCause } from "@resend-challenge/drafts";
 
-import type { ApiServerHonoEnvironment } from "#src/api-server-environment.ts";
-import { authenticate, requireReviewer } from "#src/authentication.ts";
-import { runOnDatabaseSession } from "#src/database-session.ts";
-import { DRAFT_HANDLERS } from "#src/draft-handlers.ts";
-import { jsonError } from "#src/http-errors.ts";
-import { createMcpEndpoint, MCP_PATH, requireAgent } from "#src/mcp-endpoint.ts";
-import { mountReviewUi } from "#src/review-ui.ts";
+import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
+import { authenticate, requireReviewer } from "./authentication.ts";
+import { runOnDatabaseSession } from "./database-session.ts";
+import { DRAFT_HANDLERS } from "./draft-handlers.ts";
+import { jsonError } from "./http-errors.ts";
+import { createMcpEndpoint, MCP_PATH, requireAgent } from "./mcp-endpoint.ts";
+import { mountReviewUi } from "./review-ui.ts";
 
-export type { ApiServerEnvironment } from "#src/api-server-environment.ts";
+export type { ApiServerEnvironment } from "./api-server-environment.ts";
 
 /** Requests are buffered and validated as a whole, so their size is capped. */
 const MAX_REQUEST_BODY_BYTES = 128 * 1024;

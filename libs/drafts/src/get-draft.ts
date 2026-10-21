@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
 
-import type { DraftsStorage } from "#src/database.ts";
-import type { Draft } from "#src/draft.ts";
-import { selectLastVerdictRow, toDraftSummary } from "#src/draft.ts";
-import { isDraftId } from "#src/ids.ts";
-import { getRevisionBody } from "#src/revision-bodies.ts";
-import { drafts, revisions } from "#src/schema.ts";
+import type { DraftsStorage } from "./database.ts";
+import type { Draft } from "./draft.ts";
+import { selectLastVerdictRow, toDraftSummary } from "./draft.ts";
+import { isDraftId } from "./ids.ts";
+import { getRevisionBody } from "./revision-bodies.ts";
+import { drafts, revisions } from "./schema.ts";
 
 /**
  * Reads a Draft with its latest Revision, that Revision's body and the last verdict; `undefined`

@@ -92,7 +92,7 @@ pnpm dev
 pnpm seed
 ```
 
-`pnpm dev` applies the D1 migrations to the local database and serves the Worker at <http://localhost:5173>, with D1, R2 and the Queue running locally in Miniflare. Wrangler warns that the required secret `REVIEWER_TOKEN` is missing; local development uses the local tokens from [`libs/api.routes/src/local-tokens.ts`](libs/api.routes/src/local-tokens.ts) instead, which only a Worker with `LOCAL_DEVELOPMENT="true"` accepts, and only on `localhost`. With `pnpm dev` running, `pnpm seed` adds sample Drafts: three Pending ones, one Rejected with a reason and one Approved to `delivered@resend.dev`.
+`pnpm dev` applies the D1 migrations to the local database and serves the Worker at <http://localhost:5173>, with D1, R2 and the Queue running locally in Miniflare. Wrangler warns that the required secret `REVIEWER_TOKEN` is missing; local development uses the local tokens from [`libs/api.routes/src/local-tokens.ts`](libs/api.routes/src/local-tokens.ts) instead, which only a Worker with `LOCAL_DEVELOPMENT="true"` accepts, and only on `localhost`. With `pnpm dev` running, `pnpm seed` adds sample Drafts on each run: three Pending ones, one Rejected with a reason and one Approved to `delivered@resend.dev`.
 
 The Review UI runs at <http://localhost:5173/app/> with hot reload; enter the local Reviewer token `reviewer_local-development-only` on its token screen. Agents call <http://localhost:5173> with the local Agent token `agent_local-development-only`, over HTTP, MCP or the CLI as above. Only the Reviewer token can approve or reject a Revision, for example with `POST /api/v1/drafts/<draft-id>/revisions/<revision-id>/approval` and `Authorization: Bearer reviewer_local-development-only`.
 

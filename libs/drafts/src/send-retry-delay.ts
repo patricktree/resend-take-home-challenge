@@ -73,7 +73,9 @@ export function computeRetryDelaySeconds({
 /**
  * Reads a `Retry-After` header (https://www.rfc-editor.org/rfc/rfc9110#field.retry-after):
  * delta-seconds, or an HTTP date in the IMF-fixdate format that senders must use; `undefined` when
- * it is unreadable. Resend sends delta-seconds.
+ * it is unreadable. Resend's own 429s carry delta-seconds, but every retryable response is read
+ * here, also a 429 or 503 from a proxy or load balancer in front of Resend, and RFC 9110 allows
+ * either form, so both are handled.
  */
 export function parseRetryAfterSeconds(value: string, now: number): number | undefined {
   const trimmedValue = value.trim();

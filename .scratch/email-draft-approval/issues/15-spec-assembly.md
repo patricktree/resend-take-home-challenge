@@ -13,7 +13,7 @@ How is the final, build-ready spec assembled from the resolved tickets? Settle t
 - Graduated from the map's "Not yet specified" after [13](13-testing-strategy.md) resolved; this is the map's last ticket.
 - Inputs: every ticket's `## Answer` (01–14) and its "For the spec" subsection, the map's Notes (standing decisions, Demo simplifications, Future increments, Out of scope), [GLOSSARY.md](../../../GLOSSARY.md) and `research/*.md`.
 - Later tickets revise earlier ones, among them: 09 revises 05 (repeated Submission is 409 `REVISION_ALREADY_SUBMITTED`); 07 refines 06 (`from` resolved at Approval time); 11 revises 10 (`AGENT_TOKEN` is a committed var; the local flag also needs a local host), 09 (`reviewUrl` under `/app`) and 07 (no separate consumer Worker); 13 refines 06/07 (every statement in the Approval and revise batches carries its own guard) and 11 (a fresh harness per test). The spec must state only the final decision.
-- The challenge's input is [spec-input.md](../spec-input.md). Never read `~/workspace/20261019-resend-software-engineer-devtools-take-home-challenge/`.
+- The input spec is [spec-input.md](../spec-input.md).
 - From [14](14-observability.md): the spec gets **no Observability section**. Observability appears only as the "No observability or alerting" Demo simplifications entry (which replaces 07's "no alerting" entry), plus one line in the Send pipeline that error paths `console.error` the root cause. Fold in 14's revision of 07: attempt count, last error and next attempt time are not recorded in v1.
 
 ## Answer
@@ -22,7 +22,7 @@ Resolved in a grilling session with the repository owner on 2026-10-20. The spec
 
 ### Layout
 
-- The spec stands alone and is written for the implementer (an evaluator can read it too). The body never links to tickets or says "revises NN"; it states only the final rule. A closing "Sources" section links the map, the tickets and `research/*.md`, and says the spec wins where they differ.
+- The spec stands alone and is written for the implementer (anyone else can read it too). The body never links to tickets or says "revises NN"; it states only the final rule. A closing "Sources" section links the map, the tickets and `research/*.md`, and says the spec wins where they differ.
 - Sections, in order: Overview, Requirements coverage, Domain model, Architecture, Data model, HTTP API, Authentication and authorization, Approval binding and concurrency, Send pipeline, Agent interfaces, Review UI, Infrastructure/configuration/local development, Testing, Demo simplifications, Known limitations, Future increments, Out of scope, Sources.
 - Ready-to-build detail: exact routes, codes, field names, enum values, config keys and timings, plus a column-level D1 schema derived from the decisions. Code appears only as JSON shapes; rationale is one sentence and only where a rule would surprise a reader; there is no catalogue of rejected alternatives.
 - Glossary: linked once in the Overview, terms used capitalised and never redefined; implementation terms (Draft summary, Send reconciler, outbox columns, read bookmark) are defined in the spec and stay out of `GLOSSARY.md`. No glossary changes.

@@ -9,7 +9,7 @@ A spec ready to build from for the email-draft approval system described in [spe
 ## Notes
 
 - Domain: an approval gate between Agents that compose emails and a human Reviewer. Vocabulary lives in [GLOSSARY.md](../../GLOSSARY.md); use its terms (Draft, Draft data, Revision, Submission, Pending, Approval, Rejection, Send, Agent, Reviewer, Review UI, Decided) and run the `domain-modeling` skill alongside `grilling`.
-- Context: this is for a take-home challenge. **Never read `~/workspace/20261019-resend-software-engineer-devtools-take-home-challenge/` (including its `NOTES.md`), in any session.** The design must come from this map alone.
+- The design must come from this map alone.
 - Standing decisions from charting:
   - Deploy target: Cloudflare platform. Concurrency and exactly-once guarantees live in durable storage and Resend idempotency, never in process memory.
   - Agent interface: an HTTP API described by OpenAPI → a generated or typed TypeScript client → an MCP server and a CLI built on that client. Libraries and repo layout follow `~/workspace/cup` (reading it is allowed).

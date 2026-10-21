@@ -15,7 +15,7 @@ The system is one Cloudflare Worker at `https://resend-challenge.patricktree.me`
 - the Review UI, a React SPA under `/app`, for the Reviewer;
 - D1 as the single source of truth, R2 for Revision bodies, one Queue (plus a dead-letter queue) that drives every Send, and a cron-driven Send reconciler.
 
-The challenge's input is [spec-input.md](spec-input.md). Everything is written in TypeScript.
+The input spec is [spec-input.md](spec-input.md). Everything is written in TypeScript.
 
 Prerequisites for building (not part of the system): a Cloudflare account with the `patricktree.me` zone, and a Resend account whose team serves this system alone, since Resend's rate limit (10 requests per second) applies per team.
 
@@ -608,7 +608,7 @@ v1 has no event logging. Paths that already handle an error call a bare `console
 - API URL: `--api-url`, then `RESEND_CHALLENGE_API_URL`, then the production URL built in as a constant (equal to `PUBLIC_BASE_URL`). HTTPS is required except on loopback.
 - Output: human-readable by default; `--json` prints one JSON value on stdout. Errors print `{ "error": { "code", "message" } }` on stderr and exit with 1. Inputs are validated with the contract's Zod schemas before any request.
 - `--help` on the root and every command; the root help links the OpenAPI document.
-- Evaluators run it from a checkout of the repository (`pnpm resend-challenge …`); it is not published to npm.
+- Agents run it from a checkout of the repository (`pnpm resend-challenge …`); it is not published to npm.
 
 ## 11. Review UI
 
@@ -717,8 +717,8 @@ Production only, on the custom domain `resend-challenge.patricktree.me`. There i
 ### Tokens
 
 - `pnpm secrets:generate` creates both tokens once. It writes the Agent token into `wrangler.jsonc` and pipes the Reviewer token into `wrangler secret put REVIEWER_TOKEN`, printing it once.
-- The Agent token is public: committed in `wrangler.jsonc`, shown in the README, used as the CLI fallback and in the MCP setup instructions, so an evaluator needs no setup to act as an Agent.
-- The Reviewer token is never committed. It reaches evaluators out of band, in the submission message.
+- The Agent token is public: committed in `wrangler.jsonc`, shown in the README, used as the CLI fallback and in the MCP setup instructions, so nobody needs setup to act as an Agent.
+- The Reviewer token is never committed. The repository owner hands it to Reviewers out of band.
 
 ### Deploying
 

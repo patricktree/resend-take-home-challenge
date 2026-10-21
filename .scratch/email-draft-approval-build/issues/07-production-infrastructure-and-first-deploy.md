@@ -1,6 +1,6 @@
 # 07: Production infrastructure and first deploy
 
-**What to build:** The system runs in production at `resend-challenge.patricktree.me`: an evaluator can create and get a Draft there with the public Agent token. Later tickets only redeploy. Spec: [Infrastructure, configuration and local development](../../email-draft-approval/spec.md#12-infrastructure-configuration-and-local-development).
+**What to build:** The system runs in production at `resend-challenge.patricktree.me`: anyone can create and get a Draft there with the public Agent token. Later tickets only redeploy. Spec: [Infrastructure, configuration and local development](../../email-draft-approval/spec.md#12-infrastructure-configuration-and-local-development).
 
 **Blocked by:** 02 (Create and get a Draft)
 

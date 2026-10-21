@@ -81,7 +81,7 @@ pnpm resend-challenge drafts revise <draft-id> --base-revision <revision-id> \
 
 ## Review as the Reviewer
 
-Open the Review UI at <https://resend-challenge.patricktree.me/app/> and enter the Reviewer token, which reaches evaluators with the submission message, on its token screen. The Pending list shows the submitted Drafts, longest-waiting first; open one to read its latest Revision, then approve it or reject it with an optional reason. After an Approval, the Draft page shows the sending status, from "Sending…" to "Sent". If the Agent revised the Draft after the page loaded, the verdict is not recorded: the page shows the error inline with "Reload Draft". The Decided list shows every Draft whose latest Revision has a verdict.
+Open the Review UI at <https://resend-challenge.patricktree.me/app/> and enter the Reviewer token, which the repository owner hands out separately, on its token screen. The Pending list shows the submitted Drafts, longest-waiting first; open one to read its latest Revision, then approve it or reject it with an optional reason. After an Approval, the Draft page shows the sending status, from "Sending…" to "Sent". If the Agent revised the Draft after the page loaded, the verdict is not recorded: the page shows the error inline with "Reload Draft". The Decided list shows every Draft whose latest Revision has a verdict.
 
 ## Local development
 

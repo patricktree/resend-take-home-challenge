@@ -1,6 +1,6 @@
 # 11: CLI
 
-**What to build:** An evaluator runs `pnpm draft-approval drafts …` from a checkout and works as an Agent against production with no setup. Spec: [CLI](../../email-draft-approval/spec.md#cli), [CLI process tests](../../email-draft-approval/spec.md#cli-process-tests).
+**What to build:** Anyone runs `pnpm draft-approval drafts …` from a checkout and works as an Agent against production with no setup. Spec: [CLI](../../email-draft-approval/spec.md#cli), [CLI process tests](../../email-draft-approval/spec.md#cli-process-tests).
 
 **Blocked by:** 05 (List Drafts)
 

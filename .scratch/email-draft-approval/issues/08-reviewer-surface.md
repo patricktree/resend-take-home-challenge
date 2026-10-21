@@ -14,8 +14,8 @@ Resolved in a grilling session with the repository owner on 2026-10-20.
 
 ### Requirement, corrected
 
-- The challenge asks for "a simple deployed and accessible interface where a human can review pending drafts and approve or reject them". It does not say "web UI"; [spec-input.md](../spec-input.md) now reads "the human interface is accessible".
-- "Accessible" means reachable: evaluators open it at a deployed URL with no local setup. No WCAG conformance level is required (the repository owner clarified it is not necessary).
+- The requirement is "a simple deployed and accessible interface where a human can review pending drafts and approve or reject them"; it does not say "web UI". [spec-input.md](../spec-input.md) states it as "the human interface is accessible".
+- "Accessible" means reachable: Reviewers open it at a deployed URL with no local setup. No WCAG conformance level is required (the repository owner clarified it is not necessary).
 
 ### The human interface is the Review UI, and only it
 
@@ -26,7 +26,7 @@ Resolved in a grilling session with the repository owner on 2026-10-20.
   - no email approve/reject links (they would land on a server-hosted page anyway);
   - no Reviewer notifications.
 - Review is asynchronous: the Agent submits and later reads review status. Nothing waits for a verdict.
-- An MCP App inside an agent host was rejected as the verdict channel. The server cannot tell a View click from an Agent call ([research](../research/mcp-on-cloudflare-and-mcp-apps.md)), and evaluators would need an MCP-Apps-capable host. It is feasible for a View to call our API itself with its own Reviewer login:
+- An MCP App inside an agent host was rejected as the verdict channel. The server cannot tell a View click from an Agent call ([research](../research/mcp-on-cloudflare-and-mcp-apps.md)), and Reviewers would need an MCP-Apps-capable host. It is feasible for a View to call our API itself with its own Reviewer login:
   - the View declares our origin in `_meta.ui.csp.connectDomains`;
   - the login happens in the system browser via `ui/open-link`, and the View polls our server for the token;
   - the Reviewer bearer token stays in the View's memory.

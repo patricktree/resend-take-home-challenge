@@ -19,7 +19,7 @@ What does v1 log about requests, verdicts and Sends, and in which shape? Settle:
 
 ## Answer
 
-Resolved in a grilling session with the repository owner on 2026-10-20. Observability was not asked for by the challenge, so **v1 builds none**. The spec only notes what a real deployment would add, as a Demo simplifications entry.
+Resolved in a grilling session with the repository owner on 2026-10-20. Observability was not asked for by the input spec, so **v1 builds none**. The spec only notes what a real deployment would add, as a Demo simplifications entry.
 
 ### What v1 does
 

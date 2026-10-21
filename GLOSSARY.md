@@ -14,7 +14,7 @@ _Avoid_: User, approver, admin
 
 **Review UI**:
 The deployed web interface where the Reviewer lists Pending Drafts, reviews them and renders verdicts; it is the only place a verdict can be rendered.
-_Avoid_: Dashboard, admin panel, human interface (except when quoting the challenge)
+_Avoid_: Dashboard, admin panel, human interface (except when quoting the input spec)
 
 **Draft**:
 The long-lived email an agent creates and works on; it has a sequence of Revisions and sends at most one email.

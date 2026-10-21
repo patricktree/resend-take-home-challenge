@@ -1,5 +1,5 @@
 /*
- * The production defaults, so an evaluator acts as an Agent against production with no setup.
+ * The production defaults, so anyone acts as an Agent against production with no setup.
  * `test/production.test.ts` checks both against `apps/cloudflare-worker/wrangler.jsonc`.
  */
 

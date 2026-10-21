@@ -41,7 +41,7 @@ Each case has its own error code. The envelope and OpenAPI description are ticke
 
 ### What the Reviewer sees
 
-- Every verdict error is shown; the UI never swallows one, not even when `existingVerdict` matches the intended verdict. Several humans may review at once (e.g. the challenge's evaluators), and the second one must clearly see that the Draft was already decided.
+- Every verdict error is shown; the UI never swallows one, not even when `existingVerdict` matches the intended verdict. Several humans may review at once, and the second one must clearly see that the Draft was already decided.
 - `REVISION_SUPERSEDED`: the Agent changed this Draft after you opened it and your verdict was not recorded. `REVISION_ALREADY_DECIDED`: this Draft was already approved/rejected. Both offer an explicit "Reload Draft"; the UI never reloads or re-applies the verdict on its own. After reload the Draft is either pending with a new Revision (reviewed from scratch) or gone from the pending list.
 - Approve and Reject are disabled while a verdict request is in flight, so a double-click does not produce a self-inflicted `REVISION_ALREADY_DECIDED`.
 

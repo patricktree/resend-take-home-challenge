@@ -24,13 +24,13 @@ Resolved in a grilling session with the repository owner on 2026-10-20.
   - **Agent token**: one token shared by every Agent (REST API, CLI and MCP server).
   - **Reviewer token**: one token for the Review UI.
 - Both are random 256-bit values with a readable prefix, `agent_…` and `reviewer_…`. The prefix makes a leaked token recognisable and lets the Review UI reject an Agent token before sending any request. It is only a hint: authorization never looks at it.
-- Production secrets are the Worker secrets `AGENT_TOKEN` and `REVIEWER_TOKEN`, each holding exactly one value. How they are set and handed to evaluators is [11](11-cloudflare-app-structure.md)'s call.
+- Production secrets are the Worker secrets `AGENT_TOKEN` and `REVIEWER_TOKEN`, each holding exactly one value. How they are set and handed out is [11](11-cloudflare-app-structure.md)'s call.
 - Brute force is not realistic at 256 bits, so there is no rate limiting on authentication. Tokens are never logged; logs record only the resolved role.
 - Rejected alternatives:
   - several named Agent tokens (deferred, together with per-Agent scoping);
   - OAuth for Agents;
   - a Reviewer password login with a server session cookie;
-  - Cloudflare Access in front of the Review UI (evaluators would need allow-listed emails, which conflicts with 08's "reachable without setup");
+  - Cloudflare Access in front of the Review UI (Reviewers would need allow-listed emails, which conflicts with 08's "reachable without setup");
   - hard-coding the Reviewer token into the SPA bundle. The bundle is public, and any Agent could fetch it from the `reviewUrl` and read the token. That breaks the functional requirement, not just a hardening measure.
 
 ### How the server tells them apart

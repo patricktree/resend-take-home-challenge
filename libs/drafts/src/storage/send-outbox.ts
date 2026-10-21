@@ -13,15 +13,10 @@ import type { DrizzleD1Database } from "drizzle-orm/d1";
 import assert from "node:assert/strict";
 import { Temporal } from "temporal-polyfill";
 
+import type { SendingFailure } from "../domain/draft.ts";
 import type { DraftId } from "../domain/ids.ts";
 import { sendQueueMessageSchema, type SendQueueMessage } from "../domain/send-queue-message.ts";
 import { drafts } from "./schema.ts";
-
-export type SendFailure =
-  /** Resend refused the request: the email definitely did not go out. */
-  | { reason: "REJECTED_BY_RESEND"; resendErrorName?: string; resendErrorMessage?: string }
-  /** The Send ended without an answer from Resend: the email may have gone out. */
-  | { reason: "OUTCOME_UNKNOWN" };
 
 /**
  * `sending_status = 'QUEUED'` with the value inlined: SQLite uses a partial index only when the
@@ -103,7 +98,7 @@ export async function recordSent(
 export async function recordFailed(
   database: DrizzleD1Database,
   draftId: DraftId,
-  failure: SendFailure,
+  failure: SendingFailure,
 ): Promise<void> {
   await database
     .update(drafts)

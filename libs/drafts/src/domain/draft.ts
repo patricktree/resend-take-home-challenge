@@ -82,6 +82,13 @@ export type Sending =
   | { status: "SENT"; emailId: string }
   | { status: "FAILED"; failure: SendingFailure };
 
+/** Why a Send ended as `FAILED`; one of `FAILURE_REASONS`. */
+export type SendingFailure =
+  /** Resend refused the request: the email definitely did not go out. */
+  | { reason: "REJECTED_BY_RESEND"; resendErrorName?: string; resendErrorMessage?: string }
+  /** The Send ended without an answer from Resend: the email may have gone out. */
+  | { reason: "OUTCOME_UNKNOWN" };
+
 /** A Draft whose latest Revision comes without its body. */
 export type DraftSummary = {
   id: DraftId;
@@ -94,9 +101,3 @@ export type DraftSummary = {
 };
 
 export type Draft = Omit<DraftSummary, "latestRevision"> & { latestRevision: Revision };
-
-type SendingFailure = {
-  reason: (typeof FAILURE_REASONS)[number];
-  resendErrorName?: string;
-  resendErrorMessage?: string;
-};

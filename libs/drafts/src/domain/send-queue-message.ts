@@ -11,7 +11,10 @@ import { isDraftId, type DraftId } from "./ids.ts";
 
 export type SendQueueMessage = z.infer<typeof sendQueueMessageSchema>;
 
-/** Validates a frozen outgoing email, which the domain type `OutgoingEmail` defines. */
+/**
+ * Validates a frozen outgoing email, which the domain type `OutgoingEmail` defines.
+ * `test/send-queue-message.test.ts` checks the other direction: that the schema adds no field.
+ */
 const outgoingEmailSchema = z.strictObject({
   from: z.string().min(1),
   to: z.array(z.string()).min(1),

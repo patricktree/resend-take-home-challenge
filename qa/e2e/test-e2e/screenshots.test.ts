@@ -71,7 +71,7 @@ test("inline REVISION_SUPERSEDED error", async ({ page, reviewEnvironment }) => 
   const draft = await createPendingDraft(agentClient, createDraftData("Price increase"));
   await pinServerGeneratedValues(page);
   await openDraftPage(page, draft);
-  await agentClient.reviseDraft(draft.id, {
+  await agentClient.drafts.revise(draft.id, {
     ...createDraftData("Price increase from March"),
     baseRevisionId: draft.latestRevision.id,
   });

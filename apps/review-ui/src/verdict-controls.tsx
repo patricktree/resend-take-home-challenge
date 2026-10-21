@@ -62,8 +62,8 @@ export function VerdictControls({
   const verdictMutation = useMutation({
     mutationFn: (verdict: Verdict) =>
       verdict.kind === "APPROVAL"
-        ? getApiClient().approveRevision(draftId, revisionId)
-        : getApiClient().rejectRevision(
+        ? getApiClient().revisions.approve(draftId, revisionId)
+        : getApiClient().revisions.reject(
             draftId,
             revisionId,
             verdict.reason === undefined ? {} : { reason: verdict.reason },
@@ -141,11 +141,11 @@ export function VerdictControls({
 }
 
 /**
- * A failed verdict, in a bordered box. A 401 shows nothing here: it clears the token, and the app
- * shows the token screen (query-client.ts).
+ * A failed verdict, in a bordered box. `UNAUTHENTICATED` shows nothing here: it clears the token,
+ * and the app shows the token screen (query-client.ts).
  */
 function VerdictError({ error, isBusy, onReloadDraft }: VerdictErrorProps): React.ReactNode {
-  if (error instanceof ApiError && error.status === 401) {
+  if (error instanceof ApiError && error.code === "UNAUTHENTICATED") {
     return null;
   }
 

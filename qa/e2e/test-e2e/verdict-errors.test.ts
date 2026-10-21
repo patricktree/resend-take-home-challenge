@@ -13,11 +13,11 @@ test("a verdict on a Revision the Agent replaced is refused inline and not recor
   const draft = await createPendingDraft(agentClient, createDraftData("Price increase"));
   await openDraftPage(page, draft);
   // The Agent revises and submits again after the Reviewer opened the Draft.
-  const revised = await agentClient.reviseDraft(draft.id, {
+  const revised = await agentClient.drafts.revise(draft.id, {
     ...createDraftData("Price increase from March"),
     baseRevisionId: draft.latestRevision.id,
   });
-  await agentClient.submitRevision(draft.id, revised.latestRevision.id);
+  await agentClient.revisions.submit(draft.id, revised.latestRevision.id);
   const verdictRequests = recordVerdictRequests(page);
 
   await page.getByRole("button", { name: "Approve" }).click();
@@ -27,7 +27,7 @@ test("a verdict on a Revision the Agent replaced is refused inline and not recor
   );
   // The page still shows the Revision the Reviewer read.
   await expect(page.getByText("Revision 1", { exact: true })).toBeVisible();
-  const storedDraft = await reviewerClient.getDraft(draft.id);
+  const storedDraft = await reviewerClient.drafts.get(draft.id);
   expect(storedDraft.latestRevision).toMatchObject({
     id: revised.latestRevision.id,
     reviewStatus: "PENDING",
@@ -44,7 +44,7 @@ test("a verdict on a Revision the Agent replaced is refused inline and not recor
   await expect(page.getByRole("button", { name: "Approve" })).toBeEnabled();
   // Nothing retried the verdict or applied it to the new Revision.
   expect(verdictRequests).toHaveLength(1);
-  expect((await reviewerClient.getDraft(draft.id)).reviewStatus).toBe("PENDING");
+  expect((await reviewerClient.drafts.get(draft.id)).reviewStatus).toBe("PENDING");
   expect(resendStub.requests).toStrictEqual([]);
 });
 
@@ -58,11 +58,11 @@ test("a shown verdict error survives the Reviewer coming back to the tab: the Dr
   await page.clock.install();
   const draft = await createPendingDraft(agentClient, createDraftData("Price increase"));
   await openDraftPage(page, draft);
-  const revised = await agentClient.reviseDraft(draft.id, {
+  const revised = await agentClient.drafts.revise(draft.id, {
     ...createDraftData("Price increase from March"),
     baseRevisionId: draft.latestRevision.id,
   });
-  await agentClient.submitRevision(draft.id, revised.latestRevision.id);
+  await agentClient.revisions.submit(draft.id, revised.latestRevision.id);
   await page.getByRole("button", { name: "Approve" }).click();
   await expect(page.getByRole("alert")).toHaveText(
     "The Agent changed this Draft after you opened it; your verdict was not recorded.",
@@ -88,7 +88,7 @@ test("a Rejection of a Revision approved meanwhile is refused inline and not rec
   const draft = await createPendingDraft(agentClient, createDraftData("Holiday greetings"));
   await openDraftPage(page, draft);
   // The Revision is approved elsewhere (another tab, say) after this page loaded it.
-  await reviewerClient.approveRevision(draft.id, draft.latestRevision.id);
+  await reviewerClient.revisions.approve(draft.id, draft.latestRevision.id);
   const verdictRequests = recordVerdictRequests(page);
   const reasonInput = page.getByRole("textbox", { name: "Reason for rejection" });
 
@@ -97,7 +97,7 @@ test("a Rejection of a Revision approved meanwhile is refused inline and not rec
 
   await expect(page.getByRole("alert")).toHaveText("This Revision was already approved.");
   await expect(reasonInput).toHaveValue("Wrong holiday.");
-  const storedDraft = await reviewerClient.getDraft(draft.id);
+  const storedDraft = await reviewerClient.drafts.get(draft.id);
   expect(storedDraft.latestRevision.reviewStatus).toBe("APPROVED");
   expect(storedDraft.latestRevision).not.toHaveProperty("rejectionReason");
 
@@ -116,7 +116,7 @@ test("the same verdict again is refused inline too", async ({ page, reviewEnviro
   const { agentClient, reviewerClient } = reviewEnvironment;
   const draft = await createPendingDraft(agentClient, createDraftData("Holiday greetings"));
   await openDraftPage(page, draft);
-  await reviewerClient.rejectRevision(draft.id, draft.latestRevision.id, {
+  await reviewerClient.revisions.reject(draft.id, draft.latestRevision.id, {
     reason: "Wrong holiday.",
   });
   const verdictRequests = recordVerdictRequests(page);
@@ -153,7 +153,7 @@ test("a verdict with a stored Agent token asks for the Reviewer token", async ({
     "The stored token is not the Reviewer token. Sign out and enter the Reviewer token.",
   );
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
-  expect((await reviewerClient.getDraft(draft.id)).reviewStatus).toBe("PENDING");
+  expect((await reviewerClient.drafts.get(draft.id)).reviewStatus).toBe("PENDING");
 });
 
 /** Collects the page's reads of the Draft, to show which of them happened. */

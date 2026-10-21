@@ -26,7 +26,7 @@ const SENDING_POLL_INTERVAL_MILLISECONDS = 3000;
 export function draftQuery(draftId: string) {
   return queryOptions({
     queryKey: [...DRAFTS_QUERY_KEY, "draft", draftId],
-    queryFn: () => getApiClient().getDraft(draftId),
+    queryFn: () => getApiClient().drafts.get(draftId),
     // Polls until the Send leaves `QUEUED` ("Sending…"), then stops.
     refetchInterval: (query) =>
       query.state.data?.sending.status === "QUEUED" ? SENDING_POLL_INTERVAL_MILLISECONDS : false,
@@ -42,7 +42,7 @@ function createDraftListQuery(listName: string, listQuery: ListDraftsQuery) {
   return infiniteQueryOptions({
     queryKey: [...DRAFTS_QUERY_KEY, "list", listName],
     queryFn: ({ pageParam }) =>
-      getApiClient().listDrafts({
+      getApiClient().drafts.list({
         ...listQuery,
         ...(pageParam === undefined ? {} : { cursor: pageParam }),
       }),

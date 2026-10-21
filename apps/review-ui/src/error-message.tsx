@@ -8,11 +8,11 @@ type ErrorMessageProps = {
 };
 
 /**
- * An error's message and, for an API error, its request id. Renders nothing for a 401: the app then
- * shows the token screen instead.
+ * An error's message and, for an API error, its request id. Renders nothing for `UNAUTHENTICATED`:
+ * the app then shows the token screen instead.
  */
 export function ErrorMessage({ error }: ErrorMessageProps): React.ReactNode {
-  if (error instanceof ApiError && error.status === 401) {
+  if (error instanceof ApiError && error.code === "UNAUTHENTICATED") {
     return null;
   }
 

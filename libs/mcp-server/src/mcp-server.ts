@@ -80,7 +80,7 @@ export function createResendChallengeMcpServer({
       inputSchema: draftDataRequestSchema,
       outputSchema: draftSummarySchema,
     },
-    (draftData) => runAsToolResult(() => client.createDraft(draftData)),
+    (draftData) => runAsToolResult(() => client.drafts.create(draftData)),
   );
 
   server.registerTool(
@@ -93,7 +93,7 @@ export function createResendChallengeMcpServer({
       outputSchema: draftSchema,
       annotations: READ_ONLY,
     },
-    ({ draftId }) => runAsToolResult(() => client.getDraft(draftId)),
+    ({ draftId }) => runAsToolResult(() => client.drafts.get(draftId)),
   );
 
   server.registerTool(
@@ -106,7 +106,7 @@ export function createResendChallengeMcpServer({
       outputSchema: draftListSchema,
       annotations: READ_ONLY,
     },
-    (query) => runAsToolResult(() => client.listDrafts(query)),
+    (query) => runAsToolResult(() => client.drafts.list(query)),
   );
 
   server.registerTool(
@@ -119,7 +119,7 @@ export function createResendChallengeMcpServer({
       outputSchema: draftSummarySchema,
     },
     ({ draftId, ...reviseRequest }) =>
-      runAsToolResult(() => client.reviseDraft(draftId, reviseRequest)),
+      runAsToolResult(() => client.drafts.revise(draftId, reviseRequest)),
   );
 
   server.registerTool(
@@ -131,7 +131,8 @@ export function createResendChallengeMcpServer({
       inputSchema: revisionParamsSchema,
       outputSchema: draftSummarySchema,
     },
-    ({ draftId, revisionId }) => runAsToolResult(() => client.submitRevision(draftId, revisionId)),
+    ({ draftId, revisionId }) =>
+      runAsToolResult(() => client.revisions.submit(draftId, revisionId)),
   );
 
   server.registerTool(
@@ -144,7 +145,7 @@ export function createResendChallengeMcpServer({
       outputSchema: revisionSchema,
       annotations: READ_ONLY,
     },
-    ({ draftId, revisionId }) => runAsToolResult(() => client.getRevision(draftId, revisionId)),
+    ({ draftId, revisionId }) => runAsToolResult(() => client.revisions.get(draftId, revisionId)),
   );
 
   return server;

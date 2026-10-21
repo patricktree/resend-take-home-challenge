@@ -79,7 +79,7 @@ drafts
       subject: options.subject,
       body: { plainText: await readBody(options) },
     });
-    await runApiCommand((client) => client.createDraft(draftData), formatDraftSummary);
+    await runApiCommand((client) => client.drafts.create(draftData), formatDraftSummary);
   });
 
 drafts
@@ -90,7 +90,7 @@ drafts
   .argument("<draftId>", "the Draft id (drf_…)")
   .action(async (draftId) => {
     const params = parseInput(draftParamsSchema, { draftId });
-    await runApiCommand((client) => client.getDraft(params.draftId), formatDraft);
+    await runApiCommand((client) => client.drafts.get(params.draftId), formatDraft);
   });
 
 drafts
@@ -129,7 +129,7 @@ drafts
       limit: options.limit,
       cursor: options.cursor,
     });
-    await runApiCommand((client) => client.listDrafts(query), formatDraftList);
+    await runApiCommand((client) => client.drafts.list(query), formatDraftList);
   });
 
 drafts
@@ -155,7 +155,7 @@ drafts
       body: { plainText: await readBody(options) },
     });
     await runApiCommand(
-      (client) => client.reviseDraft(params.draftId, reviseRequest),
+      (client) => client.drafts.revise(params.draftId, reviseRequest),
       formatDraftSummary,
     );
   });
@@ -170,7 +170,7 @@ drafts
   .action(async (draftId, revisionId) => {
     const params = parseInput(revisionParamsSchema, { draftId, revisionId });
     await runApiCommand(
-      (client) => client.submitRevision(params.draftId, params.revisionId),
+      (client) => client.revisions.submit(params.draftId, params.revisionId),
       formatDraftSummary,
     );
   });
@@ -183,7 +183,7 @@ drafts
   .action(async (draftId, revisionId) => {
     const params = parseInput(revisionParamsSchema, { draftId, revisionId });
     await runApiCommand(
-      (client) => client.getRevision(params.draftId, params.revisionId),
+      (client) => client.revisions.get(params.draftId, params.revisionId),
       formatRevision,
     );
   });

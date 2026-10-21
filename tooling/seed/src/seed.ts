@@ -42,18 +42,18 @@ export async function seedDrafts({
     printDraft(print, pending);
   }
 
-  const created = await agentClient.createDraft({
+  const created = await agentClient.drafts.create({
     to: [TEST_RECIPIENT],
     subject: "Meeting notes",
     body: { plainText: "Hi all,\n\nnotes from today's meeting below.\n" },
   });
-  const revised = await agentClient.reviseDraft(created.id, {
+  const revised = await agentClient.drafts.revise(created.id, {
     to: [TEST_RECIPIENT],
     subject: "Meeting notes from Tuesday",
     body: { plainText: "Hi all,\n\nnotes from Tuesday's meeting below, with the action items.\n" },
     baseRevisionId: created.latestRevision.id,
   });
-  printDraft(print, await agentClient.submitRevision(revised.id, revised.latestRevision.id));
+  printDraft(print, await agentClient.revisions.submit(revised.id, revised.latestRevision.id));
 
   const toReject = await createAndSubmit(agentClient, {
     to: [TEST_RECIPIENT],
@@ -62,7 +62,7 @@ export async function seedDrafts({
   });
   printDraft(
     print,
-    await reviewerClient.rejectRevision(toReject.id, toReject.latestRevision.id, {
+    await reviewerClient.revisions.reject(toReject.id, toReject.latestRevision.id, {
       reason: "Too abrupt: explain the reason and give customers a date.",
     }),
   );
@@ -74,7 +74,7 @@ export async function seedDrafts({
   });
   printDraft(
     print,
-    await reviewerClient.approveRevision(toApprove.id, toApprove.latestRevision.id),
+    await reviewerClient.revisions.approve(toApprove.id, toApprove.latestRevision.id),
   );
 }
 
@@ -82,8 +82,8 @@ async function createAndSubmit(
   agentClient: ApiClient,
   draftData: DraftDataRequest,
 ): Promise<DraftSummaryResponse> {
-  const created = await agentClient.createDraft(draftData);
-  return agentClient.submitRevision(created.id, created.latestRevision.id);
+  const created = await agentClient.drafts.create(draftData);
+  return agentClient.revisions.submit(created.id, created.latestRevision.id);
 }
 
 function printDraft(print: (line: string) => void, draft: DraftSummaryResponse): void {

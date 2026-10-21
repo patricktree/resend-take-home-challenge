@@ -24,9 +24,12 @@ export function signOut(): void {
   queryClient.clear();
 }
 
-/** Any 401 forgets the token and everything read with it; the app shows the token screen. */
+/**
+ * Any `UNAUTHENTICATED` error forgets the token and everything read with it; the app shows the
+ * token screen.
+ */
 function handleUnauthenticated(error: Error): void {
-  if (error instanceof ApiError && error.status === 401) {
+  if (error instanceof ApiError && error.code === "UNAUTHENTICATED") {
     rejectReviewerToken();
     queryClient.clear();
   }

@@ -1,11 +1,17 @@
 /*
- * Records the outcome of a Send on its Draft row (spec section 9, "Recording outcomes"). Every write
- * is conditional on the row, so the first final outcome wins, except that a late `SENT` overrides
- * `OUTCOME_UNKNOWN`. A Send outcome never sets `last_action_at`.
+ * The Send outbox on the Draft row after the Approval batch (spec section 9): every later write and
+ * query of the Send's columns. The Approval batch itself freezes the outbox, since that statement
+ * must carry the verdict guard (spec section 8).
+ *
+ * Every write is conditional on the row. The hand-off is recorded only while the Send is `QUEUED`
+ * without `enqueued_at`. Of the outcomes (spec section 9, "Recording outcomes"), the first final one
+ * wins, except that a late `SENT` overrides `OUTCOME_UNKNOWN`. No write sets `last_action_at`.
  */
 
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
+import assert from "node:assert/strict";
+import { Temporal } from "temporal-polyfill";
 
 import type { DraftId } from "../domain/ids.ts";
 import { drafts } from "./schema.ts";
@@ -15,6 +21,28 @@ export type SendFailure =
   | { reason: "REJECTED_BY_RESEND"; resendErrorName?: string; resendErrorMessage?: string }
   /** The Send ended without an answer from Resend: the email may have gone out. */
   | { reason: "OUTCOME_UNKNOWN" };
+
+/**
+ * Records that the Sends' Queue messages have been sent: sets `enqueued_at` on each Draft that is
+ * still `QUEUED` without one, so a Send that ended or was recorded in the meantime keeps its row.
+ * One statement per Draft, in one batch: D1 binds at most 100 parameters per statement.
+ */
+export async function recordHandOff(
+  database: DrizzleD1Database,
+  draftIds: DraftId[],
+): Promise<void> {
+  const enqueuedAt = Temporal.Now.instant().epochMilliseconds;
+  const [firstUpdate, ...otherUpdates] = draftIds.map((draftId) =>
+    database
+      .update(drafts)
+      .set({ enqueuedAt })
+      .where(
+        and(eq(drafts.id, draftId), eq(drafts.sendingStatus, "QUEUED"), isNull(drafts.enqueuedAt)),
+      ),
+  );
+  assert(firstUpdate !== undefined, "A hand-off names at least one Send.");
+  await database.batch([firstUpdate, ...otherUpdates]);
+}
 
 /**
  * Whether the Draft's Send has ended, `SENT` or `FAILED` with either reason. Throws when the Draft

@@ -11,14 +11,13 @@
  * are absorbed by the idempotency key, under which every attempt sends the same frozen body.
  */
 
-import { and, asc, eq, isNull, lt, sql } from "drizzle-orm";
+import { and, asc, isNull, lt, sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
-import assert from "node:assert/strict";
 import { Temporal } from "temporal-polyfill";
 
 import { findRootCauseMessage } from "../root-cause.ts";
 import { drafts } from "../storage/schema.ts";
-import { recordFailed } from "../storage/send-outbox.ts";
+import { recordFailed, recordHandOff } from "../storage/send-outbox.ts";
 import {
   QUEUE_BATCH_LIMITS,
   toSendQueueMessage,
@@ -104,30 +103,11 @@ async function reenqueueLostHandOffs(
       return;
     }
 
-    await recordHandOffs(database, chunk);
+    await recordHandOff(
+      database,
+      chunk.map(({ draftId }) => draftId),
+    );
   }
-}
-
-/**
- * Records the hand-off of re-enqueued Sends. One statement per Draft: D1 binds at most 100
- * parameters per statement. Each one is conditional like the Approval's own, in case a Send ended
- * in the meantime.
- */
-async function recordHandOffs(
-  database: DrizzleD1Database,
-  messages: SendQueueMessage[],
-): Promise<void> {
-  const enqueuedAt = Temporal.Now.instant().epochMilliseconds;
-  const [firstUpdate, ...otherUpdates] = messages.map(({ draftId }) =>
-    database
-      .update(drafts)
-      .set({ enqueuedAt })
-      .where(
-        and(eq(drafts.id, draftId), eq(drafts.sendingStatus, "QUEUED"), isNull(drafts.enqueuedAt)),
-      ),
-  );
-  assert(firstUpdate !== undefined, "A re-enqueued chunk has at least one Send.");
-  await database.batch([firstUpdate, ...otherUpdates]);
 }
 
 /**

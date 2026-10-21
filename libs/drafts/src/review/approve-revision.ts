@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 
 import type { DraftSummary } from "../domain/draft.ts";
@@ -12,6 +12,7 @@ import { toDraftSummary } from "../storage/draft-rows.ts";
 import { readRefusalSnapshot } from "../storage/refusal-snapshot.ts";
 import { revisionBodyKey } from "../storage/revision-bodies.ts";
 import { drafts, revisions } from "../storage/schema.ts";
+import { recordHandOff } from "../storage/send-outbox.ts";
 import { isLatestAndPending } from "./verdict-guard.ts";
 
 /** Where an Approval hands its Send intent, and the sender it freezes into the outgoing email. */
@@ -130,12 +131,7 @@ async function handOffSend(
   }
 
   try {
-    await database
-      .update(drafts)
-      .set({ enqueuedAt: Temporal.Now.instant().epochMilliseconds })
-      .where(
-        and(eq(drafts.id, draftId), eq(drafts.sendingStatus, "QUEUED"), isNull(drafts.enqueuedAt)),
-      );
+    await recordHandOff(database, [draftId]);
   } catch (error) {
     console.error(
       `Recording the Send Queue hand-off of Draft ${draftId} failed; the Send reconciler re-enqueues it, and the idempotency key absorbs the duplicate. ${findRootCauseMessage(error)}`,

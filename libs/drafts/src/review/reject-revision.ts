@@ -42,18 +42,18 @@ export async function rejectRevision(
   const now = Temporal.Now.instant().epochMilliseconds;
   const rejectionReason = reason?.trim() || null;
 
-  const guard = isLatestAndPending(database, draftId, revisionId);
+  const isRevisionLatestAndPending = isLatestAndPending(database, draftId, revisionId);
   const [updatedDrafts, updatedRevisions] = await database.batch([
     database
       .update(drafts)
       .set({ lastActionAt: now })
-      .where(and(eq(drafts.id, draftId), guard))
+      .where(and(eq(drafts.id, draftId), isRevisionLatestAndPending))
       .returning(),
     // Leaving `PENDING` makes the guard false, so this statement runs last.
     database
       .update(revisions)
       .set({ reviewStatus: "REJECTED", decidedAt: now, rejectionReason })
-      .where(and(eq(revisions.id, revisionId), guard))
+      .where(and(eq(revisions.id, revisionId), isRevisionLatestAndPending))
       .returning(),
   ]);
 

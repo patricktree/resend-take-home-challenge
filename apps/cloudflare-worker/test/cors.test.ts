@@ -5,6 +5,7 @@ import { LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN } from "@resend-challenge/api.r
 import { TEST_AGENT_TOKEN, useWorker } from "./use-worker.ts";
 
 const LOCAL_MCP_URL = "http://localhost/mcp";
+const PRODUCTION_MCP_URL = "https://resend-challenge.patricktree.me/mcp";
 
 /** A web page on another site, such as a web-based MCP host. */
 const FOREIGN_ORIGIN = "https://mcp-host.example";
@@ -149,7 +150,7 @@ test("an internal error on /mcp carries the CORS headers", async ({ expect, onTe
   // Outside local development REVIEWER_TOKEN is required; authenticating without it throws.
   const worker = await useWorker({ onTestFinished }, { vars: { LOCAL_DEVELOPMENT: "false" } });
 
-  const response = await worker.fetch("https://resend-challenge.patricktree.me/mcp", {
+  const response = await worker.fetch(PRODUCTION_MCP_URL, {
     method: "POST",
     headers: { ...MCP_REQUEST_HEADERS, Authorization: `Bearer ${TEST_AGENT_TOKEN}` },
     body: JSON.stringify(LIST_TOOLS_REQUEST),

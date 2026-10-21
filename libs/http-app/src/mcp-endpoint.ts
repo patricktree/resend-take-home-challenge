@@ -13,22 +13,28 @@ import { jsonError } from "./http-errors.ts";
 export const MCP_PATH = "/mcp";
 
 /**
- * The CORS headers of `/mcp`, which lets MCP clients in a web page call it (spec section 7,
- * "Browser hardening"). The origin is a wildcard and credentials are never allowed: only the bearer
- * token authenticates, and a page has to hold it already.
+ * The CORS headers of a preflight of `/mcp`, which lets MCP clients in a web page call it (spec
+ * section 7, "Browser hardening"). The origin is a wildcard and credentials are never allowed: only
+ * the bearer token authenticates, and a page has to hold it already.
  */
-const MCP_CORS_HEADERS = {
-  ALLOW_ORIGIN: "*",
+const MCP_PREFLIGHT_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
   // The methods of the Streamable HTTP transport.
-  ALLOW_METHODS: "GET, POST, DELETE, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
   // The request headers the MCP SDK client sends; it sends `Mcp-Param-*` only for tools that
   // declare `x-mcp-header`, which none of ours does.
-  ALLOW_HEADERS:
+  "Access-Control-Allow-Headers":
     "Authorization, Content-Type, Accept, Mcp-Protocol-Version, Mcp-Session-Id, Mcp-Method, Mcp-Name, Last-Event-ID",
-  EXPOSE_HEADERS: "Mcp-Session-Id, Mcp-Protocol-Version, WWW-Authenticate, X-Request-Id",
   // Short, so that a change of these headers reaches browsers within minutes.
-  MAX_AGE_SECONDS: "600",
-} as const;
+  "Access-Control-Max-Age": "600",
+};
+
+/** The CORS headers of every other response of `/mcp`. */
+const MCP_RESPONSE_CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Expose-Headers":
+    "Mcp-Session-Id, Mcp-Protocol-Version, WWW-Authenticate, X-Request-Id",
+};
 
 /**
  * Answers the CORS preflight (`OPTIONS`) of {@link MCP_PATH} with 204. It is mounted before
@@ -37,12 +43,7 @@ const MCP_CORS_HEADERS = {
  * keep public sites from reaching a developer's local `/mcp`.
  */
 export function answerMcpPreflight(context: Context<HttpAppHonoEnvironment>): Response {
-  return context.body(null, 204, {
-    "Access-Control-Allow-Origin": MCP_CORS_HEADERS.ALLOW_ORIGIN,
-    "Access-Control-Allow-Methods": MCP_CORS_HEADERS.ALLOW_METHODS,
-    "Access-Control-Allow-Headers": MCP_CORS_HEADERS.ALLOW_HEADERS,
-    "Access-Control-Max-Age": MCP_CORS_HEADERS.MAX_AGE_SECONDS,
-  });
+  return context.body(null, 204, MCP_PREFLIGHT_HEADERS);
 }
 
 /**
@@ -52,8 +53,9 @@ export function answerMcpPreflight(context: Context<HttpAppHonoEnvironment>): Re
 export const addMcpCorsHeaders = createMiddleware<HttpAppHonoEnvironment>(
   async (context, next) => {
     await next();
-    context.header("Access-Control-Allow-Origin", MCP_CORS_HEADERS.ALLOW_ORIGIN);
-    context.header("Access-Control-Expose-Headers", MCP_CORS_HEADERS.EXPOSE_HEADERS);
+    for (const [name, value] of Object.entries(MCP_RESPONSE_CORS_HEADERS)) {
+      context.header(name, value);
+    }
   },
 );
 
@@ -102,10 +104,11 @@ export function createMcpEndpoint(
       () => createResendChallengeMcpServer({ client, publicBaseUrl: context.env.PUBLIC_BASE_URL }),
       {
         route: MCP_PATH,
-        // `mcpCors` sets the CORS headers; `false` keeps the handler from adding its own.
+        // `answerMcpPreflight` and `addMcpCorsHeaders` set the CORS headers; `false` keeps the
+        // handler from adding its own.
         corsOptions: false,
-        // Web pages on any site may call `/mcp` (`mcpCors`), so their `Origin` is not checked
-        // either. The handler's default allows only localhost-class origins, against DNS rebinding;
+        // Web pages on any site may call `/mcp` (`addMcpCorsHeaders`), so their `Origin` is not
+        // checked either. The handler's default allows only localhost-class origins, against DNS rebinding;
         // here the bearer token guards `/mcp`, and `/api/v1` offers the Agent the same operations
         // with no `Origin` check.
         allowedOriginHostnames: "*",

@@ -143,6 +143,22 @@ test("repeated values of a filter match any of them, and different filters must 
   expect(rejectedAndQueuedPage).toStrictEqual({ items: [] });
 });
 
+test("a filter value repeated 200 times counts once, so a long query string stays within D1's bound parameters", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const worker = await useWorker({ onTestFinished });
+  const draftIds = await createDraftInEveryReviewStatus(worker);
+  const repeatedFilters = [
+    ...Array.from({ length: 200 }, () => "reviewStatus=PENDING"),
+    ...Array.from({ length: 200 }, () => "sendingStatus=NOT_SENT"),
+  ].join("&");
+
+  const page = await expectPage(worker, `?${repeatedFilters}`);
+
+  expect(page.items.map((item) => item.id)).toStrictEqual([draftIds.PENDING]);
+});
+
 test("both orderings run in both directions", async ({ expect, onTestFinished }) => {
   const worker = await useWorker({ onTestFinished });
   const first = await createDraft(worker);

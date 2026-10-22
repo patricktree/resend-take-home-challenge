@@ -236,7 +236,7 @@ test("`drafts create --body-file` reads the body from a file", async ({
   });
 });
 
-// `pnpm resend-challenge` runs the CLI in the repository root and keeps the caller's directory in INIT_CWD.
+// A pnpm script, such as the development path `pnpm resend-challenge`, runs the CLI in the repository root and keeps the caller's directory in INIT_CWD; the bundle honours it too.
 test("`drafts create --body-file` resolves a relative path against the directory pnpm was called from", async ({
   expect,
   onTestFinished,

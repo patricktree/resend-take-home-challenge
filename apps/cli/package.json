@@ -14,7 +14,7 @@
     "start": "node ./src/cli.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "turbo:build": "del-cli --dot=true \"dist/types\" \"dist/tsconfig.build.tsbuildinfo\" && tsc --build ./tsconfig.json && rolldown --config ./rolldown.config.ts && node -e \"fs.chmodSync('bundle/resend-challenge.mjs', 0o755)\"",
+    "turbo:build": "del-cli --dot=true \"dist/types\" \"dist/tsconfig.build.tsbuildinfo\" && tsc --build ./tsconfig.json && rolldown --config ./rolldown.config.ts",
     "turbo:lint": "oxlint .",
     "turbo:lint:fix": "pnpm run turbo:lint --fix",
     "turbo:test": "pnpm run test"

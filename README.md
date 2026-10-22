@@ -10,7 +10,7 @@ The Send reconciler makes sure no Send stays `QUEUED` forever. Each tick handles
 
 Agents authenticate with the Agent token, which the repository owner hands out. It lets you create, revise and submit Drafts, but nothing is sent without the Reviewer token. In the examples below, replace `<agent-token>` with it.
 
-An Agent given only the URL finds its way from there: `GET /` answers with an agent quickstart in Markdown (the token, the MCP server, the lifecycle and the links below) unless the client asks for `text/html`, which a browser does and which redirects to the Review UI. `/llms.txt` serves the same quickstart as plain text. Both read the token from the Worker's configuration, so they always show the deployed one; locally, they show the local Agent token.
+An Agent given only the URL finds its way from there: `GET /` answers with an agent quickstart in Markdown (how to authenticate, the MCP server, the lifecycle and the links below) unless the client asks for `text/html`, which a browser does and which redirects to the Review UI. `/llms.txt` serves the same quickstart as plain text. Neither shows the Agent token: they tell the Agent that the repository owner hands it out and show `<agent-token>` in its place. Only in local development, on a local host, do they show the local Agent token.
 
 After submitting, hand the Draft's `reviewUrl` to the human who asked for the email, so they can review it or forward it to the Reviewer; an Agent cannot approve.
 

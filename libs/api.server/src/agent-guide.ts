@@ -17,6 +17,9 @@ const AGENT_SKILL_URL =
 const AGENT_SKILL_RAW_URL =
   "https://raw.githubusercontent.com/patricktree/resend-take-home-challenge/main/skills/email-draft-approval/SKILL.md";
 
+/** Stands in for the configured Agent token, which the quickstart never shows. */
+const AGENT_TOKEN_PLACEHOLDER = "<agent-token>";
+
 const MARKDOWN_CONTENT_TYPE = "text/markdown; charset=utf-8";
 
 /**
@@ -69,15 +72,13 @@ function isAskingForHtml(acceptHeader: string | undefined): boolean {
 
 /**
  * The agent quickstart, in Markdown. Its URLs use the request's origin, so local development links
- * to itself. The token is the local Agent token wherever the Worker accepts it, and the configured
- * Agent token otherwise, read per request, so rotating it (`pnpm secrets:generate`) needs no change
- * here.
+ * to itself. It never shows the configured Agent token, a secret the repository owner hands out:
+ * only the local Agent token, wherever the Worker accepts it, and a placeholder everywhere else.
  */
 function describeQuickstart(context: Context<ApiServerHonoEnvironment>): string {
   const origin = new URL(context.req.url).origin;
-  const agentToken = acceptsLocalTokens(context.env, context.req.url)
-    ? LOCAL_AGENT_TOKEN
-    : context.env.AGENT_TOKEN;
+  const isAcceptingLocalTokens = acceptsLocalTokens(context.env, context.req.url);
+  const agentToken = isAcceptingLocalTokens ? LOCAL_AGENT_TOKEN : AGENT_TOKEN_PLACEHOLDER;
   const mcpUrl = `${origin}${MCP_PATH}`;
 
   return [
@@ -87,7 +88,11 @@ function describeQuickstart(context: Context<ApiServerHonoEnvironment>): string 
     "",
     "## Authenticate",
     "",
-    "Send the public Agent token on every request. It is public by design: it creates, revises and submits Drafts, and it can never approve or send.",
+    "Send the Agent token on every request. It creates, revises and submits Drafts, and it can never approve or send.",
+    "",
+    isAcceptingLocalTokens
+      ? "This Worker runs in local development, so it accepts the local Agent token shown below."
+      : `The repository owner hands out the Agent token; replace \`${AGENT_TOKEN_PLACEHOLDER}\` below with it. Ask your user for it if you do not have it.`,
     "",
     "```text",
     `Authorization: Bearer ${agentToken}`,

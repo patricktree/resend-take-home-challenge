@@ -89,28 +89,38 @@ test("the agent quickstart links the MCP server, the OpenAPI document and the Ag
   expect(quickstart).not.toContain("https://resend-challenge.patricktree.me");
 });
 
+test("the agent quickstart shows the local Agent token in local development on a local host, which the API accepts", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const worker = await useWorker({ onTestFinished });
+
+  const quickstart = await (await worker.fetch(ROOT_URL)).text();
+  const createResponse = await worker.fetch("http://localhost/api/v1/drafts", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${LOCAL_AGENT_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      to: ["delivered@resend.dev"],
+      subject: "Hello",
+      body: { plainText: "Hello from the quickstart." },
+    }),
+  });
+
+  expect(findShownTokens(quickstart)).toStrictEqual(new Set([LOCAL_AGENT_TOKEN]));
+  expect(quickstart).not.toContain(TEST_AGENT_TOKEN);
+  expect(createResponse.status).toBe(201);
+});
+
 test.for([
   {
-    name: "the local Agent token in local development on a local host",
-    origin: "http://localhost",
-    isLocalDevelopment: true,
-    expectedToken: LOCAL_AGENT_TOKEN,
-  },
-  {
-    name: "the configured Agent token in local development on a non-local host",
+    name: "in local development on a non-local host",
     origin: "https://resend-challenge.patricktree.me",
     isLocalDevelopment: true,
-    expectedToken: TEST_AGENT_TOKEN,
   },
-  {
-    name: "the configured Agent token outside local development",
-    origin: "http://localhost",
-    isLocalDevelopment: false,
-    expectedToken: TEST_AGENT_TOKEN,
-  },
+  { name: "outside local development", origin: "http://localhost", isLocalDevelopment: false },
 ])(
-  "the agent quickstart shows $name, which the API accepts",
-  async ({ origin, isLocalDevelopment, expectedToken }, { expect, onTestFinished }) => {
+  "the agent quickstart never shows the configured Agent token $name, only a placeholder",
+  async ({ origin, isLocalDevelopment }, { expect, onTestFinished }) => {
     const worker = await useWorker(
       { onTestFinished },
       isLocalDevelopment
@@ -121,24 +131,33 @@ test.for([
           },
     );
 
-    const quickstart = await (await worker.fetch(`${origin}/`)).text();
-    const shownTokens = new Set(
-      [...quickstart.matchAll(/Authorization: Bearer ([\w-]+)/g)].map((match) => match[1]),
-    );
-    const createResponse = await worker.fetch(`${origin}/api/v1/drafts`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${expectedToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        to: ["delivered@resend.dev"],
-        subject: "Hello",
-        body: { plainText: "Hello from the quickstart." },
-      }),
-    });
+    const quickstart = await (await worker.fetch(`${origin}/llms.txt`)).text();
 
-    expect(shownTokens).toStrictEqual(new Set([expectedToken]));
-    expect(createResponse.status).toBe(201);
+    expect(findShownTokens(quickstart)).toStrictEqual(new Set(["<agent-token>"]));
+    expect(quickstart).toContain("The repository owner hands out the Agent token");
+    expect(quickstart).not.toContain(TEST_AGENT_TOKEN);
+    expect(quickstart).not.toContain(LOCAL_AGENT_TOKEN);
   },
 );
+
+test("the agent quickstart works when local development configures no Agent token", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const worker = await useWorker({ onTestFinished }, { secrets: { AGENT_TOKEN: undefined } });
+
+  const response = await worker.fetch("https://resend-challenge.patricktree.me/");
+
+  expect(response.status).toBe(200);
+  expect(await response.text()).not.toContain("undefined");
+});
+
+/** The tokens of every `Authorization: Bearer …` the quickstart shows. */
+function findShownTokens(quickstart: string): Set<string | undefined> {
+  return new Set(
+    [...quickstart.matchAll(/Authorization: Bearer ([\w<>-]+)/g)].map((match) => match[1]),
+  );
+}
 
 test("an unknown API path answers with a JSON 404 NOT_FOUND", async ({
   expect,

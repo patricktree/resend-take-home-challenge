@@ -9,7 +9,7 @@ You compose an email Draft; a human Reviewer approves or rejects the exact Revis
 
 ## Connect
 
-The service's origin is `https://resend-challenge.patricktree.me`, unless your user names another one (local development uses `http://localhost:5173`). `GET <origin>/llms.txt` shows the current public Agent token and the exact connection commands; fetch it whenever you lack the token or it gets 401.
+The service's origin is `https://resend-challenge.patricktree.me`, unless your user names another one (local development uses `http://localhost:5173`). The repository owner hands out the Agent token; ask your user for it when you do not have it or it gets 401, and never guess one. `GET <origin>/llms.txt` shows the exact connection commands, and in local development also the local Agent token.
 
 1. **MCP**, preferred: Streamable HTTP at `<origin>/mcp`, with `Authorization: Bearer <Agent token>` as a static header and no OAuth. The tools are `create_draft`, `submit_draft`, `get_draft`, `list_drafts`, `revise_draft` and `get_revision`.
 2. **HTTP API**, the fallback: the same header on every request under `<origin>/api/v1`. `<origin>/api/openapi.json` describes every operation; a tool's HTTP twin is named below in parentheses.

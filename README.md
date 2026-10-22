@@ -22,10 +22,14 @@ After submitting, hand the Draft's `reviewUrl` to the human who asked for the em
 npx skills add patricktree/resend-take-home-challenge
 ```
 
-Or copy it into Claude Code by hand:
+Or copy it by hand, into `~/.claude/skills` for Claude Code or `~/.agents/skills` for Codex:
 
 ```sh
 mkdir -p ~/.claude/skills/email-draft-approval && curl -sSo ~/.claude/skills/email-draft-approval/SKILL.md https://raw.githubusercontent.com/patricktree/resend-take-home-challenge/main/skills/email-draft-approval/SKILL.md
+```
+
+```sh
+mkdir -p ~/.agents/skills/email-draft-approval && curl -sSo ~/.agents/skills/email-draft-approval/SKILL.md https://raw.githubusercontent.com/patricktree/resend-take-home-challenge/main/skills/email-draft-approval/SKILL.md
 ```
 
 ### Over HTTP

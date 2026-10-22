@@ -17,6 +17,9 @@ const AGENT_SKILL_URL =
 const AGENT_SKILL_RAW_URL =
   "https://raw.githubusercontent.com/patricktree/resend-take-home-challenge/main/skills/email-draft-approval/SKILL.md";
 
+/** The environment variable Codex reads the token from; the CLI reads the same one. */
+const CODEX_TOKEN_ENV_VAR = "RESEND_CHALLENGE_TOKEN";
+
 /** Stands in for the configured Agent token, which the quickstart never shows. */
 const AGENT_TOKEN_PLACEHOLDER = "<agent-token>";
 
@@ -106,6 +109,13 @@ function describeQuickstart(context: Context<ApiServerHonoEnvironment>): string 
     `claude mcp add --transport http resend-challenge ${mcpUrl} --header 'Authorization: Bearer ${agentToken}'`,
     "```",
     "",
+    `For Codex, which reads the token from an environment variable that must also be set whenever Codex runs:`,
+    "",
+    "```sh",
+    `export ${CODEX_TOKEN_ENV_VAR}='${agentToken}'`,
+    `codex mcp add resend-challenge --url ${mcpUrl} --bearer-token-env-var ${CODEX_TOKEN_ENV_VAR}`,
+    "```",
+    "",
     `Without MCP, call the HTTP API under ${origin}/api/v1 with the same header. Its OpenAPI document: ${origin}${OPENAPI_DOCUMENT_PATH}`,
     "",
     "## Lifecycle",
@@ -116,11 +126,14 @@ function describeQuickstart(context: Context<ApiServerHonoEnvironment>): string 
     "",
     "## Agent Skill",
     "",
-    `The Agent Skill at ${AGENT_SKILL_URL} covers the whole workflow, polling and the error codes that need a specific reaction. Install it with the skills CLI, or for Claude Code by hand:`,
+    `The Agent Skill at ${AGENT_SKILL_URL} covers the whole workflow, polling and the error codes that need a specific reaction. Install it with the skills CLI, or by hand for Claude Code or Codex:`,
     "",
     "```sh",
     "npx skills add patricktree/resend-take-home-challenge",
+    "# Claude Code",
     `mkdir -p ~/.claude/skills/email-draft-approval && curl -sSo ~/.claude/skills/email-draft-approval/SKILL.md ${AGENT_SKILL_RAW_URL}`,
+    "# Codex",
+    `mkdir -p ~/.agents/skills/email-draft-approval && curl -sSo ~/.agents/skills/email-draft-approval/SKILL.md ${AGENT_SKILL_RAW_URL}`,
     "```",
     "",
   ].join("\n");

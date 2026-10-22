@@ -69,7 +69,7 @@ test("/llms.txt serves the agent quickstart as plain text to any client, without
   expect(await llmsTxtResponse.text()).toBe(await rootResponse.text());
 });
 
-test("the agent quickstart links the MCP server, the OpenAPI document and the Agent Skill", async ({
+test("the agent quickstart links the MCP server for Claude Code and Codex, the OpenAPI document and the Agent Skill", async ({
   expect,
   onTestFinished,
 }) => {
@@ -80,6 +80,10 @@ test("the agent quickstart links the MCP server, the OpenAPI document and the Ag
 
   expect(quickstart).toContain("http://127.0.0.1/mcp");
   expect(quickstart).toContain("claude mcp add --transport http");
+  expect(quickstart).toContain(
+    "codex mcp add resend-challenge --url http://127.0.0.1/mcp --bearer-token-env-var RESEND_CHALLENGE_TOKEN",
+  );
+  expect(quickstart).toContain("~/.agents/skills/email-draft-approval/SKILL.md");
   expect(quickstart).toContain("http://127.0.0.1/api/openapi.json");
   expect(quickstart).toContain(
     "https://github.com/patricktree/resend-take-home-challenge/tree/main/skills/email-draft-approval",

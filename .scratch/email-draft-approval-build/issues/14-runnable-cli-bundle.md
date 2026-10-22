@@ -4,7 +4,7 @@
 
 **Blocked by:** 11 (CLI)
 
-**Status:** done
+**Status:** done (<https://github.com/patricktree/resend-take-home-challenge/pull/30>)
 
 - [x] `apps/cli/rolldown.config.ts` bundles `src/cli.ts`, `libs/api.client`, `libs/api.routes` and all their npm dependencies into one ESM file, `apps/cli/bundle/resend-challenge.mjs`: `platform: "node"`, only `node:*` builtins external, target `node24`, not minified, legal comments kept, no source map, deterministic, `#!/usr/bin/env node` as its first line and committed with the executable bit
 - [x] `rolldown` is a devDependency of `apps/cli`, on the catalog version that Vite resolves; `apps/cli/package.json` has no `bin` field

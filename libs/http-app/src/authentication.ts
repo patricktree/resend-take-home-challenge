@@ -8,7 +8,7 @@ import {
   OPENAPI_DOCUMENT_PATH,
 } from "@resend-challenge/api.routes";
 
-import type { ApiServerEnvironment, ApiServerHonoEnvironment } from "./api-server-environment.ts";
+import type { HttpAppEnvironment, HttpAppHonoEnvironment } from "./http-app-environment.ts";
 import { jsonError } from "./http-errors.ts";
 
 export type Role = (typeof ROLE)[keyof typeof ROLE];
@@ -29,7 +29,7 @@ const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "host.docker.int
  * 401 with no hint about which kind was expected. Reading the OpenAPI document is the only public
  * API request.
  */
-export const authenticate = createMiddleware<ApiServerHonoEnvironment>(async (context, next) => {
+export const authenticate = createMiddleware<HttpAppHonoEnvironment>(async (context, next) => {
   const isReadingOpenApiDocument =
     (context.req.method === "GET" || context.req.method === "HEAD") &&
     context.req.path === OPENAPI_DOCUMENT_PATH;
@@ -61,7 +61,7 @@ export const authenticate = createMiddleware<ApiServerHonoEnvironment>(async (co
  * 403 `REVIEWER_ONLY`. Runs after {@link authenticate} and before any database access, so an Agent
  * can never change a Draft through these routes.
  */
-export const requireReviewer = createMiddleware<ApiServerHonoEnvironment>(async (context, next) => {
+export const requireReviewer = createMiddleware<HttpAppHonoEnvironment>(async (context, next) => {
   if (context.get("role") !== ROLE.REVIEWER) {
     return jsonError(
       context,
@@ -135,7 +135,7 @@ type TokenConfiguration = {
  * Throws when the configuration is incomplete: outside local development both tokens must be set.
  */
 function readTokenConfiguration(
-  environment: ApiServerEnvironment,
+  environment: HttpAppEnvironment,
   requestUrl: string,
 ): TokenConfiguration {
   const isLocalDevelopment = environment.LOCAL_DEVELOPMENT === "true";
@@ -161,7 +161,7 @@ function readTokenConfiguration(
 }
 
 /** Whether a request accepts the local tokens: only in local development, and only on a local host. */
-export function acceptsLocalTokens(environment: ApiServerEnvironment, requestUrl: string): boolean {
+export function acceptsLocalTokens(environment: HttpAppEnvironment, requestUrl: string): boolean {
   return environment.LOCAL_DEVELOPMENT === "true" && LOCAL_HOSTS.has(new URL(requestUrl).hostname);
 }
 

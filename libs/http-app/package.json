@@ -1,13 +1,13 @@
 {
-  "name": "@resend-challenge/api.server",
+  "name": "@resend-challenge/http-app",
   "private": true,
   "description": "The Hono app behind the Worker's fetch handler: routing, authentication and the error envelope",
   "type": "module",
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "types": "./dist/types/api-server.d.ts",
-      "default": "./src/api-server.ts"
+      "types": "./dist/types/http-app.d.ts",
+      "default": "./src/http-app.ts"
     }
   },
   "scripts": {

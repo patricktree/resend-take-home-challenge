@@ -370,12 +370,12 @@ importers:
 
   apps/cloudflare-worker:
     dependencies:
-      '@resend-challenge/api.server':
-        specifier: workspace:*
-        version: link:../../libs/api.server
       '@resend-challenge/email-drafts':
         specifier: workspace:*
         version: link:../../libs/email-drafts
+      '@resend-challenge/http-app':
+        specifier: workspace:*
+        version: link:../../libs/http-app
     devDependencies:
       '@cloudflare/vite-plugin':
         specifier: catalog:web-app
@@ -403,7 +403,7 @@ importers:
         version: link:../../qa/resend-stub
       '@resend-challenge/review-ui':
         specifier: workspace:*
-        version: link:../review-ui
+        version: link:../../libs/review-ui
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -434,85 +434,6 @@ importers:
       zod:
         specifier: ^4.6.5
         version: 4.6.7
-
-  apps/review-ui:
-    dependencies:
-      '@fontsource-variable/inter':
-        specifier: ^5.3.0
-        version: 5.3.0
-      '@linaria/core':
-        specifier: ^8.2.0
-        version: 8.2.0
-      '@resend-challenge/api.client':
-        specifier: workspace:*
-        version: link:../../libs/api.client
-      '@resend-challenge/api.routes':
-        specifier: workspace:*
-        version: link:../../libs/api.routes
-      '@tanstack/react-query':
-        specifier: ^5.104.1
-        version: 5.104.5(@types/react@19.3.0)(react@19.3.1)
-      '@tanstack/react-router':
-        specifier: ^1.170.42
-        version: 1.170.45(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      react:
-        specifier: catalog:web-app
-        version: 19.3.1
-      react-dom:
-        specifier: catalog:web-app
-        version: 19.3.1(react@19.3.1)
-      temporal-polyfill:
-        specifier: ^1.0.6
-        version: 1.0.6
-    devDependencies:
-      '@patricktree-stack/config-typescript':
-        specifier: workspace:*
-        version: link:../../.patricktree-stack/tooling/config-typescript
-      '@patricktree-stack/config-vitest':
-        specifier: workspace:*
-        version: link:../../.patricktree-stack/tooling/config-vitest
-      '@patricktree-stack/config-wyw-in-js':
-        specifier: workspace:*
-        version: link:../../.patricktree-stack/tooling/config-wyw-in-js
-      '@resend-challenge/config-oxlint':
-        specifier: workspace:*
-        version: link:../../tooling/config-oxlint
-      '@types/node':
-        specifier: 'catalog:'
-        version: 26.6.5
-      '@types/react':
-        specifier: catalog:web-app
-        version: 19.3.0
-      '@types/react-dom':
-        specifier: catalog:web-app
-        version: 19.3.0(@types/react@19.3.0)
-      '@typescript/native':
-        specifier: 'catalog:'
-        version: typescript@7.0.2
-      '@vitejs/plugin-react':
-        specifier: catalog:web-app
-        version: 6.1.2(vite@8.3.4(@types/node@26.6.5))
-      '@vitest/coverage-v8':
-        specifier: 'catalog:'
-        version: 4.1.11(vitest@4.1.11)
-      '@wyw-in-js/vite':
-        specifier: catalog:web-app
-        version: 2.6.0(@typescript/typescript6@6.0.2)(vite@8.3.4(@types/node@26.6.5))
-      oxlint:
-        specifier: 'catalog:'
-        version: 1.89.0(oxlint-tsgolint@7.0.2004)
-      oxlint-tsgolint:
-        specifier: 'catalog:'
-        version: 7.0.2004
-      typescript:
-        specifier: 'catalog:'
-        version: '@typescript/typescript6@6.0.2'
-      vite:
-        specifier: catalog:web-app
-        version: 8.3.4(@types/node@26.6.5)
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.11(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(vite@8.3.4(@types/node@26.6.5))
 
   libs/api.client:
     dependencies:
@@ -579,7 +500,62 @@ importers:
         specifier: 'catalog:'
         version: '@typescript/typescript6@6.0.2'
 
-  libs/api.server:
+  libs/email-drafts:
+    dependencies:
+      drizzle-orm:
+        specifier: ^0.45.4
+        version: 0.45.4
+      temporal-polyfill:
+        specifier: ^1.0.6
+        version: 1.0.6
+      uuid:
+        specifier: ^14.0.3
+        version: 14.0.3
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.7
+    devDependencies:
+      '@patricktree-stack/config-typescript':
+        specifier: workspace:*
+        version: link:../../.patricktree-stack/tooling/config-typescript
+      '@patricktree-stack/config-vitest':
+        specifier: workspace:*
+        version: link:../../.patricktree-stack/tooling/config-vitest
+      '@resend-challenge/config-oxlint':
+        specifier: workspace:*
+        version: link:../../tooling/config-oxlint
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.5
+      '@typescript/native':
+        specifier: 'catalog:'
+        version: typescript@7.0.2
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 4.1.11(vitest@4.1.11)
+      drizzle-kit:
+        specifier: 0.31.11
+        version: 0.31.11
+      oxlint:
+        specifier: 'catalog:'
+        version: 1.89.0(oxlint-tsgolint@7.0.2004)
+      oxlint-tsgolint:
+        specifier: 'catalog:'
+        version: 7.0.2004
+      typescript:
+        specifier: 'catalog:'
+        version: '@typescript/typescript6@6.0.2'
+      vite:
+        specifier: 'catalog:'
+        version: 8.3.4(@types/node@26.6.5)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(vite@8.3.4(@types/node@26.6.5))
+      wrangler:
+        specifier: 'catalog:'
+        version: 4.144.0(@types/node@26.6.5)
+
+  libs/http-app:
     dependencies:
       '@modelcontextprotocol/client':
         specifier: catalog:mcp
@@ -643,61 +619,6 @@ importers:
         specifier: 'catalog:'
         version: 4.144.0(@types/node@26.6.5)
 
-  libs/email-drafts:
-    dependencies:
-      drizzle-orm:
-        specifier: ^0.45.4
-        version: 0.45.4
-      temporal-polyfill:
-        specifier: ^1.0.6
-        version: 1.0.6
-      uuid:
-        specifier: ^14.0.3
-        version: 14.0.3
-      zod:
-        specifier: ^4.6.5
-        version: 4.6.7
-    devDependencies:
-      '@patricktree-stack/config-typescript':
-        specifier: workspace:*
-        version: link:../../.patricktree-stack/tooling/config-typescript
-      '@patricktree-stack/config-vitest':
-        specifier: workspace:*
-        version: link:../../.patricktree-stack/tooling/config-vitest
-      '@resend-challenge/config-oxlint':
-        specifier: workspace:*
-        version: link:../../tooling/config-oxlint
-      '@types/node':
-        specifier: 'catalog:'
-        version: 26.6.5
-      '@typescript/native':
-        specifier: 'catalog:'
-        version: typescript@7.0.2
-      '@vitest/coverage-v8':
-        specifier: 'catalog:'
-        version: 4.1.11(vitest@4.1.11)
-      drizzle-kit:
-        specifier: 0.31.11
-        version: 0.31.11
-      oxlint:
-        specifier: 'catalog:'
-        version: 1.89.0(oxlint-tsgolint@7.0.2004)
-      oxlint-tsgolint:
-        specifier: 'catalog:'
-        version: 7.0.2004
-      typescript:
-        specifier: 'catalog:'
-        version: '@typescript/typescript6@6.0.2'
-      vite:
-        specifier: 'catalog:'
-        version: 8.3.4(@types/node@26.6.5)
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.11(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(vite@8.3.4(@types/node@26.6.5))
-      wrangler:
-        specifier: 'catalog:'
-        version: 4.144.0(@types/node@26.6.5)
-
   libs/mcp-server:
     dependencies:
       '@modelcontextprotocol/server':
@@ -734,6 +655,85 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: '@typescript/typescript6@6.0.2'
+
+  libs/review-ui:
+    dependencies:
+      '@fontsource-variable/inter':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@linaria/core':
+        specifier: ^8.2.0
+        version: 8.2.0
+      '@resend-challenge/api.client':
+        specifier: workspace:*
+        version: link:../api.client
+      '@resend-challenge/api.routes':
+        specifier: workspace:*
+        version: link:../api.routes
+      '@tanstack/react-query':
+        specifier: ^5.104.1
+        version: 5.104.5(@types/react@19.3.0)(react@19.3.1)
+      '@tanstack/react-router':
+        specifier: ^1.170.42
+        version: 1.170.45(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      react:
+        specifier: catalog:web-app
+        version: 19.3.1
+      react-dom:
+        specifier: catalog:web-app
+        version: 19.3.1(react@19.3.1)
+      temporal-polyfill:
+        specifier: ^1.0.6
+        version: 1.0.6
+    devDependencies:
+      '@patricktree-stack/config-typescript':
+        specifier: workspace:*
+        version: link:../../.patricktree-stack/tooling/config-typescript
+      '@patricktree-stack/config-vitest':
+        specifier: workspace:*
+        version: link:../../.patricktree-stack/tooling/config-vitest
+      '@patricktree-stack/config-wyw-in-js':
+        specifier: workspace:*
+        version: link:../../.patricktree-stack/tooling/config-wyw-in-js
+      '@resend-challenge/config-oxlint':
+        specifier: workspace:*
+        version: link:../../tooling/config-oxlint
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.5
+      '@types/react':
+        specifier: catalog:web-app
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: catalog:web-app
+        version: 19.3.0(@types/react@19.3.0)
+      '@typescript/native':
+        specifier: 'catalog:'
+        version: typescript@7.0.2
+      '@vitejs/plugin-react':
+        specifier: catalog:web-app
+        version: 6.1.2(vite@8.3.4(@types/node@26.6.5))
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 4.1.11(vitest@4.1.11)
+      '@wyw-in-js/vite':
+        specifier: catalog:web-app
+        version: 2.6.0(@typescript/typescript6@6.0.2)(vite@8.3.4(@types/node@26.6.5))
+      oxlint:
+        specifier: 'catalog:'
+        version: 1.89.0(oxlint-tsgolint@7.0.2004)
+      oxlint-tsgolint:
+        specifier: 'catalog:'
+        version: 7.0.2004
+      typescript:
+        specifier: 'catalog:'
+        version: '@typescript/typescript6@6.0.2'
+      vite:
+        specifier: catalog:web-app
+        version: 8.3.4(@types/node@26.6.5)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(vite@8.3.4(@types/node@26.6.5))
 
   qa/e2e:
     devDependencies:

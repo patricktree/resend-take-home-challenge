@@ -3,14 +3,14 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 import type { ErrorCode, ErrorExtras, ErrorResponse } from "@resend-challenge/api.routes";
 
-import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
+import type { HttpAppHonoEnvironment } from "./http-app-environment.ts";
 
 /**
  * Answers with the error envelope, carrying the request's id. The response is typed with its
  * status, so route handlers can return it for the error responses their route declares.
  */
 export function jsonError<Status extends ContentfulStatusCode>(
-  context: Context<ApiServerHonoEnvironment>,
+  context: Context<HttpAppHonoEnvironment>,
   status: Status,
   code: ErrorCode,
   message: string,

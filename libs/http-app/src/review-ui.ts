@@ -1,7 +1,7 @@
 import type { Context, Hono } from "hono";
 import { createMiddleware } from "hono/factory";
 
-import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
+import type { HttpAppHonoEnvironment } from "./http-app-environment.ts";
 
 /**
  * The Review UI's browser hardening (spec section 7). `frame-ancestors 'none'` keeps any page from
@@ -22,14 +22,14 @@ const INDEX_HTML_PATH = "/app/index.html";
  * them in an `app/` folder, so request paths are asset paths. The files are public: the Reviewer
  * token only ever reaches the API.
  */
-export function mountReviewUi(app: Hono<ApiServerHonoEnvironment>): void {
+export function mountReviewUi(app: Hono<HttpAppHonoEnvironment>): void {
   for (const path of ["/app", "/app/*"]) {
     app.use(path, setSecurityHeaders);
     app.get(path, (context) => serveReviewUiFile(context));
   }
 }
 
-const setSecurityHeaders = createMiddleware<ApiServerHonoEnvironment>(async (context, next) => {
+const setSecurityHeaders = createMiddleware<HttpAppHonoEnvironment>(async (context, next) => {
   await next();
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
     context.header(name, value);
@@ -37,7 +37,7 @@ const setSecurityHeaders = createMiddleware<ApiServerHonoEnvironment>(async (con
 });
 
 /** A path without a matching file gets index.html with 200, so client routes deep-link. */
-async function serveReviewUiFile(context: Context<ApiServerHonoEnvironment>): Promise<Response> {
+async function serveReviewUiFile(context: Context<HttpAppHonoEnvironment>): Promise<Response> {
   let response = await context.env.ASSETS.fetch(context.req.raw);
   if (response.status === 404) {
     const indexHtmlUrl = new URL(INDEX_HTML_PATH, context.req.url);

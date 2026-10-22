@@ -3,8 +3,8 @@ import type { Context, Hono } from "hono";
 import { LOCAL_AGENT_TOKEN, OPENAPI_DOCUMENT_PATH } from "@resend-challenge/api.routes";
 import { describeLifecycle } from "@resend-challenge/mcp-server";
 
-import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
 import { acceptsLocalTokens } from "./authentication.ts";
+import type { HttpAppHonoEnvironment } from "./http-app-environment.ts";
 import { MCP_PATH } from "./mcp-endpoint.ts";
 
 /**
@@ -30,7 +30,7 @@ const MARKDOWN_CONTENT_TYPE = "text/markdown; charset=utf-8";
  * `/` (unless a browser asks for HTML, which goes to the Review UI) and at `/llms.txt`. Both are
  * public and never reach D1.
  */
-export function mountAgentGuide(app: Hono<ApiServerHonoEnvironment>): void {
+export function mountAgentGuide(app: Hono<HttpAppHonoEnvironment>): void {
   app.get("/", (context) => {
     // The answer depends on `Accept`, so caches must keep the redirect and the Markdown apart.
     context.header("Vary", "Accept");
@@ -78,7 +78,7 @@ function isAskingForHtml(acceptHeader: string | undefined): boolean {
  * to itself. It never shows the configured Agent token, a secret the repository owner hands out:
  * only the local Agent token, wherever the Worker accepts it, and a placeholder everywhere else.
  */
-function describeQuickstart(context: Context<ApiServerHonoEnvironment>): string {
+function describeQuickstart(context: Context<HttpAppHonoEnvironment>): string {
   const origin = new URL(context.req.url).origin;
   const isAcceptingLocalTokens = acceptsLocalTokens(context.env, context.req.url);
   const agentToken = isAcceptingLocalTokens ? LOCAL_AGENT_TOKEN : AGENT_TOKEN_PLACEHOLDER;

@@ -2,8 +2,8 @@ import type { DraftsStorage, SendQueue } from "@resend-challenge/email-drafts";
 
 import type { Role } from "./authentication.ts";
 
-/** The Worker bindings, vars and secrets the API server reads. */
-export type ApiServerEnvironment = {
+/** The Worker bindings, vars and secrets the HTTP app reads. */
+export type HttpAppEnvironment = {
   /** The Agent token, a secret; only local development may leave it unset. */
   AGENT_TOKEN?: string;
   /** The Reviewer token, a secret; only local development may leave it unset. */
@@ -22,8 +22,8 @@ export type ApiServerEnvironment = {
   ASSETS: Fetcher;
 };
 
-export type ApiServerHonoEnvironment = {
-  Bindings: ApiServerEnvironment;
+export type HttpAppHonoEnvironment = {
+  Bindings: HttpAppEnvironment;
   Variables: {
     requestId: string;
     /** Set by the authentication middleware on every authenticated request. */

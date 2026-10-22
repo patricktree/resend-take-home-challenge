@@ -26,10 +26,10 @@ import {
   type RevisionSummary,
 } from "@resend-challenge/email-drafts";
 
-import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
+import type { HttpAppHonoEnvironment } from "./http-app-environment.ts";
 import { jsonError } from "./http-errors.ts";
 
-export const DRAFT_HANDLERS: ApiHandlers<ApiServerHonoEnvironment> = {
+export const DRAFT_HANDLERS: ApiHandlers<HttpAppHonoEnvironment> = {
   createDraft: async (context) => {
     const draft = await createDraft(context.get("draftsStorage"), context.req.valid("json"));
 
@@ -252,7 +252,7 @@ export const DRAFT_HANDLERS: ApiHandlers<ApiServerHonoEnvironment> = {
 
 /** Answers a verdict that changed nothing, for both verdict routes. */
 function verdictRefusalResponse(
-  context: Context<ApiServerHonoEnvironment>,
+  context: Context<HttpAppHonoEnvironment>,
   refusal: Exclude<ApproveRevisionResult | RejectRevisionResult, { draft: unknown }>,
 ) {
   switch (refusal.outcome) {

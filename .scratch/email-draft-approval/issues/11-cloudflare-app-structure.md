@@ -84,7 +84,7 @@ Resolved in a grilling session with the repository owner on 2026-10-20. Earlier 
 ### Tokens (refines [10](10-agent-reviewer-separation.md))
 
 - `pnpm secrets:generate` creates both tokens once (`agent_` / `reviewer_` + base64url of 32 random bytes). It sets both as Worker secrets with Wrangler and prints both once; it changes no file.
-- **The Agent token is a Worker secret, never committed** (as in 10). The repository owner hands it to Agent operators out of band; the CLI requires `RESEND_CHALLENGE_TOKEN`, and the README's examples use a placeholder. _Changed later:_ this decision first made the Agent token public, as a committed var shown in the README and used as the CLI's fallback, so nobody needed setup to act as an Agent; that was reverted so that only people the owner chooses can create Drafts.
+- **The Agent token is a Worker secret, never committed** (as in 10). The repository owner hands it to Agents out of band; the CLI requires `RESEND_CHALLENGE_TOKEN`, and the README's examples use a placeholder. _Changed later:_ this decision first made the Agent token public, as a committed var shown in the README and used as the CLI's fallback, so nobody needed setup to act as an Agent; that was reverted so that only people the owner chooses can create Drafts.
 - **The Reviewer token is never committed.** The repository owner hands it to Reviewers out of band. Committing it was considered and rejected: any Agent that can read the repo could then approve (breaking the core requirement, as 10 found for the SPA bundle), and anyone could send arbitrary email through the Resend account and domain.
 
 ### Local-environment flag (defines 10's flag)

@@ -43,8 +43,8 @@ type UseWorkerOptions = {
   /** Test-only vars that override wrangler.test.jsonc, for example `LOCAL_DEVELOPMENT`. */
   vars?: Record<string, string>;
   /**
-   * Test-only secrets, for example `REVIEWER_TOKEN` (absent by default, as in local development).
-   * `AGENT_TOKEN` is `TEST_AGENT_TOKEN` unless overridden here; `undefined` leaves a secret unset.
+   * Test-only secrets. `AGENT_TOKEN` is `TEST_AGENT_TOKEN` unless overridden here; every other
+   * secret, such as `REVIEWER_TOKEN`, is absent by default. `undefined` leaves a secret unset.
    */
   secrets?: Record<string, string | undefined>;
   /**

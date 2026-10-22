@@ -716,7 +716,7 @@ Production only, on the custom domain `resend-challenge.patricktree.me`. There i
 ### Tokens
 
 - `pnpm secrets:generate` creates both tokens once. It pipes them into one `wrangler secret bulk` call, which sets the Worker secrets `AGENT_TOKEN` and `REVIEWER_TOKEN`, and prints both once. It changes no file.
-- Neither token is ever committed. The repository owner hands the Agent token to Agent operators and the Reviewer token to Reviewers, both out of band.
+- Neither token is ever committed. The repository owner hands the Agent token to Agents and the Reviewer token to Reviewers, both out of band.
 
 ### Deploying
 

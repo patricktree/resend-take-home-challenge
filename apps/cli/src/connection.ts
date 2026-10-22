@@ -27,8 +27,8 @@ export function createClient(
   const token = readNonEmpty(environment, ENVIRONMENT_VARIABLE.TOKEN);
   if (token === undefined) {
     throw new CliError(
-      ERROR_CODE.INVALID_REQUEST,
-      `${ENVIRONMENT_VARIABLE.TOKEN} is not set. Set it to the Agent token, which the repository owner hands out.`,
+      CLI_ERROR_CODE.TOKEN_NOT_SET,
+      `${ENVIRONMENT_VARIABLE.TOKEN} is not set. The CLI sends it as the Agent token; set it to the Agent token, which the repository owner hands out.`,
     );
   }
 

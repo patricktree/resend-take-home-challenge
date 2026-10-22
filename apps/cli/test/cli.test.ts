@@ -168,8 +168,9 @@ test.for([
     expect(result.stdout).toBe("");
     expect(JSON.parse(result.stderr)).toStrictEqual({
       error: {
-        code: "INVALID_REQUEST",
-        message: expect.stringContaining("RESEND_CHALLENGE_TOKEN"),
+        code: "TOKEN_NOT_SET",
+        message:
+          "RESEND_CHALLENGE_TOKEN is not set. The CLI sends it as the Agent token; set it to the Agent token, which the repository owner hands out.",
       },
     });
     expect(api.requests).toStrictEqual([]);

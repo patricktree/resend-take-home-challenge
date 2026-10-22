@@ -18,6 +18,8 @@ export type ErrorEnvelope = {
  * own code, and local input errors use the API's `INVALID_REQUEST`.
  */
 export const CLI_ERROR_CODE = {
+  /** `RESEND_CHALLENGE_TOKEN` is unset or empty, so the CLI has no token to send. */
+  TOKEN_NOT_SET: "TOKEN_NOT_SET",
   /** The API could not be reached: DNS, connection or TLS failure. */
   NETWORK_ERROR: "NETWORK_ERROR",
   /** Anything else, such as a response without the API's error envelope. */

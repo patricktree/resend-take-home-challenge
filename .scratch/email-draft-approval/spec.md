@@ -410,10 +410,10 @@ Indexes: unique `(draft_id, revision_number)`; `review_status` (list filters joi
 
 | Operation    | Route                                                                                      | Who               | Success                                          |
 | ------------ | ------------------------------------------------------------------------------------------ | ----------------- | ------------------------------------------------ |
-| Create       | `POST /api/v1/drafts`                                                                      | Agent or Reviewer | 201, Draft summary                               |
+| Create       | `POST /api/v1/drafts`                                                                      | Agent or Reviewer | 201, Draft summary without `reviewUrl`           |
 | List         | `GET /api/v1/drafts`                                                                       | Agent or Reviewer | 200, `{ items, nextCursor? }` of Draft summaries |
 | Get          | `GET /api/v1/drafts/{draftId}`                                                             | Agent or Reviewer | 200, Draft with body                             |
-| Revise       | `POST /api/v1/drafts/{draftId}/revisions`                                                  | Agent or Reviewer | 201, Draft summary                               |
+| Revise       | `POST /api/v1/drafts/{draftId}/revisions`                                                  | Agent or Reviewer | 201, Draft summary without `reviewUrl`           |
 | Submit       | `POST /api/v1/drafts/{draftId}/revisions/{revisionId}/submission`                          | Agent or Reviewer | 200, Draft summary                               |
 | Get Revision | `GET /api/v1/drafts/{draftId}/revisions/{revisionId}`                                      | Agent or Reviewer | 200, Revision with body                          |
 | Approve      | `POST /api/v1/drafts/{draftId}/revisions/{revisionId}/approval` (empty body)               | Reviewer only     | 200, Draft summary with sending `QUEUED`         |
@@ -464,9 +464,9 @@ Indexes: unique `(draft_id, revision_number)`; `review_status` (list filters joi
   - The Revision object also carries `decidedAt` and `rejectionReason` when present. Get Revision returns the same Revision object (with body) for any of the Draft's Revisions, including Superseded ones.
   - `lastVerdict` is the newest verdict on any of the Draft's Revisions, so after a Rejection and a revise the Agent still sees the reason.
   - `sending` is `{ status, emailId? (when SENT), failure? (when FAILED) }` with `failure = { reason: "REJECTED_BY_RESEND" | "OUTCOME_UNKNOWN", resendErrorName?, resendErrorMessage? }`. Attempt count, last error and next attempt time are not recorded.
-  - `reviewUrl` is `${PUBLIC_BASE_URL}/app/drafts/{draftId}`. It grants nothing without the Reviewer token.
+  - `reviewUrl` is `${PUBLIC_BASE_URL}/app/drafts/{draftId}`. It grants nothing without the Reviewer token. Create and revise leave it out: their latest Revision is always Unsubmitted, so there is nothing to review yet, and an Agent that never sees the link cannot hand it over before submitting. The Submission is the first response of an Agent's lifecycle that carries it.
 
-- **Draft summary**: the Draft without `latestRevision.body`. Lists and every mutation return it, so none of them reads R2; only the two `GET`s by id return a body.
+- **Draft summary**: the Draft without `latestRevision.body`. Lists and every mutation return it (create and revise without `reviewUrl`), so none of them reads R2; only the two `GET`s by id return a body.
 
 ### Lists
 
@@ -716,7 +716,7 @@ v1 has no event logging. Paths that already handle an error call a bare `console
   | `get_revision`                                        | Get Revision  | `readOnlyHint` |
 
 - Input schemas reuse the contract's Zod schemas. Every tool declares an `outputSchema` and returns `structuredContent`. An API error becomes an `isError` result carrying its code and message (and extras such as `existingVerdict`).
-- The server `instructions` describe the lifecycle (create → submit → show the Draft's `reviewUrl` to the user, the human who asked for the email, who reviews it or forwards it to the Reviewer → poll `get_draft` for review and sending status), state that Agents cannot approve or send, and link the OpenAPI document. The `submit_draft` description repeats the hand-over of `reviewUrl` in one sentence. There is no revise-and-submit tool.
+- The server `instructions` describe the lifecycle (create → submit → show the Draft's `reviewUrl` to the user, the human who asked for the email, who reviews it or forwards it to the Reviewer → poll `get_draft` for review and sending status), state that Agents cannot approve or send, and link the OpenAPI document. The `submit_draft` description repeats the hand-over of `reviewUrl` in one sentence; `create_draft` and `revise_draft` return no `reviewUrl`, and their descriptions point to `submit_draft` for it. There is no revise-and-submit tool.
 
 ### CLI
 
@@ -733,7 +733,7 @@ v1 has no event logging. Paths that already handle an error call a bare `console
 - Output: human-readable by default; `--json` prints one JSON value on stdout. Errors print `{ "error": { "code", "message" } }` on stderr and exit with 1. Inputs are validated with the contract's Zod schemas before any request.
 - `--help` on the root and every command; the root help links the OpenAPI document.
 - Agents run it from a checkout with nothing but Node 24, as `node apps/cli/bundle/resend-challenge.mjs …`: the committed single-file bundle (the CLI, the workspace libraries it imports and all its npm dependencies) is generated from the sources by `turbo:build`. It is not published to npm.
-- `drafts submit` prints the Draft's `Review URL`; its help and the root help tell the Agent to show that URL to its user.
+- `drafts submit` prints the Draft's `Review URL`; its help and the root help tell the Agent to show that URL to its user. For an Unsubmitted Draft (after `drafts create` or `drafts revise`, which return no `reviewUrl`, or from a read), the human output prints the `drafts submit` command in place of the Review URL, so the Agent does not hand over a Draft with nothing to review.
 
 ### Agent Skill
 

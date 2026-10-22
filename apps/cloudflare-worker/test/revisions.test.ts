@@ -2,13 +2,13 @@ import { Temporal } from "temporal-polyfill";
 import { test } from "vitest";
 
 import {
-  draftSummarySchema,
+  unsubmittedDraftSummarySchema,
   LOCAL_AGENT_TOKEN,
   LOCAL_REVIEWER_TOKEN,
-  type DraftSummaryResponse,
+  type UnsubmittedDraftSummaryResponse,
 } from "@resend-challenge/api.routes";
 
-import { useWorker, type TestWorker } from "./use-worker.ts";
+import { reviewUrlOf, useWorker, type TestWorker } from "./use-worker.ts";
 
 const AGENT_HEADERS = {
   Authorization: `Bearer ${LOCAL_AGENT_TOKEN}`,
@@ -48,7 +48,7 @@ test("revising answers with 201 and a Draft summary of Revision 2 built on the b
 
   expect(response.status).toBe(201);
   const body: unknown = await response.json();
-  const revised = draftSummarySchema.parse(body);
+  const revised = unsubmittedDraftSummarySchema.parse(body);
   expect(body).toStrictEqual({
     ...created,
     lastActionAt: revised.latestRevision.createdAt,
@@ -84,6 +84,7 @@ test("after a revise, getting the Draft answers with the new Revision and its bo
 
   expect(await response.json()).toStrictEqual({
     ...revised,
+    reviewUrl: reviewUrlOf(revised.id),
     latestRevision: { ...revised.latestRevision, body: REVISED_DRAFT_DATA.body },
   });
 });
@@ -422,7 +423,7 @@ test("10 concurrent revises on the same base: one 201, nine 409 REVISION_SUPERSE
     })),
   );
   const winner = responses.find((response) => response.status === 201);
-  const revised = draftSummarySchema.parse(await winner?.json());
+  const revised = unsubmittedDraftSummarySchema.parse(await winner?.json());
   const { drafts, revisions } = await readRows(worker);
   expect(drafts).toMatchObject([{ id: created.id, latest_revision_id: revised.latestRevision.id }]);
   expect(revisions).toMatchObject([
@@ -431,13 +432,13 @@ test("10 concurrent revises on the same base: one 201, nine 409 REVISION_SUPERSE
   ]);
 });
 
-async function createDraft(worker: TestWorker): Promise<DraftSummaryResponse> {
+async function createDraft(worker: TestWorker): Promise<UnsubmittedDraftSummaryResponse> {
   const response = await worker.fetch("/api/v1/drafts", {
     method: "POST",
     headers: AGENT_HEADERS,
     body: JSON.stringify(DRAFT_DATA),
   });
-  return draftSummarySchema.parse(await response.json());
+  return unsubmittedDraftSummarySchema.parse(await response.json());
 }
 
 async function reviseDraft(worker: TestWorker, draftId: string, revise: unknown) {
@@ -454,12 +455,12 @@ async function expectRevised(
   draftId: string,
   draftData: typeof DRAFT_DATA,
   baseRevisionId: string,
-): Promise<DraftSummaryResponse> {
+): Promise<UnsubmittedDraftSummaryResponse> {
   const response = await reviseDraft(worker, draftId, { ...draftData, baseRevisionId });
   if (response.status !== 201) {
     throw new Error(`The revise answered with ${response.status}: ${await response.text()}`);
   }
-  return draftSummarySchema.parse(await response.json());
+  return unsubmittedDraftSummarySchema.parse(await response.json());
 }
 
 async function getRevision(worker: TestWorker, draftId: string, revisionId: string) {

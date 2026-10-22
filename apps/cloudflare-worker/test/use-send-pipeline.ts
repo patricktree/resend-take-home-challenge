@@ -11,6 +11,7 @@ import {
   LOCAL_REVIEWER_TOKEN,
   type DraftDataRequest,
   type DraftSummaryResponse,
+  unsubmittedDraftSummarySchema,
 } from "@resend-challenge/api.routes";
 import type { SendQueueMessage } from "@resend-challenge/email-drafts";
 import type { ResendStub } from "@resend-challenge/resend-stub";
@@ -47,13 +48,15 @@ export async function createApprovedDraft(
   worker: TestWorker,
   draftData: DraftDataRequest = DRAFT_DATA,
 ): Promise<{ draft: DraftSummaryResponse; message: SendQueueMessage }> {
-  const created = await expectSummary(
-    await worker.fetch("/api/v1/drafts", {
-      method: "POST",
-      headers: AGENT_HEADERS,
-      body: JSON.stringify(draftData),
-    }),
-  );
+  const createResponse = await worker.fetch("/api/v1/drafts", {
+    method: "POST",
+    headers: AGENT_HEADERS,
+    body: JSON.stringify(draftData),
+  });
+  if (createResponse.status !== 201) {
+    throw new Error(`Creating a Draft answered with ${createResponse.status}.`);
+  }
+  const created = unsubmittedDraftSummarySchema.parse(await createResponse.json());
   const revisionPath = `/api/v1/drafts/${created.id}/revisions/${created.latestRevision.id}`;
   await expectSummary(
     await worker.fetch(`${revisionPath}/submission`, { method: "POST", headers: AGENT_HEADERS }),

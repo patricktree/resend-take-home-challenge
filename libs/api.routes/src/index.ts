@@ -19,6 +19,7 @@ export {
   revisionParamsSchema,
   revisionSchema,
   sendingStatusSchema,
+  unsubmittedDraftSummarySchema,
   type DraftDataRequest,
   type DraftListResponse,
   type DraftResponse,
@@ -27,6 +28,7 @@ export {
   type RejectionRequest,
   type ReviseRequest,
   type RevisionResponse,
+  type UnsubmittedDraftSummaryResponse,
 } from "./drafts.ts";
 export {
   ERROR_CODE,

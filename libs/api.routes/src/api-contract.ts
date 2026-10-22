@@ -6,6 +6,7 @@ import {
   draftParamsSchema,
   draftSchema,
   draftSummarySchema,
+  unsubmittedDraftSummarySchema,
   listDraftsQuerySchema,
   rejectionRequestSchema,
   reviseRequestSchema,
@@ -98,9 +99,9 @@ const createDraftRoute = createRoute({
   },
   responses: {
     201: {
-      description: "The created Draft, without the body.",
+      description: "The created Draft, without the body and without `reviewUrl`.",
       headers: readBookmarkResponseHeadersSchema,
-      content: { "application/json": { schema: draftSummarySchema } },
+      content: { "application/json": { schema: unsubmittedDraftSummarySchema } },
     },
     400: errorResponse(
       "`INVALID_REQUEST`: the request violates the schema or a limit; see `issues`.",
@@ -156,9 +157,10 @@ const reviseDraftRoute = createRoute({
   },
   responses: {
     201: {
-      description: "The revised Draft with its new latest Revision, without the body.",
+      description:
+        "The revised Draft with its new latest Revision, without the body and without `reviewUrl`.",
       headers: readBookmarkResponseHeadersSchema,
-      content: { "application/json": { schema: draftSummarySchema } },
+      content: { "application/json": { schema: unsubmittedDraftSummarySchema } },
     },
     400: errorResponse(
       "`INVALID_REQUEST`: the request violates the schema or a limit; see `issues`.",

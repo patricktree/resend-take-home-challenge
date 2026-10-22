@@ -19,7 +19,7 @@ The service's origin is `https://resend-challenge.patricktree.me`, unless your u
 
 1. **Create** the Draft with `create_draft` (`POST /api/v1/drafts`): `to`, `subject` and `body.plainText`. Create is not idempotent: after a timeout or a lost response, look for the Draft with `list_drafts` (`GET /api/v1/drafts`) before creating it again.
 2. **Submit** the Draft's latest Revision with `submit_draft` (`POST /api/v1/drafts/{draftId}/revisions/{revisionId}/submission`), passing `latestRevision.id`. The Draft becomes `PENDING`.
-3. **Hand over** the Draft's `reviewUrl` to your user, the human who asked for the email, so they can review it or forward it to the Reviewer. Tell them the email goes out only after an Approval.
+3. **Hand over** the `reviewUrl` from the Submission's result to your user, the human who asked for the email, so they can review it or forward it to the Reviewer. Tell them the email goes out only after an Approval.
 4. **Poll** `get_draft` (`GET /api/v1/drafts/{draftId}`) every 10 to 30 seconds, backing off toward the longer interval. After about 15 minutes without a verdict, stop polling, tell your user the Draft is still pending at its `reviewUrl`, and resume when they ask.
 5. **React** to the verdict in `reviewStatus`:
    - `REJECTED`: read `lastVerdict.reason`, revise with `revise_draft` (`POST /api/v1/drafts/{draftId}/revisions`) passing the latest Revision's id as `baseRevisionId`, then go back to step 2 with the new Revision. When the reason is unclear, ask your user how to revise.

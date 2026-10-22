@@ -6,6 +6,7 @@ import type {
   DraftResponse,
   DraftSummaryResponse,
   RevisionResponse,
+  UnsubmittedDraftSummaryResponse,
 } from "@resend-challenge/api.routes";
 import { ERROR_CODE } from "@resend-challenge/api.routes";
 import {
@@ -33,7 +34,7 @@ export const DRAFT_HANDLERS: ApiHandlers<HttpAppHonoEnvironment> = {
   createDraft: async (context) => {
     const draft = await createDraft(context.get("draftsStorage"), context.req.valid("json"));
 
-    return context.json(toDraftSummaryResponse(draft, context.env.PUBLIC_BASE_URL), 201);
+    return context.json(toUnsubmittedDraftSummaryResponse(draft), 201);
   },
 
   getDraft: async (context) => {
@@ -54,7 +55,7 @@ export const DRAFT_HANDLERS: ApiHandlers<HttpAppHonoEnvironment> = {
 
     switch (result.outcome) {
       case "REVISED": {
-        return context.json(toDraftSummaryResponse(result.draft, context.env.PUBLIC_BASE_URL), 201);
+        return context.json(toUnsubmittedDraftSummaryResponse(result.draft), 201);
       }
       case "DRAFT_NOT_FOUND": {
         return jsonError(context, 404, ERROR_CODE.DRAFT_NOT_FOUND, "No Draft has this id.");
@@ -300,6 +301,14 @@ function verdictRefusalResponse(
 
 function toDraftSummaryResponse(draft: DraftSummary, publicBaseUrl: string): DraftSummaryResponse {
   return {
+    ...toUnsubmittedDraftSummaryResponse(draft),
+    reviewUrl: new URL(`/app/drafts/${draft.id}`, publicBaseUrl).href,
+  };
+}
+
+/** The Draft summary without `reviewUrl`, for create and revise: there is nothing to review yet. */
+function toUnsubmittedDraftSummaryResponse(draft: DraftSummary): UnsubmittedDraftSummaryResponse {
+  return {
     id: draft.id,
     createdAt: toTimestamp(draft.createdAt),
     lastActionAt: toTimestamp(draft.lastActionAt),
@@ -309,7 +318,6 @@ function toDraftSummaryResponse(draft: DraftSummary, publicBaseUrl: string): Dra
       ? {}
       : { lastVerdict: toLastVerdictResponse(draft.lastVerdict) }),
     sending: draft.sending,
-    reviewUrl: new URL(`/app/drafts/${draft.id}`, publicBaseUrl).href,
   };
 }
 

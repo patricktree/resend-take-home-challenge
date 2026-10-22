@@ -107,7 +107,7 @@
           "message"
         ]
       },
-      "DraftSummary": {
+      "UnsubmittedDraftSummary": {
         "type": "object",
         "properties": {
           "id": {
@@ -135,11 +135,6 @@
           "sending": {
             "$ref": "#/components/schemas/Sending"
           },
-          "reviewUrl": {
-            "type": "string",
-            "format": "uri",
-            "description": "The Draft's page in the Review UI; it grants nothing without the Reviewer token"
-          },
           "latestRevision": {
             "$ref": "#/components/schemas/RevisionSummary"
           }
@@ -150,7 +145,6 @@
           "lastActionAt",
           "reviewStatus",
           "sending",
-          "reviewUrl",
           "latestRevision"
         ]
       },
@@ -434,7 +428,7 @@
           "reviewUrl": {
             "type": "string",
             "format": "uri",
-            "description": "The Draft's page in the Review UI; it grants nothing without the Reviewer token"
+            "description": "The Draft's page in the Review UI; it grants nothing without the Reviewer token. Create and revise leave it out, since an unsubmitted Draft has nothing to review; the Submission returns it, for the Agent to show to its user."
           },
           "latestRevision": {
             "$ref": "#/components/schemas/Revision"
@@ -527,6 +521,53 @@
         ],
         "additionalProperties": false
       },
+      "DraftSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^drf_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "description": "A Draft id: `drf_` followed by a UUIDv7",
+            "example": "drf_019a0b7e-5c3d-7f2a-9b1e-4d6c8a2f0e13"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 UTC timestamp"
+          },
+          "lastActionAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The last create, revise, submit or verdict; never a Send outcome"
+          },
+          "reviewStatus": {
+            "$ref": "#/components/schemas/DraftReviewStatus"
+          },
+          "lastVerdict": {
+            "$ref": "#/components/schemas/LastVerdict"
+          },
+          "sending": {
+            "$ref": "#/components/schemas/Sending"
+          },
+          "reviewUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "The Draft's page in the Review UI; it grants nothing without the Reviewer token. Create and revise leave it out, since an unsubmitted Draft has nothing to review; the Submission returns it, for the Agent to show to its user."
+          },
+          "latestRevision": {
+            "$ref": "#/components/schemas/RevisionSummary"
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "lastActionAt",
+          "reviewStatus",
+          "sending",
+          "reviewUrl",
+          "latestRevision"
+        ]
+      },
       "DraftList": {
         "type": "object",
         "properties": {
@@ -608,7 +649,7 @@
         },
         "responses": {
           "201": {
-            "description": "The created Draft, without the body.",
+            "description": "The created Draft, without the body and without `reviewUrl`.",
             "headers": {
               "X-Read-Bookmark": {
                 "schema": {
@@ -622,7 +663,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DraftSummary"
+                  "$ref": "#/components/schemas/UnsubmittedDraftSummary"
                 }
               }
             }
@@ -1095,7 +1136,7 @@
         },
         "responses": {
           "201": {
-            "description": "The revised Draft with its new latest Revision, without the body.",
+            "description": "The revised Draft with its new latest Revision, without the body and without `reviewUrl`.",
             "headers": {
               "X-Read-Bookmark": {
                 "schema": {
@@ -1109,7 +1150,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DraftSummary"
+                  "$ref": "#/components/schemas/UnsubmittedDraftSummary"
                 }
               }
             }

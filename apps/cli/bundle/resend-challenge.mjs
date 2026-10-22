@@ -22470,13 +22470,19 @@ const draftSummaryFields = {
 	reviewStatus: draftReviewStatusSchema,
 	lastVerdict: lastVerdictSchema.optional(),
 	sending: sendingSchema,
-	reviewUrl: url().openapi({ description: "The Draft's page in the Review UI; it grants nothing without the Reviewer token" })
+	reviewUrl: url().openapi({ description: "The Draft's page in the Review UI; it grants nothing without the Reviewer token. Create and revise leave it out, since an unsubmitted Draft has nothing to review; the Submission returns it, for the Agent to show to its user." })
 };
-/** The Draft without the latest Revision's body; lists and every mutation return it. */
+/** The Draft without the latest Revision's body; lists, the Submission and the verdicts return it. */
 const draftSummarySchema = object({
 	...draftSummaryFields,
 	latestRevision: revisionSummarySchema
 }).openapi("DraftSummary");
+/**
+* The Draft summary without `reviewUrl`; create and revise return it. Their latest Revision is
+* always unsubmitted, so there is nothing to review yet, and an Agent that never sees the link
+* cannot hand it over before submitting.
+*/
+const unsubmittedDraftSummarySchema = draftSummarySchema.omit({ reviewUrl: true }).openapi("UnsubmittedDraftSummary");
 /** The Draft with the latest Revision's body; only the reads by id return it. */
 const draftSchema = object({
 	...draftSummaryFields,
@@ -22625,9 +22631,9 @@ const createDraftRoute = createRoute({
 	},
 	responses: {
 		201: {
-			description: "The created Draft, without the body.",
+			description: "The created Draft, without the body and without `reviewUrl`.",
 			headers: readBookmarkResponseHeadersSchema,
-			content: { "application/json": { schema: draftSummarySchema } }
+			content: { "application/json": { schema: unsubmittedDraftSummarySchema } }
 		},
 		400: errorResponse("`INVALID_REQUEST`: the request violates the schema or a limit; see `issues`."),
 		401: errorResponse("`UNAUTHENTICATED`: a valid bearer token is required."),
@@ -22677,9 +22683,9 @@ const reviseDraftRoute = createRoute({
 	},
 	responses: {
 		201: {
-			description: "The revised Draft with its new latest Revision, without the body.",
+			description: "The revised Draft with its new latest Revision, without the body and without `reviewUrl`.",
 			headers: readBookmarkResponseHeadersSchema,
-			content: { "application/json": { schema: draftSummarySchema } }
+			content: { "application/json": { schema: unsubmittedDraftSummarySchema } }
 		},
 		400: errorResponse("`INVALID_REQUEST`: the request violates the schema or a limit; see `issues`."),
 		401: errorResponse("`UNAUTHENTICATED`: a valid bearer token is required."),
@@ -23379,7 +23385,7 @@ function describeNetworkFailure(error) {
 
 //#endregion
 //#region src/human-output.ts
-/** The Draft summary that create, revise and submit return. */
+/** The Draft summary that create, revise and submit return; create and revise carry no `reviewUrl`. */
 function formatDraftSummary(draft) {
 	const { latestRevision, lastVerdict } = draft;
 	const lines = [
@@ -23392,7 +23398,7 @@ function formatDraftSummary(draft) {
 		const reason = lastVerdict.reason === void 0 ? "" : `: ${lastVerdict.reason}`;
 		lines.push(`Last verdict: ${lastVerdict.verdict} on Revision ${lastVerdict.revisionNumber}${reason}`);
 	}
-	lines.push(`Review URL: ${draft.reviewUrl}`);
+	lines.push(!("reviewUrl" in draft) || draft.reviewStatus === "UNSUBMITTED" ? `Not submitted yet: run drafts submit ${draft.id} ${latestRevision.id}, then show the Review URL to your user` : `Review URL: ${draft.reviewUrl}`);
 	return lines.join("\n");
 }
 /** A Draft with the recipients, subject and body of its latest Revision. */

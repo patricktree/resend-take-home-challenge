@@ -38,10 +38,10 @@ const LIFECYCLE_STEPS: LifecycleStep[] = [
   {
     ...OPERATION.SUBMIT,
     describe: (call) =>
-      `${call} submits one specific Revision (the Draft's latest) for review; the Draft becomes PENDING.`,
+      `${call} submits one specific Revision (the Draft's latest) for review; the Draft becomes PENDING, and the result carries the Draft's \`reviewUrl\`.`,
   },
   {
-    text: "Then show the Draft's `reviewUrl` to your user, the human who asked for the email, so they can review it or forward it to the Reviewer. A human Reviewer reads exactly that Revision there and approves or rejects it. An Approval sends the email through Resend, with no further action by anyone.",
+    text: "Then show that `reviewUrl` to your user, the human who asked for the email, so they can review it or forward it to the Reviewer. A human Reviewer reads exactly that Revision there and approves or rejects it. An Approval sends the email through Resend, with no further action by anyone.",
   },
   {
     ...OPERATION.GET,

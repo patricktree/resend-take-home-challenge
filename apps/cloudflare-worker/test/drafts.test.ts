@@ -2,12 +2,12 @@ import { Temporal } from "temporal-polyfill";
 import { test } from "vitest";
 
 import {
-  draftSummarySchema,
+  unsubmittedDraftSummarySchema,
   LOCAL_AGENT_TOKEN,
   LOCAL_REVIEWER_TOKEN,
 } from "@resend-challenge/api.routes";
 
-import { useWorker, type TestWorker } from "./use-worker.ts";
+import { reviewUrlOf, useWorker, type TestWorker } from "./use-worker.ts";
 
 const AGENT_HEADERS = {
   Authorization: `Bearer ${LOCAL_AGENT_TOKEN}`,
@@ -39,7 +39,7 @@ test("creating a Draft answers with 201 and a Draft summary of Revision 1", asyn
 
   expect(response.status).toBe(201);
   const body: unknown = await response.json();
-  const draft = draftSummarySchema.parse(body);
+  const draft = unsubmittedDraftSummarySchema.parse(body);
   expect(body).toStrictEqual({
     id: expect.stringMatching(DRAFT_ID_PATTERN),
     createdAt: expect.stringMatching(ISO_TIMESTAMP_PATTERN),
@@ -54,7 +54,6 @@ test("creating a Draft answers with 201 and a Draft summary of Revision 1", asyn
       reviewStatus: "UNSUBMITTED",
     },
     sending: { status: "NOT_SENT" },
-    reviewUrl: `https://resend-challenge.patricktree.me/app/drafts/${draft.id}`,
   });
   expect(Temporal.Instant.from(draft.createdAt).epochMilliseconds).toBeGreaterThanOrEqual(before);
   expect(Temporal.Instant.from(draft.createdAt).epochMilliseconds).toBeLessThanOrEqual(after);
@@ -65,13 +64,16 @@ test("getting a created Draft answers with the full Draft including the body", a
   onTestFinished,
 }) => {
   const worker = await useWorker({ onTestFinished });
-  const created = draftSummarySchema.parse(await (await createDraft(worker, DRAFT_DATA)).json());
+  const created = unsubmittedDraftSummarySchema.parse(
+    await (await createDraft(worker, DRAFT_DATA)).json(),
+  );
 
   const response = await worker.fetch(`/api/v1/drafts/${created.id}`, { headers: AGENT_HEADERS });
 
   expect(response.status).toBe(200);
   expect(await response.json()).toStrictEqual({
     ...created,
+    reviewUrl: reviewUrlOf(created.id),
     latestRevision: {
       ...created.latestRevision,
       body: { plainText: "Hello Ada and Grace,\n\nthe report is attached.\n" },
@@ -85,7 +87,9 @@ test("the Revision body is stored in R2 as JSON under the Revision's id", async 
 }) => {
   const worker = await useWorker({ onTestFinished });
 
-  const created = draftSummarySchema.parse(await (await createDraft(worker, DRAFT_DATA)).json());
+  const created = unsubmittedDraftSummarySchema.parse(
+    await (await createDraft(worker, DRAFT_DATA)).json(),
+  );
 
   const env = await worker.getEnv();
   const object = await env.REVISION_BODIES.get(`revisions/${created.latestRevision.id}/body`);
@@ -103,7 +107,7 @@ test("the Reviewer token can create and get a Draft too", async ({ expect, onTes
     headers,
     body: JSON.stringify(DRAFT_DATA),
   });
-  const created = draftSummarySchema.parse(await createResponse.json());
+  const created = unsubmittedDraftSummarySchema.parse(await createResponse.json());
   const getResponse = await worker.fetch(`/api/v1/drafts/${created.id}`, { headers });
 
   expect(createResponse.status).toBe(201);
@@ -116,8 +120,12 @@ test("every create makes a new Draft, even with the same Draft data", async ({
 }) => {
   const worker = await useWorker({ onTestFinished });
 
-  const first = draftSummarySchema.parse(await (await createDraft(worker, DRAFT_DATA)).json());
-  const second = draftSummarySchema.parse(await (await createDraft(worker, DRAFT_DATA)).json());
+  const first = unsubmittedDraftSummarySchema.parse(
+    await (await createDraft(worker, DRAFT_DATA)).json(),
+  );
+  const second = unsubmittedDraftSummarySchema.parse(
+    await (await createDraft(worker, DRAFT_DATA)).json(),
+  );
 
   expect(second.id).not.toBe(first.id);
   expect(second.latestRevision.id).not.toBe(first.latestRevision.id);

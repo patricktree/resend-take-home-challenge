@@ -15,6 +15,7 @@ import {
   revisionParamsSchema,
   revisionSchema,
   sendingStatusSchema,
+  unsubmittedDraftSummarySchema,
 } from "@resend-challenge/api.routes";
 
 import { describeLifecycle } from "./agent-lifecycle.ts";
@@ -80,9 +81,9 @@ export function createResendChallengeMcpServer({
     {
       title: "Create a Draft",
       description:
-        "Creates a Draft whose first Revision holds the given recipients, subject and plain-text body, UNSUBMITTED. Creating never submits: call submit_draft with the returned `latestRevision.id` next. Not idempotent: a retried call may create a second Draft.",
+        "Creates a Draft whose first Revision holds the given recipients, subject and plain-text body, UNSUBMITTED. Creating never submits: call submit_draft with the returned `latestRevision.id` next; its result carries the `reviewUrl` for your user. Not idempotent: a retried call may create a second Draft.",
       inputSchema: draftDataRequestSchema,
-      outputSchema: draftSummarySchema,
+      outputSchema: unsubmittedDraftSummarySchema,
     },
     (draftData) => runAsToolResult(() => client.drafts.create(draftData)),
   );
@@ -118,9 +119,9 @@ export function createResendChallengeMcpServer({
     {
       title: "Revise a Draft",
       description:
-        "Creates the Draft's next Revision, UNSUBMITTED, from the given recipients, subject and body. `baseRevisionId` is the Draft's latest Revision as you last read it; if another revise came first, nothing is written and the result is the error REVISION_SUPERSEDED: read the Draft again and build on its latest Revision. Revising withdraws a pending Submission. It never submits: call submit_draft with the new `latestRevision.id`. An approved Draft accepts no further Revisions (DRAFT_APPROVED).",
+        "Creates the Draft's next Revision, UNSUBMITTED, from the given recipients, subject and body. `baseRevisionId` is the Draft's latest Revision as you last read it; if another revise came first, nothing is written and the result is the error REVISION_SUPERSEDED: read the Draft again and build on its latest Revision. Revising withdraws a pending Submission. It never submits: call submit_draft with the new `latestRevision.id`; its result carries the `reviewUrl` for your user. An approved Draft accepts no further Revisions (DRAFT_APPROVED).",
       inputSchema: reviseDraftInputSchema,
-      outputSchema: draftSummarySchema,
+      outputSchema: unsubmittedDraftSummarySchema,
     },
     ({ draftId, ...reviseRequest }) =>
       runAsToolResult(() => client.drafts.revise(draftId, reviseRequest)),

@@ -7,7 +7,7 @@ import {
   type ListDraftsQuery,
 } from "@resend-challenge/api.routes";
 
-import { useWorker, type TestWorker } from "./use-worker.ts";
+import { reviewUrlOf, useWorker, type TestWorker } from "./use-worker.ts";
 
 const DRAFT_DATA = {
   to: ["ada@example.com"],
@@ -33,8 +33,10 @@ test("the client creates a Draft and reads it back with its body", async ({
     sending: { status: "NOT_SENT" },
   });
   expect(created.latestRevision).not.toHaveProperty("body");
+  expect(created).not.toHaveProperty("reviewUrl");
   expect(draft).toStrictEqual({
     ...created,
+    reviewUrl: reviewUrlOf(created.id),
     latestRevision: { ...created.latestRevision, body: { plainText: "Hello Ada" } },
   });
 });
@@ -183,7 +185,10 @@ test("the client lists Drafts with repeated filters and pages through them with 
     unsubmitted.id,
     ...pendingIds,
   ]);
-  expect(firstPage.items[0]).toStrictEqual(unsubmitted);
+  expect(firstPage.items[0]).toStrictEqual({
+    ...unsubmitted,
+    reviewUrl: reviewUrlOf(unsubmitted.id),
+  });
   expect(secondPage).not.toHaveProperty("nextCursor");
   expect(pendingPage.items.map((item) => item.id)).toStrictEqual(pendingIds.toReversed());
 });

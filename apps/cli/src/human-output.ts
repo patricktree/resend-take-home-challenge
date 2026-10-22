@@ -3,10 +3,13 @@ import type {
   DraftResponse,
   DraftSummaryResponse,
   RevisionResponse,
+  UnsubmittedDraftSummaryResponse,
 } from "@resend-challenge/api.routes";
 
-/** The Draft summary that create, revise and submit return. */
-export function formatDraftSummary(draft: DraftSummaryResponse): string {
+/** The Draft summary that create, revise and submit return; create and revise carry no `reviewUrl`. */
+export function formatDraftSummary(
+  draft: DraftSummaryResponse | UnsubmittedDraftSummaryResponse,
+): string {
   const { latestRevision, lastVerdict } = draft;
   const lines = [
     `Draft ${draft.id}`,
@@ -20,7 +23,13 @@ export function formatDraftSummary(draft: DraftSummaryResponse): string {
       `Last verdict: ${lastVerdict.verdict} on Revision ${lastVerdict.revisionNumber}${reason}`,
     );
   }
-  lines.push(`Review URL: ${draft.reviewUrl}`);
+  // An unsubmitted Draft has nothing to review yet; reads still carry its URL, but printing it
+  // invites handing it over early.
+  lines.push(
+    !("reviewUrl" in draft) || draft.reviewStatus === "UNSUBMITTED"
+      ? `Not submitted yet: run drafts submit ${draft.id} ${latestRevision.id}, then show the Review URL to your user`
+      : `Review URL: ${draft.reviewUrl}`,
+  );
   return lines.join("\n");
 }
 

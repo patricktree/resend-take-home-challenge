@@ -4,6 +4,8 @@ export type DraftDataRequest = z.input<typeof draftDataRequestSchema>;
 
 export type DraftSummaryResponse = z.infer<typeof draftSummarySchema>;
 
+export type UnsubmittedDraftSummaryResponse = z.infer<typeof unsubmittedDraftSummarySchema>;
+
 export type DraftResponse = z.infer<typeof draftSchema>;
 
 export type ReviseRequest = z.input<typeof reviseRequestSchema>;
@@ -234,14 +236,24 @@ const draftSummaryFields = {
   lastVerdict: lastVerdictSchema.optional(),
   sending: sendingSchema,
   reviewUrl: z.url().openapi({
-    description: "The Draft's page in the Review UI; it grants nothing without the Reviewer token",
+    description:
+      "The Draft's page in the Review UI; it grants nothing without the Reviewer token. Create and revise leave it out, since an unsubmitted Draft has nothing to review; the Submission returns it, for the Agent to show to its user.",
   }),
 };
 
-/** The Draft without the latest Revision's body; lists and every mutation return it. */
+/** The Draft without the latest Revision's body; lists, the Submission and the verdicts return it. */
 export const draftSummarySchema = z
   .object({ ...draftSummaryFields, latestRevision: revisionSummarySchema })
   .openapi("DraftSummary");
+
+/**
+ * The Draft summary without `reviewUrl`; create and revise return it. Their latest Revision is
+ * always unsubmitted, so there is nothing to review yet, and an Agent that never sees the link
+ * cannot hand it over before submitting.
+ */
+export const unsubmittedDraftSummarySchema = draftSummarySchema
+  .omit({ reviewUrl: true })
+  .openapi("UnsubmittedDraftSummary");
 
 /** The Draft with the latest Revision's body; only the reads by id return it. */
 export const draftSchema = z

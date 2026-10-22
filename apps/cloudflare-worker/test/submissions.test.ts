@@ -6,9 +6,11 @@ import {
   LOCAL_AGENT_TOKEN,
   LOCAL_REVIEWER_TOKEN,
   type DraftSummaryResponse,
+  unsubmittedDraftSummarySchema,
+  type UnsubmittedDraftSummaryResponse,
 } from "@resend-challenge/api.routes";
 
-import { useWorker, type TestWorker } from "./use-worker.ts";
+import { reviewUrlOf, useWorker, type TestWorker } from "./use-worker.ts";
 
 const AGENT_HEADERS = {
   Authorization: `Bearer ${LOCAL_AGENT_TOKEN}`,
@@ -48,6 +50,7 @@ test("submitting the latest Revision answers with 200 and a Pending Draft summar
     ...created,
     lastActionAt: expect.any(String),
     reviewStatus: "PENDING",
+    reviewUrl: reviewUrlOf(created.id),
     latestRevision: {
       ...created.latestRevision,
       reviewStatus: "PENDING",
@@ -377,13 +380,13 @@ test("10 concurrent Submissions of the same Revision: one 200, nine 409 REVISION
   ]);
 });
 
-async function createDraft(worker: TestWorker): Promise<DraftSummaryResponse> {
+async function createDraft(worker: TestWorker): Promise<UnsubmittedDraftSummaryResponse> {
   const response = await worker.fetch("/api/v1/drafts", {
     method: "POST",
     headers: AGENT_HEADERS,
     body: JSON.stringify(DRAFT_DATA),
   });
-  return draftSummarySchema.parse(await response.json());
+  return unsubmittedDraftSummarySchema.parse(await response.json());
 }
 
 async function submitRevision(worker: TestWorker, draftId: string, revisionId: string) {
@@ -419,12 +422,12 @@ async function expectRevised(
   worker: TestWorker,
   draftId: string,
   baseRevisionId: string,
-): Promise<DraftSummaryResponse> {
+): Promise<UnsubmittedDraftSummaryResponse> {
   const response = await reviseDraft(worker, draftId, baseRevisionId);
   if (response.status !== 201) {
     throw new Error(`The revise answered with ${response.status}: ${await response.text()}`);
   }
-  return draftSummarySchema.parse(await response.json());
+  return unsubmittedDraftSummarySchema.parse(await response.json());
 }
 
 async function getRevision(worker: TestWorker, draftId: string, revisionId: string) {

@@ -13,6 +13,7 @@ import type {
   RejectionRequest,
   ReviseRequest,
   RevisionResponse,
+  UnsubmittedDraftSummaryResponse,
 } from "@resend-challenge/api.routes";
 
 export type { ErrorCode } from "@resend-challenge/api.routes";
@@ -140,7 +141,7 @@ export class DraftsResource {
   }
 
   /** Creates a Draft whose first Revision, `UNSUBMITTED`, holds the Draft data. */
-  async create(draftData: DraftDataRequest): Promise<DraftSummaryResponse> {
+  async create(draftData: DraftDataRequest): Promise<UnsubmittedDraftSummaryResponse> {
     const response = await this.#honoClient.api.v1.drafts.$post({
       header: NO_HEADERS,
       json: draftData,
@@ -185,7 +186,10 @@ export class DraftsResource {
    * {@link ApiError} with `REVISION_SUPERSEDED` when another revise came first, and with
    * `DRAFT_APPROVED` when the Draft is approved.
    */
-  async revise(draftId: string, reviseRequest: ReviseRequest): Promise<DraftSummaryResponse> {
+  async revise(
+    draftId: string,
+    reviseRequest: ReviseRequest,
+  ): Promise<UnsubmittedDraftSummaryResponse> {
     const response = await this.#honoClient.api.v1.drafts[":draftId"].revisions.$post({
       header: NO_HEADERS,
       param: { draftId },

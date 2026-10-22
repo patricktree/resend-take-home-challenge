@@ -10,9 +10,11 @@ import {
   LOCAL_REVIEWER_TOKEN,
   type DraftListResponse,
   type DraftSummaryResponse,
+  unsubmittedDraftSummarySchema,
+  type UnsubmittedDraftSummaryResponse,
 } from "@resend-challenge/api.routes";
 
-import { useWorker, type TestWorker } from "./use-worker.ts";
+import { reviewUrlOf, useWorker, type TestWorker } from "./use-worker.ts";
 
 const AGENT_HEADERS = {
   Authorization: `Bearer ${LOCAL_AGENT_TOKEN}`,
@@ -45,9 +47,9 @@ test("listing without parameters answers with every Draft summary, last action n
   expect(response.status).toBe(200);
   expect(await response.json()).toStrictEqual({
     items: [
-      { ...first, lastActionAt: "1970-01-01T00:00:03.000Z" },
-      { ...third, lastActionAt: "1970-01-01T00:00:02.000Z" },
-      { ...second, lastActionAt: "1970-01-01T00:00:01.000Z" },
+      { ...first, lastActionAt: "1970-01-01T00:00:03.000Z", reviewUrl: reviewUrlOf(first.id) },
+      { ...third, lastActionAt: "1970-01-01T00:00:02.000Z", reviewUrl: reviewUrlOf(third.id) },
+      { ...second, lastActionAt: "1970-01-01T00:00:01.000Z", reviewUrl: reviewUrlOf(second.id) },
     ],
   });
 });
@@ -82,7 +84,9 @@ test("a Draft whose Pending Revision was superseded leaves the Pending list, and
   const supersededResponse = await listDrafts(worker, "?reviewStatus=SUPERSEDED");
 
   expect(pendingPage).toStrictEqual({ items: [] });
-  expect(unsubmittedPage).toStrictEqual({ items: [revised] });
+  expect(unsubmittedPage).toStrictEqual({
+    items: [{ ...revised, reviewUrl: reviewUrlOf(revised.id) }],
+  });
   expect(supersededResponse.status).toBe(400);
   expect(await supersededResponse.json()).toMatchObject({
     error: { code: "INVALID_REQUEST", issues: [{ path: ["reviewStatus", 0] }] },
@@ -502,7 +506,7 @@ test("listing reads no bodies: it works with every body missing from R2", async 
 
   const page = await expectPage(worker, "");
 
-  expect(page).toStrictEqual({ items: [created] });
+  expect(page).toStrictEqual({ items: [{ ...created, reviewUrl: reviewUrlOf(created.id) }] });
 });
 
 test("the Reviewer token can list Drafts, and the response carries a read bookmark", async ({
@@ -518,10 +522,12 @@ test("the Reviewer token can list Drafts, and the response carries a read bookma
 
   expect(response.status).toBe(200);
   expect(response.headers.get("X-Read-Bookmark")).toMatch(/^\S+$/);
-  expect(await response.json()).toStrictEqual({ items: [created] });
+  expect(await response.json()).toStrictEqual({
+    items: [{ ...created, reviewUrl: reviewUrlOf(created.id) }],
+  });
 });
 
-async function createDraft(worker: TestWorker): Promise<DraftSummaryResponse> {
+async function createDraft(worker: TestWorker): Promise<UnsubmittedDraftSummaryResponse> {
   const response = await worker.fetch("/api/v1/drafts", {
     method: "POST",
     headers: AGENT_HEADERS,
@@ -530,7 +536,7 @@ async function createDraft(worker: TestWorker): Promise<DraftSummaryResponse> {
   if (response.status !== 201) {
     throw new Error(`Creating a Draft answered with ${response.status}.`);
   }
-  return draftSummarySchema.parse(await response.json());
+  return unsubmittedDraftSummarySchema.parse(await response.json());
 }
 
 async function submitRevision(
@@ -552,7 +558,7 @@ async function reviseDraft(
   worker: TestWorker,
   draftId: string,
   baseRevisionId: string,
-): Promise<DraftSummaryResponse> {
+): Promise<UnsubmittedDraftSummaryResponse> {
   const response = await worker.fetch(`/api/v1/drafts/${draftId}/revisions`, {
     method: "POST",
     headers: AGENT_HEADERS,
@@ -561,7 +567,7 @@ async function reviseDraft(
   if (response.status !== 201) {
     throw new Error(`Revising a Draft answered with ${response.status}.`);
   }
-  return draftSummarySchema.parse(await response.json());
+  return unsubmittedDraftSummarySchema.parse(await response.json());
 }
 
 /**

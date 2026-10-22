@@ -7,6 +7,8 @@ import {
   LOCAL_AGENT_TOKEN,
   LOCAL_REVIEWER_TOKEN,
   type DraftSummaryResponse,
+  unsubmittedDraftSummarySchema,
+  type UnsubmittedDraftSummaryResponse,
 } from "@resend-challenge/api.routes";
 
 import { readSentSendQueueMessages, useWorker, type TestWorker } from "./use-worker.ts";
@@ -584,13 +586,13 @@ type Outcome =
   | { status: number; body: unknown }
   | { status: number; code: string; existingVerdict?: string };
 
-async function createDraft(worker: TestWorker): Promise<DraftSummaryResponse> {
+async function createDraft(worker: TestWorker): Promise<UnsubmittedDraftSummaryResponse> {
   const response = await worker.fetch("/api/v1/drafts", {
     method: "POST",
     headers: AGENT_HEADERS,
     body: JSON.stringify(DRAFT_DATA),
   });
-  return draftSummarySchema.parse(await response.json());
+  return unsubmittedDraftSummarySchema.parse(await response.json());
 }
 
 /** Creates a Draft and submits its first Revision, so that it awaits a verdict. */
@@ -632,12 +634,12 @@ async function expectRevised(
   worker: TestWorker,
   draftId: string,
   baseRevisionId: string,
-): Promise<DraftSummaryResponse> {
+): Promise<UnsubmittedDraftSummaryResponse> {
   const response = await reviseDraft(worker, draftId, baseRevisionId);
   if (response.status !== 201) {
     throw new Error(`The revise answered with ${response.status}: ${await response.text()}`);
   }
-  return draftSummarySchema.parse(await response.json());
+  return unsubmittedDraftSummarySchema.parse(await response.json());
 }
 
 async function approve(worker: TestWorker, draftId: string, revisionId: string) {

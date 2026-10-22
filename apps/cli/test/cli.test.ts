@@ -24,7 +24,8 @@ const REVISION_ID = "rev_019a0b7e-5c3d-7f2a-9b1e-4d6c8a2f0e14";
 const NEXT_REVISION_ID = "rev_019a0b7e-6000-7f2a-9b1e-4d6c8a2f0e15";
 const REVIEW_URL = `https://resend-challenge.patricktree.me/app/drafts/${DRAFT_ID}`;
 
-const DRAFT_SUMMARY = {
+/** What create and revise return: an unsubmitted Draft, without `reviewUrl`. */
+const UNSUBMITTED_DRAFT_SUMMARY = {
   id: DRAFT_ID,
   createdAt: "2026-10-21T08:00:00.000Z",
   lastActionAt: "2026-10-21T08:00:00.000Z",
@@ -38,8 +39,9 @@ const DRAFT_SUMMARY = {
     reviewStatus: "UNSUBMITTED",
   },
   sending: { status: "NOT_SENT" },
-  reviewUrl: REVIEW_URL,
 };
+
+const DRAFT_SUMMARY = { ...UNSUBMITTED_DRAFT_SUMMARY, reviewUrl: REVIEW_URL };
 
 const DRAFT = {
   ...DRAFT_SUMMARY,
@@ -127,7 +129,10 @@ test("`drafts create` sends the Draft data with RESEND_CHALLENGE_TOKEN, and --js
   expect,
   onTestFinished,
 }) => {
-  const api = await useApiStub(onTestFinished, () => ({ status: 201, body: DRAFT_SUMMARY }));
+  const api = await useApiStub(onTestFinished, () => ({
+    status: 201,
+    body: UNSUBMITTED_DRAFT_SUMMARY,
+  }));
 
   const result = await runCli(
     [
@@ -148,7 +153,7 @@ test("`drafts create` sends the Draft data with RESEND_CHALLENGE_TOKEN, and --js
 
   expect(result.exitCode).toBe(0);
   expect(result.stderr).toBe("");
-  expect(JSON.parse(result.stdout)).toStrictEqual(DRAFT_SUMMARY);
+  expect(JSON.parse(result.stdout)).toStrictEqual(UNSUBMITTED_DRAFT_SUMMARY);
   expect(api.requests).toStrictEqual([
     {
       method: "POST",
@@ -189,11 +194,14 @@ test.for([
   },
 );
 
-test("`drafts create` prints the ids, the statuses and the reviewUrl", async ({
+test("`drafts create` prints the ids and the statuses, and the submit command instead of the reviewUrl", async ({
   expect,
   onTestFinished,
 }) => {
-  const api = await useApiStub(onTestFinished, () => ({ status: 201, body: DRAFT_SUMMARY }));
+  const api = await useApiStub(onTestFinished, () => ({
+    status: 201,
+    body: UNSUBMITTED_DRAFT_SUMMARY,
+  }));
 
   const result = await runCli(
     ["drafts", "create", "--to", "ada@example.com", "--subject", "Hi", "--body", "Hello"],
@@ -207,7 +215,7 @@ test("`drafts create` prints the ids, the statuses and the reviewUrl", async ({
       "Review status: UNSUBMITTED",
       "Sending status: NOT_SENT",
       `Latest Revision: ${REVISION_ID} (Revision 1, UNSUBMITTED)`,
-      `Review URL: ${REVIEW_URL}`,
+      `Not submitted yet: run drafts submit ${DRAFT_ID} ${REVISION_ID}, then show the Review URL to your user`,
       "",
     ].join("\n"),
   );
@@ -217,7 +225,10 @@ test("`drafts create --body-file` reads the body from a file", async ({
   expect,
   onTestFinished,
 }) => {
-  const api = await useApiStub(onTestFinished, () => ({ status: 201, body: DRAFT_SUMMARY }));
+  const api = await useApiStub(onTestFinished, () => ({
+    status: 201,
+    body: UNSUBMITTED_DRAFT_SUMMARY,
+  }));
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "resend-challenge-cli-"));
   onTestFinished(() => fs.rm(directory, { recursive: true, force: true }));
   const bodyPath = path.join(directory, "body.txt");
@@ -241,7 +252,10 @@ test("`drafts create --body-file` resolves a relative path against the directory
   expect,
   onTestFinished,
 }) => {
-  const api = await useApiStub(onTestFinished, () => ({ status: 201, body: DRAFT_SUMMARY }));
+  const api = await useApiStub(onTestFinished, () => ({
+    status: 201,
+    body: UNSUBMITTED_DRAFT_SUMMARY,
+  }));
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "resend-challenge-cli-"));
   onTestFinished(() => fs.rm(directory, { recursive: true, force: true }));
   await fs.writeFile(path.join(directory, "body.txt"), "Hello from the caller's directory.\n");
@@ -261,7 +275,10 @@ test("`drafts revise --body-file -` reads the body from stdin and sends the base
   expect,
   onTestFinished,
 }) => {
-  const api = await useApiStub(onTestFinished, () => ({ status: 201, body: DRAFT_SUMMARY }));
+  const api = await useApiStub(onTestFinished, () => ({
+    status: 201,
+    body: UNSUBMITTED_DRAFT_SUMMARY,
+  }));
 
   const result = await runCli(
     [
@@ -347,7 +364,7 @@ test("`drafts get` prints the recipients, the subject and the body", async ({
       "Review status: UNSUBMITTED",
       "Sending status: NOT_SENT",
       `Latest Revision: ${REVISION_ID} (Revision 1, UNSUBMITTED)`,
-      `Review URL: ${REVIEW_URL}`,
+      `Not submitted yet: run drafts submit ${DRAFT_ID} ${REVISION_ID}, then show the Review URL to your user`,
       "",
       "To: ada@example.com, grace@example.com",
       "Subject: Quarterly report",
@@ -404,7 +421,10 @@ test("`drafts list` sends every filter, the ordering and the paging, and prints 
   ]);
   expect(result.stdout).toContain(`Draft ${DRAFT_ID}\n`);
   expect(result.stdout).toContain("Subject: Quarterly report\n");
-  expect(result.stdout).toContain(`Review URL: ${REVIEW_URL}\n`);
+  expect(result.stdout).toContain(
+    `Not submitted yet: run drafts submit ${DRAFT_ID} ${REVISION_ID}`,
+  );
+  expect(result.stdout).not.toContain(REVIEW_URL);
   expect(result.stdout).toContain("--cursor cursor_2");
 });
 
@@ -437,6 +457,30 @@ test("`drafts submit` submits the Revision", async ({ expect, onTestFinished }) 
     },
   ]);
   expect(JSON.parse(result.stdout)).toStrictEqual(submitted);
+});
+
+test("`drafts submit` prints the reviewUrl once the Draft is pending", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const submitted = {
+    ...DRAFT_SUMMARY,
+    reviewStatus: "PENDING",
+    latestRevision: { ...DRAFT_SUMMARY.latestRevision, reviewStatus: "PENDING" },
+  };
+  const api = await useApiStub(onTestFinished, () => ({ status: 200, body: submitted }));
+
+  const result = await runCli(["drafts", "submit", DRAFT_ID, REVISION_ID], {
+    env: { RESEND_CHALLENGE_API_URL: api.url },
+  });
+
+  expect(result.exitCode).toBe(0);
+  expect(result.stdout).toContain(
+    [`Latest Revision: ${REVISION_ID} (Revision 1, PENDING)`, `Review URL: ${REVIEW_URL}`].join(
+      "\n",
+    ),
+  );
+  expect(result.stdout).not.toContain("Not submitted yet");
 });
 
 test("`drafts revision` prints the Revision with its rejection reason and body", async ({

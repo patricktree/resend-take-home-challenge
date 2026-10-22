@@ -1,6 +1,6 @@
 import { test } from "vitest";
 
-import { draftSummarySchema, LOCAL_AGENT_TOKEN } from "@resend-challenge/api.routes";
+import { LOCAL_AGENT_TOKEN, unsubmittedDraftSummarySchema } from "@resend-challenge/api.routes";
 
 import { useWorker } from "./use-worker.ts";
 
@@ -35,7 +35,7 @@ test("a read with the bookmark of a write reads that write and returns a read bo
     headers: { ...AUTHORIZATION, "Content-Type": "application/json" },
     body: JSON.stringify(DRAFT_DATA),
   });
-  const created = draftSummarySchema.parse(await createResponse.json());
+  const created = unsubmittedDraftSummarySchema.parse(await createResponse.json());
   const writeBookmark = createResponse.headers.get("X-Read-Bookmark") ?? "";
 
   const response = await worker.fetch(`/api/v1/drafts/${created.id}`, {

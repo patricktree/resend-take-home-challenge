@@ -7,10 +7,10 @@ import {
 import { test, type TestContext } from "vitest";
 
 import {
-  draftSummarySchema,
   LOCAL_AGENT_TOKEN,
   LOCAL_REVIEWER_TOKEN,
-  type DraftSummaryResponse,
+  unsubmittedDraftSummarySchema,
+  type UnsubmittedDraftSummaryResponse,
 } from "@resend-challenge/api.routes";
 
 import { TEST_AGENT_TOKEN, TEST_REVIEWER_TOKEN, useWorker, type TestWorker } from "./use-worker.ts";
@@ -78,7 +78,7 @@ test("the server instructions describe the lifecycle and link the OpenAPI docume
   const instructions = mcpClient.getInstructions();
 
   expect(instructions).toContain("https://resend-challenge.patricktree.me/api/openapi.json");
-  expect(instructions).toContain("show the Draft's `reviewUrl` to your user");
+  expect(instructions).toContain("show that `reviewUrl` to your user");
   expect(instructions).toContain("Agents cannot approve, reject or send");
   for (const toolName of ["create_draft", "submit_draft", "get_draft", "revise_draft"]) {
     expect(instructions).toContain(toolName);
@@ -123,10 +123,11 @@ test("create_draft creates a Draft and returns its summary as structured content
     sending: { status: "NOT_SENT" },
   });
   expect(result.structuredContent).not.toHaveProperty("latestRevision.body");
+  expect(result.structuredContent).not.toHaveProperty("reviewUrl");
   expect(result.content).toStrictEqual([
     { type: "text", text: JSON.stringify(result.structuredContent) },
   ]);
-  const created = draftSummarySchema.parse(result.structuredContent);
+  const created = unsubmittedDraftSummarySchema.parse(result.structuredContent);
   const draft = await readThroughApi(worker, `/api/v1/drafts/${created.id}`);
   expect(draft).toMatchObject({ latestRevision: { body: { plainText: "Hello Ada" } } });
 });
@@ -480,12 +481,13 @@ async function callToolSuccessfully(
   mcpClient: Client,
   name: string,
   toolArguments: Record<string, unknown>,
-): Promise<DraftSummaryResponse> {
+): Promise<UnsubmittedDraftSummaryResponse> {
   const result = await mcpClient.callTool({ name, arguments: toolArguments });
   if (result.isError === true) {
     throw new Error(`The tool ${name} failed: ${readTextContent(result)}`);
   }
-  return draftSummarySchema.parse(result.structuredContent);
+  // Every tool these tests call returns a Draft summary; only submit_draft adds `reviewUrl`.
+  return unsubmittedDraftSummarySchema.parse(result.structuredContent);
 }
 
 function readTextContent(result: CallToolResult): string {

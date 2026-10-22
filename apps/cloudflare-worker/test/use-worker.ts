@@ -16,6 +16,14 @@ export const TEST_AGENT_TOKEN = "agent_test-configured-agent-token";
 /** A Reviewer token for tests that configure `REVIEWER_TOKEN` through `secrets`. */
 export const TEST_REVIEWER_TOKEN = "reviewer_test-configured-reviewer-token";
 
+/**
+ * The `reviewUrl` of a Draft under the test Worker's `PUBLIC_BASE_URL`. Create and revise leave it
+ * out, so tests that compare their response with a later read add it back.
+ */
+export function reviewUrlOf(draftId: string): string {
+  return `https://resend-challenge.patricktree.me/app/drafts/${draftId}`;
+}
+
 const PACKAGE_DIRECTORY = nodeUrl.fileURLToPath(new URL("..", import.meta.url));
 
 type TestWorkerEnvironment = {

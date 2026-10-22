@@ -5,4 +5,3 @@
 - Global styles stay in emitted stylesheets: the Content-Security-Policy blocks inline `<style>` and scripts.
 - Vite builds the Review UI with `base: "/app/"` into `apps/review-ui/dist/web/app/`, and the Worker's Vite build ships `dist/web` as its static assets. `libs/api.server/src/review-ui.ts` serves `/app` from the `ASSETS` binding, falls back to `/app/index.html`, and sets the security headers. [`apps/cloudflare-worker/AGENTS.md`](../cloudflare-worker/AGENTS.md) covers the integration tests' fixture in place of the build and the dev server's CSP.
 - The unit tests (`test/`, Vitest) cover the Review UI's pure functions, such as the sending-status labels.
-- `draft-queries.ts` creates the list queries when it loads, so every constant they read is declared above them: one declared below is `undefined` in the production bundle, and the lists stop polling (the e2e test "a shown list reads its Drafts again when its countdown runs out" catches it).

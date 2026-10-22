@@ -1,6 +1,92 @@
-# Spec: Email Draft Approval
+# Spec: Email Draft Approval <!-- omit in toc -->
 
 Status: ready to build. This document states the final decisions only; the reasoning behind them and the alternatives that were considered are in the documents listed under [Sources](#18-sources).
+
+- [1. Overview](#1-overview)
+- [2. Requirements coverage](#2-requirements-coverage)
+- [3. Domain model](#3-domain-model)
+  - [Revision review status](#revision-review-status)
+  - [Draft review status](#draft-review-status)
+  - [Sending status](#sending-status)
+  - [Allowed combinations](#allowed-combinations)
+- [4. Architecture](#4-architecture)
+  - [One Worker](#one-worker)
+  - [Routing in `fetch`](#routing-in-fetch)
+  - [MCP calls the API in-process](#mcp-calls-the-api-in-process)
+  - [Packages](#packages)
+  - [Repository and tooling](#repository-and-tooling)
+- [5. Data model](#5-data-model)
+  - [Storage split](#storage-split)
+  - [IDs](#ids)
+  - [Table `drafts`](#table-drafts)
+  - [Table `revisions`](#table-revisions)
+  - [D1 sessions and read replication](#d1-sessions-and-read-replication)
+- [6. HTTP API](#6-http-api)
+  - [One API, one contract](#one-api-one-contract)
+  - [Operations](#operations)
+  - [Shapes](#shapes)
+  - [Lists](#lists)
+  - [Limits and request format](#limits-and-request-format)
+  - [Error model](#error-model)
+  - [Read bookmark](#read-bookmark)
+- [7. Authentication and authorization](#7-authentication-and-authorization)
+  - [Credentials](#credentials)
+  - [Roles](#roles)
+  - [MCP](#mcp)
+  - [Local tokens](#local-tokens)
+  - [Browser hardening](#browser-hardening)
+- [8. Approval binding and concurrency](#8-approval-binding-and-concurrency)
+  - [Binding](#binding)
+  - [Guarded batches](#guarded-batches)
+  - [Race outcomes](#race-outcomes)
+- [9. Send pipeline](#9-send-pipeline)
+  - [Approval and hand-off](#approval-and-hand-off)
+  - [Queue consumer](#queue-consumer)
+  - [Classification and backoff](#classification-and-backoff)
+  - [The 23 h deadline](#the-23-h-deadline)
+  - [Send reconciler](#send-reconciler)
+  - [DLQ consumer](#dlq-consumer)
+  - [Recording outcomes](#recording-outcomes)
+  - [Why each approved Draft sends exactly one email](#why-each-approved-draft-sends-exactly-one-email)
+  - [Error reporting](#error-reporting)
+- [10. Agent interfaces](#10-agent-interfaces)
+  - [MCP server](#mcp-server)
+  - [CLI](#cli)
+- [11. Review UI](#11-review-ui)
+  - [Routes and layout](#routes-and-layout)
+  - [Token screen](#token-screen)
+  - [Pending and Decided lists](#pending-and-decided-lists)
+  - [Draft page](#draft-page)
+  - [Verdict controls](#verdict-controls)
+  - [Sending status labels](#sending-status-labels)
+  - [Verdict errors](#verdict-errors)
+  - [Style](#style)
+- [12. Infrastructure, configuration and local development](#12-infrastructure-configuration-and-local-development)
+  - [Environments](#environments)
+  - [Terraform](#terraform)
+  - [`wrangler.jsonc`](#wranglerjsonc)
+  - [Tokens](#tokens)
+  - [Deploying](#deploying)
+  - [Local development](#local-development)
+- [13. Testing](#13-testing)
+  - [Integration test setup](#integration-test-setup)
+  - [Resend stub](#resend-stub)
+  - [Forcing races](#forcing-races)
+  - [Time](#time)
+  - [API, auth and MCP scenarios](#api-auth-and-mcp-scenarios)
+  - [CLI process tests](#cli-process-tests)
+  - [e2e](#e2e)
+  - [Unit tests](#unit-tests)
+  - [Live Resend contract test](#live-resend-contract-test)
+  - [Flakiness and where tests run](#flakiness-and-where-tests-run)
+- [14. Demo simplifications](#14-demo-simplifications)
+  - [Identity and access](#identity-and-access)
+  - [Operations and deployment](#operations-and-deployment)
+  - [Data](#data)
+- [15. Known limitations](#15-known-limitations)
+- [16. Future increments](#16-future-increments)
+- [17. Out of scope](#17-out-of-scope)
+- [18. Sources](#18-sources)
 
 ## 1. Overview
 
@@ -164,18 +250,53 @@ Static assets are configured with `run_worker_first: true`, `html_handling: "non
 
 The repository follows cup's layout (`~/workspace/cup`), with package names under `@resend-challenge/*`. `apps/` holds only what is deployed or installed on its own (the Worker and the CLI); everything they import lives in `libs/`, whether it exports code or a build output. The `api.*` prefix marks only the contract and its typed client.
 
-| Folder                   | Role                                                                                                                                                                                                     |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/cloudflare-worker` | Thin entry: `wrangler.jsonc`, Vite build with `@cloudflare/vite-plugin`; exports `fetch` (from `http-app`), `queue` and `scheduled` (both delegate to `email-drafts`); integration tests in `test/`      |
-| `apps/cli`               | The `resend-challenge` CLI, with its committed single-file bundle in `bundle/` (built with Rolldown)                                                                                                     |
-| `libs/api.routes`        | `@hono/zod-openapi` contract: routes, Zod schemas, error schema, `LOCAL_AGENT_TOKEN` and `LOCAL_REVIEWER_TOKEN`                                                                                          |
-| `libs/api.client`        | Typed client (Hono RPC `hc` wrapped in a hand-written class), read-bookmark handling, OpenAPI export                                                                                                     |
-| `libs/http-app`          | Hono app: routing, authentication, error envelope, `/app` serving, `/mcp` mounting, the agent guide; calls into `email-drafts`                                                                           |
-| `libs/email-drafts`      | The Draft domain: Drizzle schema and migrations, R2 body storage, use cases (create, revise, submit, approve, reject, list, get), Queue consumer, DLQ consumer, Send reconciler, internal Resend adapter |
-| `libs/mcp-server`        | The six MCP tools on the typed client; the lifecycle steps shared with the agent quickstart                                                                                                              |
-| `libs/review-ui`         | React 19 SPA (TanStack Router and Query), served under `/app`; the Worker's Vite build imports its config and ships its `dist/` as static assets                                                         |
-| `qa/e2e`                 | Playwright e2e tests                                                                                                                                                                                     |
-| `terraform/`             | Infrastructure                                                                                                                                                                                           |
+| Folder                     | Role                                                                                                                                                                                                     |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/cloudflare-worker`   | Thin entry: `wrangler.jsonc`, Vite build with `@cloudflare/vite-plugin`; exports `fetch` (from `http-app`), `queue` and `scheduled` (both delegate to `email-drafts`); integration tests in `test/`      |
+| `apps/cli`                 | The `resend-challenge` CLI, with its committed single-file bundle in `bundle/` (built with Rolldown)                                                                                                     |
+| `libs/api.routes`          | `@hono/zod-openapi` contract: routes, Zod schemas, error schema, `LOCAL_AGENT_TOKEN` and `LOCAL_REVIEWER_TOKEN`                                                                                          |
+| `libs/api.client`          | Typed client (Hono RPC `hc` wrapped in a hand-written class), read-bookmark handling, OpenAPI export                                                                                                     |
+| `libs/http-app`            | Hono app: routing, authentication, error envelope, `/app` serving, `/mcp` mounting, the agent guide; calls into `email-drafts`                                                                           |
+| `libs/email-drafts`        | The Draft domain: Drizzle schema and migrations, R2 body storage, use cases (create, revise, submit, approve, reject, list, get), Queue consumer, DLQ consumer, Send reconciler, internal Resend adapter |
+| `libs/mcp-server`          | The six MCP tools on the typed client; the lifecycle steps shared with the agent quickstart                                                                                                              |
+| `libs/review-ui`           | React 19 SPA (TanStack Router and Query), served under `/app`; the Worker's Vite build imports its config and ships its `dist/` as static assets                                                         |
+| `qa/e2e`                   | Playwright e2e tests                                                                                                                                                                                     |
+| `qa/resend-stub`           | A `node:http` stand-in for Resend's `POST /emails` that models its idempotency ([section 13](#resend-stub)); the opt-in live contract test                                                               |
+| `tooling/config-oxlint`    | The shared oxlint settings that every package extends                                                                                                                                                    |
+| `tooling/seed`             | `pnpm seed`                                                                                                                                                                                              |
+| `tooling/secrets-generate` | `pnpm secrets:generate`                                                                                                                                                                                  |
+| `terraform/`               | Infrastructure                                                                                                                                                                                           |
+
+The production dependencies between the workspace packages are as follows. The one dotted arrow is a development dependency that ships anyway: the Worker build bundles the Review UI's `dist/` as its static assets. Packages with neither production dependencies nor production dependents on other workspace packages (`qa/e2e`, `qa/resend-stub`, `tooling/secrets-generate`, `tooling/config-oxlint`) are left out, and so is the development script `tooling/seed`.
+
+```mermaid
+flowchart TB
+  subgraph apps
+    worker["apps/cloudflare-worker<br/>Worker entry: fetch, queue and scheduled handlers"]
+    cli["apps/cli<br/>resend-challenge CLI for Agents"]
+  end
+  subgraph libs
+    httpApp["libs/http-app<br/>Hono app: routing, auth, /mcp, quickstart"]
+    mcpServer["libs/mcp-server<br/>The six MCP tools on the typed client"]
+    emailDrafts["libs/email-drafts<br/>Draft domain, storage and Send pipeline"]
+    reviewUi["libs/review-ui<br/>Review UI, a React SPA under /app"]
+    apiClient["libs/api.client<br/>Typed API client"]
+    apiRoutes["libs/api.routes<br/>HTTP API contract: routes and Zod schemas"]
+  end
+  worker --> httpApp
+  worker --> emailDrafts
+  worker -.->|ships its build as static assets| reviewUi
+  httpApp --> mcpServer
+  httpApp --> emailDrafts
+  httpApp --> apiRoutes
+  mcpServer --> apiClient
+  mcpServer --> apiRoutes
+  reviewUi --> apiClient
+  reviewUi --> apiRoutes
+  cli --> apiClient
+  cli --> apiRoutes
+  apiClient --> apiRoutes
+```
 
 Storage and the Send pipeline are one package because the outbox columns live on the Draft row: the Draft's invariants and the Send's conditional writes belong to one module. Inside `libs/email-drafts`, `src/` has layer folders for the domain types and pure rules (`domain/`) and for the D1 and R2 adapter (`storage/`, with the Send outbox), feature folders for the use cases of the review flow (`review/`) and of the Send pipeline (`send/`), and adapter folders for Resend (`resend/`) and the Worker glue (`worker/`).
 

@@ -1,6 +1,6 @@
 # Email Draft Approval
 
-Human approval for emails written by Agents: nothing is sent until a Reviewer approves the exact Revision. An Agent creates a Draft, revises it and submits it for review; the Reviewer approves or rejects exactly the Revision they read, and only an approved Revision is sent, at most once. See the [spec](.scratch/email-draft-approval/spec.md) for the design and [GLOSSARY.md](GLOSSARY.md) for the terms.
+Human approval for emails written by Agents: nothing is sent until a Reviewer approves the exact Revision. An Agent creates a Draft, revises it and submits it for review; the Reviewer approves or rejects exactly the Revision they read, and only an approved Revision is sent, at most once. See the [spec](.scratch/email-draft-approval/spec.md) for the design (its [architecture section](.scratch/email-draft-approval/spec.md#4-architecture) has the system and package diagrams) and [GLOSSARY.md](GLOSSARY.md) for the terms.
 
 One Cloudflare Worker at <https://resend-challenge.patricktree.me> serves the HTTP API under `/api/v1`, the MCP server at `/mcp` and the Review UI under `/app`. It keeps Drafts in D1 and Revision bodies in R2, hands approved Drafts to a Cloudflare Queue whose consumer calls Resend, and runs a Send reconciler every minute. The published OpenAPI document is served at `/api/openapi.json`.
 
@@ -52,11 +52,21 @@ curl -sS https://resend-challenge.patricktree.me/api/v1/drafts/<draft-id> \
 
 ### Through MCP
 
-The MCP server speaks Streamable HTTP at `https://resend-challenge.patricktree.me/mcp`. It needs no OAuth: configure the Agent token as a static `Authorization` header. The Reviewer token gets `403 AGENT_ONLY` there. For Claude Code:
+The MCP server speaks Streamable HTTP at `https://resend-challenge.patricktree.me/mcp`. It needs no OAuth: configure the Agent token as a static `Authorization` header. The Reviewer token gets `403 AGENT_ONLY` there.
+
+For Claude Code:
 
 ```sh
 claude mcp add --transport http resend-challenge https://resend-challenge.patricktree.me/mcp \
   --header 'Authorization: Bearer <agent-token>'
+```
+
+For the Codex CLI, which reads the token from an environment variable that must also be set whenever Codex runs:
+
+```sh
+export RESEND_CHALLENGE_TOKEN='<agent-token>'
+codex mcp add resend-challenge --url https://resend-challenge.patricktree.me/mcp \
+  --bearer-token-env-var RESEND_CHALLENGE_TOKEN
 ```
 
 Hosts configured through JSON take the same URL and header, for example:

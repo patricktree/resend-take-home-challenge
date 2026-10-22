@@ -22,6 +22,8 @@ export const LIST_REFRESH_INTERVAL_MILLISECONDS = 5000;
 /** How often the Draft page reads the Draft again while its Send is `QUEUED`. */
 const SENDING_POLL_INTERVAL_MILLISECONDS = 3000;
 
+// Created at module load, so they stay below every constant `createDraftListQuery` reads: one
+// declared after them is `undefined` in the production bundle, and the lists stop polling.
 export const pendingDraftsQuery = createDraftListQuery("pending", PENDING_LIST_QUERY);
 
 export const decidedDraftsQuery = createDraftListQuery("decided", DECIDED_LIST_QUERY);

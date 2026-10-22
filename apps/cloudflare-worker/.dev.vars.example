@@ -2,7 +2,8 @@
 
 # Accepts the local tokens (LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN from libs/api.routes) on localhost.
 LOCAL_DEVELOPMENT="true"
-# REVIEWER_TOKEN stays unset, so Wrangler warns that the required secret is missing; use LOCAL_REVIEWER_TOKEN instead.
+# AGENT_TOKEN and REVIEWER_TOKEN stay unset, so Wrangler warns that the required secrets are missing;
+# use LOCAL_AGENT_TOKEN and LOCAL_REVIEWER_TOKEN instead.
 
 # Your own Resend API key: local Sends call the real Resend API. Send to Resend's test recipients
 # delivered@resend.dev or bounced@resend.dev, which exercise the real API without delivering mail.

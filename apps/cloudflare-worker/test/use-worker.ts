@@ -42,8 +42,11 @@ type DeliveredMessage = {
 type UseWorkerOptions = {
   /** Test-only vars that override wrangler.test.jsonc, for example `LOCAL_DEVELOPMENT`. */
   vars?: Record<string, string>;
-  /** Test-only secrets, for example `REVIEWER_TOKEN` (absent by default, as in local development). */
-  secrets?: Record<string, string>;
+  /**
+   * Test-only secrets, for example `REVIEWER_TOKEN` (absent by default, as in local development).
+   * `AGENT_TOKEN` is `TEST_AGENT_TOKEN` unless overridden here; `undefined` leaves a secret unset.
+   */
+  secrets?: Record<string, string | undefined>;
   /**
    * Consumes the Send Queue for real, as Miniflare delivers it (the `send-queue-delivery`
    * environment of wrangler.test.jsonc). Off by default: consumer scenarios deliver their batches
@@ -78,8 +81,8 @@ export async function useWorker(
       {
         configPath: "./test/wrangler.test.jsonc",
         ...(options.shouldConsumeSendQueue === true ? { env: "send-queue-delivery" } : {}),
-        vars: { AGENT_TOKEN: TEST_AGENT_TOKEN, ...options.vars },
-        secrets: options.secrets ?? {},
+        vars: options.vars ?? {},
+        secrets: withoutUnsetValues({ AGENT_TOKEN: TEST_AGENT_TOKEN, ...options.secrets }),
       },
     ],
   });
@@ -90,6 +93,12 @@ export async function useWorker(
   await worker.applyD1Migrations("DB");
 
   return worker;
+}
+
+function withoutUnsetValues(values: Record<string, string | undefined>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(values).flatMap(([name, value]) => (value === undefined ? [] : [[name, value]])),
+  );
 }
 
 /**

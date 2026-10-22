@@ -37,7 +37,7 @@
       },
     ],
   },
-  // AGENT_TOKEN and REVIEWER_TOKEN come from the `useWorker()` fixture (test/use-worker.ts).
+  // The secrets AGENT_TOKEN and REVIEWER_TOKEN come from the `useWorker()` fixture (test/use-worker.ts).
   "vars": {
     "PUBLIC_BASE_URL": "https://resend-challenge.patricktree.me",
     "RESEND_FROM": "drafts@resend-challenge.patricktree.me",

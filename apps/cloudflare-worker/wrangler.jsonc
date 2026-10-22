@@ -68,11 +68,10 @@
     "RESEND_FROM": "drafts@resend-challenge.patricktree.me",
     "RESEND_BASE_URL": "https://api.resend.com",
     "LOCAL_DEVELOPMENT": "false",
-    // The public Agent token, written by `pnpm secrets:generate`; README.md shows the same value.
-    "AGENT_TOKEN": "agent_-17WHltuc9F9_Lpa7Yl3yy_tJ5_Upo07v637L_y1330",
   },
-  // Set with `wrangler secret put`; a deploy without them fails. Locally, `.dev.vars` may provide them.
+  // Set with Wrangler (`pnpm secrets:generate` sets both tokens); a deploy without them fails.
+  // Locally, `.dev.vars` may provide them.
   "secrets": {
-    "required": ["REVIEWER_TOKEN", "RESEND_API_KEY"],
+    "required": ["AGENT_TOKEN", "REVIEWER_TOKEN", "RESEND_API_KEY"],
   },
 }

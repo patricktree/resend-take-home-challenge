@@ -78,19 +78,19 @@ Resolved in a grilling session with the repository owner on 2026-10-20. Earlier 
 - **Terraform** (Cloudflare provider v5, Resend provider) manages: the D1 database with read replication `auto`, the R2 bucket for Revision bodies, the send Queue and the DLQ, and the Resend sending domain `resend-challenge.patricktree.me` with its verification DNS records in the Cloudflare zone. `from` is an address on that domain, for example `drafts@resend-challenge.patricktree.me`.
 - Terraform state lives in an R2 bucket through the S3 backend, created once by hand as a bootstrap step. `terraform apply` runs manually before `wrangler deploy`.
 - **`wrangler.jsonc`** owns what `wrangler deploy` owns: the Worker, route, cron trigger, Queue consumer settings (from 07: `max_concurrency: 1`, `max_batch_size: 8`, `max_retries: 100`, DLQ), bindings with the resource IDs from `terraform output` (committed), and vars.
-- Vars: `PUBLIC_BASE_URL` (`https://resend-challenge.patricktree.me`; the CLI's built-in production URL must equal it), `RESEND_FROM`, `RESEND_BASE_URL` (default `https://api.resend.com`), `LOCAL_DEVELOPMENT` (`"false"`), `AGENT_TOKEN`.
-- Secrets (`secrets.required`, so a deploy without them fails, set with `wrangler secret put`): `REVIEWER_TOKEN`, `RESEND_API_KEY` (sending-only key).
+- Vars: `PUBLIC_BASE_URL` (`https://resend-challenge.patricktree.me`; the CLI's built-in production URL must equal it), `RESEND_FROM`, `RESEND_BASE_URL` (default `https://api.resend.com`), `LOCAL_DEVELOPMENT` (`"false"`).
+- Secrets (`secrets.required`, so a deploy without them fails, set with Wrangler): `AGENT_TOKEN`, `REVIEWER_TOKEN`, `RESEND_API_KEY` (sending-only key).
 
 ### Tokens (refines [10](10-agent-reviewer-separation.md))
 
-- `pnpm secrets:generate` creates both tokens once (`agent_` / `reviewer_` + base64url of 32 random bytes). It writes the Agent token into `wrangler.jsonc` and pipes the Reviewer token into `wrangler secret put`, printing it once.
-- **The Agent token is public and committed**: a plain var `AGENT_TOKEN` in `wrangler.jsonc` (10 had it as a Worker secret; the code reads `env.AGENT_TOKEN` either way). The README shows it. The CLI falls back to it when `RESEND_CHALLENGE_TOKEN` is unset (as it already falls back to the production URL), and the MCP setup instructions use it, so nobody needs setup to act as an Agent.
+- `pnpm secrets:generate` creates both tokens once (`agent_` / `reviewer_` + base64url of 32 random bytes). It sets both as Worker secrets with Wrangler and prints both once; it changes no file.
+- **The Agent token is a Worker secret, never committed** (as in 10). The repository owner hands it to Agent operators out of band; the CLI requires `RESEND_CHALLENGE_TOKEN`, and the README's examples use a placeholder. _Changed later:_ this decision first made the Agent token public, as a committed var shown in the README and used as the CLI's fallback, so nobody needed setup to act as an Agent; that was reverted so that only people the owner chooses can create Drafts.
 - **The Reviewer token is never committed.** The repository owner hands it to Reviewers out of band. Committing it was considered and rejected: any Agent that can read the repo could then approve (breaking the core requirement, as 10 found for the SPA bundle), and anyone could send arbitrary email through the Resend account and domain.
 
 ### Local-environment flag (defines 10's flag)
 
 - `LOCAL_DEVELOPMENT` is `"false"` in `wrangler.jsonc`, and `"true"` only in the gitignored `.dev.vars` (copied from a committed `.dev.vars.example`) and in `wrangler.test.jsonc`.
-- `LOCAL_AGENT_TOKEN` / `LOCAL_REVIEWER_TOKEN` are accepted only when `LOCAL_DEVELOPMENT === "true"` **and** the request host is `localhost`, `127.0.0.1`, `[::1]` or `host.docker.internal` (the last one for Docker Playwright). On Cloudflare the request host is the routed hostname, which a client cannot set to one of these, so a production Worker deployed with the flag misset still rejects the public fixed tokens. With the flag on, `REVIEWER_TOKEN` and `RESEND_API_KEY` may be absent.
+- `LOCAL_AGENT_TOKEN` / `LOCAL_REVIEWER_TOKEN` are accepted only when `LOCAL_DEVELOPMENT === "true"` **and** the request host is `localhost`, `127.0.0.1`, `[::1]` or `host.docker.internal` (the last one for Docker Playwright). On Cloudflare the request host is the routed hostname, which a client cannot set to one of these, so a production Worker deployed with the flag misset still rejects the public fixed tokens. With the flag on, `REVIEWER_TOKEN` and `RESEND_API_KEY` may be absent (and `AGENT_TOKEN`, since it became a secret too).
 
 ### Local development
 
@@ -114,6 +114,6 @@ Resolved in a grilling session with the repository owner on 2026-10-20. Earlier 
 ### For the spec
 
 - Demo simplifications:
-  - **Public Agent token**: the Agent token is committed to the repo and shown in the README, so anyone can create, revise and submit Drafts (and fill the Pending list). Nothing is sent without the Reviewer token, which is never committed. _Real deployment:_ per-Agent credentials issued and rotated through an authorization server (see 10's entries), never in source control.
+  - **Agent token handed out by hand**: the repository owner hands the one Agent token out of band; anyone holding it can create, revise and submit Drafts (and fill the Pending list). Nothing is sent without the Reviewer token. _Real deployment:_ per-Agent credentials issued and rotated through an authorization server (see 10's entries).
   - **Single production environment, manual deploys**: no staging, `terraform apply` and `wrangler deploy` run by hand. _Real deployment:_ a staging environment and CI-driven deploys with migrations gated on review.
-- Revises: [10](10-agent-reviewer-separation.md) (`AGENT_TOKEN` is a committed var, not a secret; the local flag also requires a local host); [09](09-api-surface.md) (`reviewUrl` is under `/app`); [07](07-exactly-once-sending.md) (the consumer is not a separate Worker).
+- Revises: [10](10-agent-reviewer-separation.md) (the local flag also requires a local host); [09](09-api-surface.md) (`reviewUrl` is under `/app`); [07](07-exactly-once-sending.md) (the consumer is not a separate Worker).

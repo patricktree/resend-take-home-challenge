@@ -156,8 +156,13 @@ function readTokenConfiguration(
   return {
     agentToken,
     reviewerToken,
-    acceptsLocalTokens: isLocalDevelopment && LOCAL_HOSTS.has(new URL(requestUrl).hostname),
+    acceptsLocalTokens: acceptsLocalTokens(environment, requestUrl),
   };
+}
+
+/** Whether a request accepts the local tokens: only in local development, and only on a local host. */
+export function acceptsLocalTokens(environment: ApiServerEnvironment, requestUrl: string): boolean {
+  return environment.LOCAL_DEVELOPMENT === "true" && LOCAL_HOSTS.has(new URL(requestUrl).hostname);
 }
 
 function computeDigest(token: string): Buffer {

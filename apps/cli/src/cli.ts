@@ -30,8 +30,9 @@ const HELP_ERROR_CODES = new Set(["commander.helpDisplayed", "commander.help"]);
 const ROOT_HELP_FOOTER = `
 Lifecycle:
   drafts create, then drafts submit; a human Reviewer approves or rejects the
-  submitted Revision at its reviewUrl. Poll drafts get for the review status and
-  the sending status. Agents cannot approve or send.
+  submitted Revision at its reviewUrl. Show that Review URL to your user, then
+  poll drafts get for the review status and the sending status. Agents
+  cannot approve or send.
 
 Environment:
   ${ENVIRONMENT_VARIABLE.TOKEN}    The Agent token (required; the repository owner hands it out)
@@ -178,7 +179,7 @@ drafts
 drafts
   .command("submit")
   .description(
-    "Submit the Draft's latest Revision for review; a human Reviewer then approves or rejects it",
+    "Submit the Draft's latest Revision for review; a human Reviewer then approves or rejects it. Then show the printed Review URL to your user, so they can review it or forward it to the Reviewer",
   )
   .argument("<draftId>", "the Draft id (drf_…)")
   .argument("<revisionId>", "the Revision to submit, the Draft's latest (rev_…)")

@@ -17,6 +17,10 @@ import {
   sendingStatusSchema,
 } from "@resend-challenge/api.routes";
 
+import { describeLifecycle } from "./agent-lifecycle.ts";
+
+export { describeLifecycle } from "./agent-lifecycle.ts";
+
 /** Re-exported so the `/mcp` endpoint can build the client without depending on the client package. */
 export { ApiClient } from "@resend-challenge/api.client";
 
@@ -127,7 +131,7 @@ export function createResendChallengeMcpServer({
     {
       title: "Submit a Revision for review",
       description:
-        "Submits one specific Revision, the Draft's latest and UNSUBMITTED, for the human Reviewer's verdict; the Draft becomes PENDING. The Reviewer reviews it at the Draft's `reviewUrl`; poll get_draft for the verdict. Errors: DRAFT_APPROVED, REVISION_SUPERSEDED (submit the latest Revision instead), REVISION_ALREADY_DECIDED with `existingVerdict` (revise the Draft first), REVISION_ALREADY_SUBMITTED (an earlier attempt went through).",
+        "Submits one specific Revision, the Draft's latest and UNSUBMITTED, for the human Reviewer's verdict; the Draft becomes PENDING. Then show the Draft's `reviewUrl` to your user, so they can review it there or forward it to the Reviewer, and poll get_draft for the verdict. Errors: DRAFT_APPROVED, REVISION_SUPERSEDED (submit the latest Revision instead), REVISION_ALREADY_DECIDED with `existingVerdict` (revise the Draft first), REVISION_ALREADY_SUBMITTED (an earlier attempt went through).",
       inputSchema: revisionParamsSchema,
       outputSchema: draftSummarySchema,
     },
@@ -158,12 +162,9 @@ function describeInstructions(publicBaseUrl: string): string {
     "Email Draft Approval: you compose email Drafts; a human Reviewer approves or rejects each one before anything is sent.",
     "",
     "Lifecycle:",
-    "1. create_draft creates a Draft whose first Revision is UNSUBMITTED.",
-    "2. submit_draft submits one specific Revision (the Draft's latest) for review; the Draft becomes PENDING.",
-    "3. A human Reviewer reads exactly that Revision at the Draft's `reviewUrl` and approves or rejects it. An Approval sends the email through Resend, with no further action by anyone.",
-    "4. Poll get_draft for `reviewStatus`, `lastVerdict` (with the Rejection reason) and `sending` (NOT_SENT, QUEUED, SENT or FAILED).",
+    ...describeLifecycle({ shouldNameHttpOperations: false }),
     "",
-    "Agents cannot approve, reject or send: no tool does that, and none will. A rejected Draft is revised with revise_draft, passing its latest Revision's id as `baseRevisionId`, and the new Revision is submitted again with submit_draft. An approved Draft accepts no further Revisions.",
+    "Agents cannot approve, reject or send: no tool does that, and none will.",
     "",
     "A failed call is a tool error whose structured content is `{ error: { code, message, requestId, ... } }`, with the API's error codes, for example REVISION_SUPERSEDED.",
     "",

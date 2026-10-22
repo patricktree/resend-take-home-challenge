@@ -78,11 +78,28 @@ test("the server instructions describe the lifecycle and link the OpenAPI docume
   const instructions = mcpClient.getInstructions();
 
   expect(instructions).toContain("https://resend-challenge.patricktree.me/api/openapi.json");
-  expect(instructions).toContain("`reviewUrl`");
+  expect(instructions).toContain("show the Draft's `reviewUrl` to your user");
   expect(instructions).toContain("Agents cannot approve, reject or send");
   for (const toolName of ["create_draft", "submit_draft", "get_draft", "revise_draft"]) {
     expect(instructions).toContain(toolName);
   }
+});
+
+test("the submit_draft description tells the Agent to hand the reviewUrl to its user", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const worker = await useWorker({ onTestFinished });
+  const mcpClient = await connectMcpClient(
+    worker,
+    { token: LOCAL_AGENT_TOKEN },
+    { onTestFinished },
+  );
+
+  const { tools } = await mcpClient.listTools();
+  const submitDraftTool = tools.find((tool) => tool.name === "submit_draft");
+
+  expect(submitDraftTool?.description).toContain("show the Draft's `reviewUrl` to your user");
 });
 
 test("create_draft creates a Draft and returns its summary as structured content and as text", async ({

@@ -10,6 +10,7 @@ import {
 } from "@resend-challenge/api.routes";
 import { findRootCause } from "@resend-challenge/email-drafts";
 
+import { mountAgentGuide } from "./agent-guide.ts";
 import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
 import { authenticate, requireReviewer } from "./authentication.ts";
 import { runOnDatabaseSession } from "./database-session.ts";
@@ -54,7 +55,7 @@ export function createApiServer(): Hono<ApiServerHonoEnvironment> {
     jsonError(context, 404, ERROR_CODE.NOT_FOUND, "No route matches this path."),
   );
 
-  app.get("/", (context) => context.redirect("/app/", 302));
+  mountAgentGuide(app);
   mountReviewUi(app);
 
   app.use("/api/*", authenticate);

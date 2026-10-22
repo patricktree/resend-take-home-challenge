@@ -10,6 +10,28 @@ The Send reconciler makes sure no Send stays `QUEUED` forever. Each tick handles
 
 Agents authenticate with the Agent token, which the repository owner hands out. It lets you create, revise and submit Drafts, but nothing is sent without the Reviewer token. In the examples below, replace `<agent-token>` with it.
 
+An Agent given only the URL finds its way from there: `GET /` answers with an agent quickstart in Markdown (how to authenticate, the MCP server, the lifecycle and the links below) unless the client asks for `text/html`, which a browser does and which redirects to the Review UI. `/llms.txt` serves the same quickstart as plain text. Neither shows the Agent token: they tell the Agent that the repository owner hands it out and show `<agent-token>` in its place. Only in local development, on a local host, do they show the local Agent token.
+
+After submitting, hand the Draft's `reviewUrl` to the human who asked for the email, so they can review it or forward it to the Reviewer; an Agent cannot approve.
+
+### Agent Skill
+
+[`skills/email-draft-approval/SKILL.md`](skills/email-draft-approval/SKILL.md) is an Agent Skill for the whole workflow: connecting, submitting, handing over the `reviewUrl`, polling with backoff, revising after a Rejection, following the Send, and the error codes that need a specific reaction. Install it with the [skills CLI](https://github.com/vercel-labs/skills):
+
+```sh
+npx skills add patricktree/resend-take-home-challenge
+```
+
+Or copy it by hand, into `~/.claude/skills` for Claude Code or `~/.agents/skills` for Codex:
+
+```sh
+mkdir -p ~/.claude/skills/email-draft-approval && curl -sSo ~/.claude/skills/email-draft-approval/SKILL.md https://raw.githubusercontent.com/patricktree/resend-take-home-challenge/main/skills/email-draft-approval/SKILL.md
+```
+
+```sh
+mkdir -p ~/.agents/skills/email-draft-approval && curl -sSo ~/.agents/skills/email-draft-approval/SKILL.md https://raw.githubusercontent.com/patricktree/resend-take-home-challenge/main/skills/email-draft-approval/SKILL.md
+```
+
 ### Over HTTP
 
 Create a Draft:
@@ -51,7 +73,7 @@ Hosts configured through JSON take the same URL and header, for example:
 }
 ```
 
-The host then lists six tools: `create_draft`, `get_draft`, `list_drafts`, `revise_draft`, `submit_draft` and `get_revision`. The server instructions describe the lifecycle. No tool approves, rejects or sends: only the Reviewer does that, in the Review UI. Locally, use `http://localhost:5173/mcp` with the local Agent token `agent_local-development-only`.
+The host then lists six tools: `create_draft`, `get_draft`, `list_drafts`, `revise_draft`, `submit_draft` and `get_revision`. The server instructions describe the lifecycle, including handing the `reviewUrl` to the human. No tool approves, rejects or sends: only the Reviewer does that, in the Review UI. Locally, use `http://localhost:5173/mcp` with the local Agent token `agent_local-development-only`.
 
 ### With the CLI
 
@@ -65,7 +87,7 @@ pnpm resend-challenge drafts create --to delivered@resend.dev --subject 'Hello' 
 pnpm resend-challenge drafts submit <draft-id> <revision-id>
 ```
 
-The Reviewer opens the printed `Review URL`. Poll the Draft for its review status and sending status:
+Show the printed `Review URL` to the human who asked for the email; the Reviewer opens it. Poll the Draft for its review status and sending status:
 
 ```sh
 pnpm resend-challenge drafts get <draft-id>

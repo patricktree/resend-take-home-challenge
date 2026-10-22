@@ -102,7 +102,7 @@ function describeQuickstart(context: Context<ApiServerHonoEnvironment>): string 
     "",
     ...describeLifecycle({ shouldNameHttpOperations: true }),
     "",
-    "After a Rejection, revise the Draft with `revise_draft` (`POST /api/v1/drafts/{draftId}/revisions`), passing its latest Revision's id as `baseRevisionId`, and submit the new Revision. An approved Draft accepts no further Revisions. Say the email was sent only once `sending.status` is SENT.",
+    "Say the email was sent only once `sending.status` is SENT.",
     "",
     "## Agent Skill",
     "",

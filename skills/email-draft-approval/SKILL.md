@@ -5,7 +5,7 @@ description: Sends an email that needs human approval through the Email Draft Ap
 
 # Email Draft Approval
 
-You compose an email Draft; a human Reviewer approves or rejects the exact Revision you submitted, and only an approved Revision is sent, at most once. You can create, revise and submit Drafts. Approving, rejecting and sending belong to the Reviewer alone.
+You compose an email Draft; a human Reviewer approves or rejects the exact Revision you submitted, and only an approved Revision is sent, at most once. You create, revise and submit Drafts; the Reviewer's Approval triggers the Send.
 
 ## Connect
 
@@ -17,7 +17,7 @@ The service's origin is `https://resend-challenge.patricktree.me`, unless your u
 
 ## Workflow
 
-1. **Create** the Draft with `create_draft` (`POST /api/v1/drafts`): `to`, `subject` and `body.plainText`. Address only the recipients your user asked for; in the demo, that is `delivered@resend.dev`. Create is not idempotent: after a timeout or a lost response, look for the Draft with `list_drafts` (`GET /api/v1/drafts`) before creating it again.
+1. **Create** the Draft with `create_draft` (`POST /api/v1/drafts`): `to`, `subject` and `body.plainText`. Create is not idempotent: after a timeout or a lost response, look for the Draft with `list_drafts` (`GET /api/v1/drafts`) before creating it again.
 2. **Submit** the Draft's latest Revision with `submit_draft` (`POST /api/v1/drafts/{draftId}/revisions/{revisionId}/submission`), passing `latestRevision.id`. The Draft becomes `PENDING`.
 3. **Hand over** the Draft's `reviewUrl` to your user, the human who asked for the email, so they can review it or forward it to the Reviewer. Tell them the email goes out only after an Approval.
 4. **Poll** `get_draft` (`GET /api/v1/drafts/{draftId}`) every 10 to 30 seconds, backing off toward the longer interval. After about 15 minutes without a verdict, stop polling, tell your user the Draft is still pending at its `reviewUrl`, and resume when they ask.
@@ -31,7 +31,7 @@ The workflow is done when `sending.status` is `SENT` or `FAILED` and your user k
 
 - Report the email as sent only once `sending.status` is `SENT`; until then, it is pending review or queued.
 - Leave every verdict to the Reviewer, even when your user asks you to approve: no tool or token of yours can approve, and the Agent token on a verdict route gets `403 REVIEWER_ONLY`.
-- Address an email only to recipients your user named.
+- Address an email only to recipients your user named; in the demo, that is `delivered@resend.dev`.
 
 ## Errors that need a specific reaction
 

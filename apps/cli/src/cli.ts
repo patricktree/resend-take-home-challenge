@@ -30,8 +30,8 @@ const HELP_ERROR_CODES = new Set(["commander.helpDisplayed", "commander.help"]);
 const ROOT_HELP_FOOTER = `
 Lifecycle:
   drafts create, then drafts submit; a human Reviewer approves or rejects the
-  submitted Revision at its reviewUrl, so show that Review URL to your user.
-  Poll drafts get for the review status and the sending status. Agents
+  submitted Revision at its reviewUrl. Show that Review URL to your user, then
+  poll drafts get for the review status and the sending status. Agents
   cannot approve or send.
 
 Environment:

@@ -131,7 +131,7 @@ export function createResendChallengeMcpServer({
     {
       title: "Submit a Revision for review",
       description:
-        "Submits one specific Revision, the Draft's latest and UNSUBMITTED, for the human Reviewer's verdict; the Draft becomes PENDING. The Reviewer reviews it at the Draft's `reviewUrl`: show the Draft's `reviewUrl` to your user, so they can review it or forward it to the Reviewer, then poll get_draft for the verdict. Errors: DRAFT_APPROVED, REVISION_SUPERSEDED (submit the latest Revision instead), REVISION_ALREADY_DECIDED with `existingVerdict` (revise the Draft first), REVISION_ALREADY_SUBMITTED (an earlier attempt went through).",
+        "Submits one specific Revision, the Draft's latest and UNSUBMITTED, for the human Reviewer's verdict; the Draft becomes PENDING. Then show the Draft's `reviewUrl` to your user, so they can review it there or forward it to the Reviewer, and poll get_draft for the verdict. Errors: DRAFT_APPROVED, REVISION_SUPERSEDED (submit the latest Revision instead), REVISION_ALREADY_DECIDED with `existingVerdict` (revise the Draft first), REVISION_ALREADY_SUBMITTED (an earlier attempt went through).",
       inputSchema: revisionParamsSchema,
       outputSchema: draftSummarySchema,
     },
@@ -164,7 +164,7 @@ function describeInstructions(publicBaseUrl: string): string {
     "Lifecycle:",
     ...describeLifecycle({ shouldNameHttpOperations: false }),
     "",
-    "Agents cannot approve, reject or send: no tool does that, and none will. A rejected Draft is revised with revise_draft, passing its latest Revision's id as `baseRevisionId`, and the new Revision is submitted again with submit_draft. An approved Draft accepts no further Revisions.",
+    "Agents cannot approve, reject or send: no tool does that, and none will.",
     "",
     "A failed call is a tool error whose structured content is `{ error: { code, message, requestId, ... } }`, with the API's error codes, for example REVISION_SUPERSEDED.",
     "",

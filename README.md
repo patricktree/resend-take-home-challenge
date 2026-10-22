@@ -176,17 +176,19 @@ These steps need the operator's Cloudflare and Resend accounts, so no agent runs
 - [ ] **Set the Resend API key.** Run `pnpm --filter '@resend-challenge/cloudflare-worker' exec wrangler secret put RESEND_API_KEY` and paste the sending-only key when Wrangler asks for it. Success: Wrangler prints `Success! Uploaded secret RESEND_API_KEY`.
 - [ ] **Apply the D1 migrations.** Run `pnpm --filter '@resend-challenge/cloudflare-worker' run migrations:apply:remote` and confirm. Success: Wrangler lists every migration in `libs/email-drafts/migrations` with status ✅.
 - [ ] **Deploy the Worker.** Run `pnpm --filter '@resend-challenge/cloudflare-worker' run deploy`, which builds the Worker with the Review UI as its static assets and runs `wrangler deploy`. Success: Wrangler lists the triggers `resend-challenge.patricktree.me (custom domain)`, `schedule: * * * * *`, `Producer for resend-challenge-send`, `Consumer for resend-challenge-send` and `Consumer for resend-challenge-send-dlq`. A first deploy of the custom domain can take a few minutes to serve.
-- [ ] **Verify production.** Create and get a Draft with the Agent token in place of `<agent-token>`, as in [Over HTTP](#over-http): creating answers `201`, getting answers `200` with the body. Then check that production refuses the local tokens and redirects the root:
+- [ ] **Verify production.** Create and get a Draft with the Agent token in place of `<agent-token>`, as in [Over HTTP](#over-http): creating answers `201`, getting answers `200` with the body. Then check that production refuses the local tokens, redirects a browser at the root to the Review UI and answers any other client there with the agent quickstart:
 
   ```sh
   curl -sS -o /dev/null -w '%{http_code}\n' https://resend-challenge.patricktree.me/api/v1/drafts/drf_00000000-0000-7000-8000-000000000000 \
     -H 'Authorization: Bearer agent_local-development-only'
   curl -sS -o /dev/null -w '%{http_code}\n' https://resend-challenge.patricktree.me/api/v1/drafts/drf_00000000-0000-7000-8000-000000000000 \
     -H 'Authorization: Bearer reviewer_local-development-only'
-  curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' https://resend-challenge.patricktree.me/
+  curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' https://resend-challenge.patricktree.me/ \
+    -H 'Accept: text/html'
+  curl -sS -o /dev/null -w '%{http_code} %{content_type}\n' https://resend-challenge.patricktree.me/
   ```
 
-  Success: the first two commands print `401`, the third `302 https://resend-challenge.patricktree.me/app/`.
+  Success: the first two commands print `401`, the third `302 https://resend-challenge.patricktree.me/app/` and the fourth `200 text/markdown; charset=utf-8`.
 
 - [ ] **Run the live Resend contract test.** Run `RESEND_API_KEY=<key> pnpm test:resend-live`, replacing `<key>` with the sending-only key. It sends three emails from `RESEND_FROM` of `wrangler.jsonc` (override it with `RESEND_FROM`) to `delivered@resend.dev`, and checks Resend's idempotency behavior that the local tests' Resend stub models. Success: Vitest reports 3 passed tests.
 

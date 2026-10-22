@@ -49,6 +49,23 @@ test("the Pending list shows the longest-waiting Draft first and its columns", a
   await expect(rows.nth(2).getByRole("cell").first()).toHaveText("Your invoice");
 });
 
+test("a shown list reads its Drafts again when its countdown runs out", async ({
+  page,
+  reviewEnvironment,
+}) => {
+  // A controlled clock, so the test runs the countdown down instead of waiting it out.
+  await page.clock.install();
+  await openReviewUi(page);
+  await expect(page.getByText("No Pending Drafts.")).toBeVisible();
+  await expect(page.getByText("Next refresh in 5 s")).toBeVisible();
+
+  await createPendingDraft(reviewEnvironment.agentClient, createDraftData("Weekly digest"));
+  await page.clock.runFor("00:05");
+
+  await expect(page.getByRole("link", { name: "Weekly digest" })).toBeVisible();
+  await expect(page.getByText("Next refresh in 5 s")).toBeVisible();
+});
+
 test("the Pending list pages with Load more", async ({ page, reviewEnvironment }) => {
   for (let draftNumber = 1; draftNumber <= PAGE_SIZE + 1; draftNumber++) {
     await createPendingDraft(

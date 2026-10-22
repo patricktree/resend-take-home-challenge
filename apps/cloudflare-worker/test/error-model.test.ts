@@ -7,7 +7,7 @@ import { TEST_AGENT_TOKEN, useWorker } from "./use-worker.ts";
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 test.for([
-  { name: "a redirect", path: "/", headers: {}, status: 302 },
+  { name: "a redirect", path: "/", headers: { Accept: "text/html" }, status: 302 },
   { name: "the OpenAPI document", path: "/api/openapi.json", headers: {}, status: 200 },
   { name: "a refused request", path: "/api/v1/drafts", headers: {}, status: 401 },
   {

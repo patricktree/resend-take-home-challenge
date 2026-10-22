@@ -100,6 +100,17 @@ test.for(DRAFTS_COMMANDS)(
   },
 );
 
+test("`drafts submit --help` tells the Agent to hand the Review URL to its user", async ({
+  expect,
+}) => {
+  const result = await runCli(["drafts", "submit", "--help"]);
+
+  expect(result.exitCode).toBe(0);
+  expect(result.stdout.replaceAll(/\s+/g, " ")).toContain(
+    "show the printed Review URL to your user",
+  );
+});
+
 test.for(["approve", "reject"])(
   "`drafts %s` is an unknown command",
   async (command, { expect }) => {

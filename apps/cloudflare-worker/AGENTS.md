@@ -12,4 +12,5 @@
 ## Wrangler configs and the dev server
 
 - `wrangler.jsonc` is the production config and the one `pnpm dev` uses; `test/wrangler-config.test.ts` pins the settings the spec prescribes. Its resources come from `terraform/` ([`terraform/AGENTS.md`](../../terraform/AGENTS.md)). [`libs/email-drafts/AGENTS.md`](../../libs/email-drafts/AGENTS.md) covers the D1 migrations.
+- A `.md` import is the file's text: the `markdownAsText` plugin of `vite.config.ts` provides it to the build and `pnpm dev`, and a `Text` module rule to the Wrangler-bundled runs (`test/wrangler.test.jsonc` for the integration tests, `qa/e2e/wrangler.jsonc` for the e2e tests); Vite's `?raw` would not work there. `libs/api.server` imports the Agent Skill (`skills/email-draft-approval/SKILL.md`) this way.
 - In `pnpm dev`, `vite.config.ts` merges the Review UI's Vite config and bridges two dev-server gaps: it serves `/app/index.html` and allows inline scripts and styles in the CSP.

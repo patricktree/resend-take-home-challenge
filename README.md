@@ -10,6 +10,18 @@ The Send reconciler makes sure no Send stays `QUEUED` forever. Each tick handles
 
 The Agent token is public by design, so you can act as an Agent without any setup: `agent_-17WHltuc9F9_Lpa7Yl3yy_tJ5_Upo07v637L_y1330`.
 
+An Agent given only the URL finds its way from there: `GET /` answers with an agent quickstart in Markdown (the token, the MCP server, the lifecycle and the links below) unless the client asks for `text/html`, which a browser does and which redirects to the Review UI. `/llms.txt` serves the same quickstart as plain text. Both read the token from the Worker's configuration, so they always show the deployed one.
+
+After submitting, hand the Draft's `reviewUrl` to the human who asked for the email, so they can review it or forward it to the Reviewer; an Agent cannot approve.
+
+### Agent Skill
+
+[`skills/email-draft-approval/SKILL.md`](skills/email-draft-approval/SKILL.md) is an Agent Skill for the whole workflow: connecting, submitting, handing over the `reviewUrl`, polling with backoff, revising after a Rejection, following the Send, and the error codes that need a specific reaction. The Worker serves the same file at <https://resend-challenge.patricktree.me/skills/email-draft-approval/SKILL.md>. Install it for Claude Code:
+
+```sh
+mkdir -p ~/.claude/skills/email-draft-approval && curl -sSo ~/.claude/skills/email-draft-approval/SKILL.md https://resend-challenge.patricktree.me/skills/email-draft-approval/SKILL.md
+```
+
 ### Over HTTP
 
 Create a Draft:
@@ -51,7 +63,7 @@ Hosts configured through JSON take the same URL and header, for example:
 }
 ```
 
-The host then lists six tools: `create_draft`, `get_draft`, `list_drafts`, `revise_draft`, `submit_draft` and `get_revision`. The server instructions describe the lifecycle. No tool approves, rejects or sends: only the Reviewer does that, in the Review UI. Locally, use `http://localhost:5173/mcp` with the local Agent token `agent_local-development-only`.
+The host then lists six tools: `create_draft`, `get_draft`, `list_drafts`, `revise_draft`, `submit_draft` and `get_revision`. The server instructions describe the lifecycle, including handing the `reviewUrl` to the human. No tool approves, rejects or sends: only the Reviewer does that, in the Review UI. Locally, use `http://localhost:5173/mcp` with the local Agent token `agent_local-development-only`.
 
 ### With the CLI
 
@@ -64,7 +76,7 @@ pnpm resend-challenge drafts create --to delivered@resend.dev --subject 'Hello' 
 pnpm resend-challenge drafts submit <draft-id> <revision-id>
 ```
 
-The Reviewer opens the printed `Review URL`. Poll the Draft for its review status and sending status:
+Show the printed `Review URL` to the human who asked for the email; the Reviewer opens it. Poll the Draft for its review status and sending status:
 
 ```sh
 pnpm resend-challenge drafts get <draft-id>

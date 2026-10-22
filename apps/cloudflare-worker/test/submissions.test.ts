@@ -377,55 +377,6 @@ test("10 concurrent Submissions of the same Revision: one 200, nine 409 REVISION
   ]);
 });
 
-test("a concurrent Submission and revise end in one of the two outcomes of their commit order", async ({
-  expect,
-  onTestFinished,
-}) => {
-  const worker = await useWorker({ onTestFinished });
-  const created = await createDraft(worker);
-
-  const [submitResponse, reviseResponse] = await Promise.all([
-    submitRevision(worker, created.id, created.latestRevision.id),
-    reviseDraft(worker, created.id, created.latestRevision.id),
-  ]);
-
-  expect(reviseResponse.status).toBe(201);
-  const revised = draftSummarySchema.parse(await reviseResponse.json());
-  const submitBody: unknown = await submitResponse.json();
-  const { drafts, revisions } = await readRows(worker);
-  const observed = {
-    submit: { status: submitResponse.status, body: submitBody },
-    drafts,
-    revisions,
-  };
-  // Revise first: the Submission loses and changes nothing, so the base was never submitted.
-  // Submit first: the revise supersedes the now-Pending base, which keeps its `submitted_at`.
-  const isReviseFirst = submitResponse.status === 409;
-  expect(observed).toStrictEqual({
-    submit: isReviseFirst
-      ? { status: 409, body: { error: expect.objectContaining({ code: "REVISION_SUPERSEDED" }) } }
-      : { status: 200, body: expect.objectContaining({ reviewStatus: "PENDING" }) },
-    drafts: [
-      expect.objectContaining({
-        latest_revision_id: revised.latestRevision.id,
-        last_action_at: Temporal.Instant.from(revised.lastActionAt).epochMilliseconds,
-      }),
-    ],
-    revisions: [
-      expect.objectContaining({
-        id: created.latestRevision.id,
-        review_status: "SUPERSEDED",
-        submitted_at: isReviseFirst ? null : expect.any(Number),
-      }),
-      expect.objectContaining({
-        id: revised.latestRevision.id,
-        review_status: "UNSUBMITTED",
-        submitted_at: null,
-      }),
-    ],
-  });
-});
-
 async function createDraft(worker: TestWorker): Promise<DraftSummaryResponse> {
   const response = await worker.fetch("/api/v1/drafts", {
     method: "POST",

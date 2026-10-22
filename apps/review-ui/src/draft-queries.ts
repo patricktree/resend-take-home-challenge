@@ -16,15 +16,17 @@ const PENDING_LIST_QUERY: ListDraftsQuery = { reviewStatus: ["PENDING"], order: 
 /** Newest decision first (the API's default ordering). */
 const DECIDED_LIST_QUERY: ListDraftsQuery = { reviewStatus: ["APPROVED", "REJECTED"] };
 
-export const pendingDraftsQuery = createDraftListQuery("pending", PENDING_LIST_QUERY);
-
-export const decidedDraftsQuery = createDraftListQuery("decided", DECIDED_LIST_QUERY);
-
 /** How often a shown list reads its Drafts again; the list counts down to the next read. */
 export const LIST_REFRESH_INTERVAL_MILLISECONDS = 5000;
 
 /** How often the Draft page reads the Draft again while its Send is `QUEUED`. */
 const SENDING_POLL_INTERVAL_MILLISECONDS = 3000;
+
+// Created at module load, so they stay below every constant `createDraftListQuery` reads: one
+// declared after them is `undefined` in the production bundle, and the lists stop polling.
+export const pendingDraftsQuery = createDraftListQuery("pending", PENDING_LIST_QUERY);
+
+export const decidedDraftsQuery = createDraftListQuery("decided", DECIDED_LIST_QUERY);
 
 export function draftQuery(draftId: string) {
   return queryOptions({

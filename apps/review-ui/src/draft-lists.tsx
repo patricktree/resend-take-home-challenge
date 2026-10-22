@@ -20,6 +20,7 @@ import {
   pendingDraftsQuery,
 } from "./draft-queries.ts";
 import { ErrorMessage } from "./error-message.tsx";
+import { refreshCountdownSeconds } from "./refresh-countdown.ts";
 import { rootRoute } from "./root-route.tsx";
 
 type DraftListProps = {
@@ -101,7 +102,7 @@ function DraftList({ heading, emptyText, listQuery, columns }: DraftListProps): 
         >
           Refresh
         </DSButton>
-        <RefreshCountdown dataUpdatedAt={list.dataUpdatedAt} />
+        <RefreshCountdown dataUpdatedAt={list.dataUpdatedAt} errorUpdatedAt={list.errorUpdatedAt} />
       </div>
       {drafts.length === 0 ? (
         <p>{emptyText}</p>
@@ -156,18 +157,26 @@ function DraftList({ heading, emptyText, listQuery, columns }: DraftListProps): 
 }
 
 /** Seconds until the list's next automatic refresh, counted from its last read. */
-function RefreshCountdown({ dataUpdatedAt }: { dataUpdatedAt: number }): React.ReactNode {
+function RefreshCountdown({
+  dataUpdatedAt,
+  errorUpdatedAt,
+}: {
+  dataUpdatedAt: number;
+  errorUpdatedAt: number;
+}): React.ReactNode {
   const [now, setNow] = React.useState(nowEpochMilliseconds);
   React.useEffect(() => {
     const timer = setInterval(() => setNow(nowEpochMilliseconds()), 1000);
     return () => clearInterval(timer);
   }, []);
-  const remainingMilliseconds = Math.max(
-    0,
-    dataUpdatedAt + LIST_REFRESH_INTERVAL_MILLISECONDS - Math.max(now, dataUpdatedAt),
-  );
+  const seconds = refreshCountdownSeconds({
+    dataUpdatedAt,
+    errorUpdatedAt,
+    now,
+    intervalMilliseconds: LIST_REFRESH_INTERVAL_MILLISECONDS,
+  });
 
-  return <span>Next refresh in {Math.ceil(remainingMilliseconds / 1000)} s</span>;
+  return <span>Next refresh in {seconds} s</span>;
 }
 
 function nowEpochMilliseconds(): number {

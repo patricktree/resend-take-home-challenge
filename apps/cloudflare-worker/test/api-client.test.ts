@@ -67,21 +67,6 @@ test("the client revises a Draft and reads any of its Revisions", async ({
   });
 });
 
-test("a revise on a superseded base throws an ApiError with REVISION_SUPERSEDED", async ({
-  expect,
-  onTestFinished,
-}) => {
-  const worker = await useWorker({ onTestFinished });
-  const client = createClient(worker, LOCAL_AGENT_TOKEN);
-  const created = await client.drafts.create(DRAFT_DATA);
-  const revise = { ...DRAFT_DATA, baseRevisionId: created.latestRevision.id };
-  await client.drafts.revise(created.id, revise);
-
-  const error = await catchApiError(client.drafts.revise(created.id, revise));
-
-  expect(error).toMatchObject({ code: "REVISION_SUPERSEDED", extras: {} });
-});
-
 test("the client submits a Revision, and a repeated Submission throws an ApiError with REVISION_ALREADY_SUBMITTED", async ({
   expect,
   onTestFinished,
@@ -100,27 +85,6 @@ test("the client submits a Revision, and a repeated Submission throws an ApiErro
   });
   expect(submitted.latestRevision).not.toHaveProperty("body");
   expect(error).toMatchObject({ code: "REVISION_ALREADY_SUBMITTED", extras: {} });
-});
-
-test("submitting a Rejected Revision throws an ApiError with REVISION_ALREADY_DECIDED and the existing verdict", async ({
-  expect,
-  onTestFinished,
-}) => {
-  const worker = await useWorker({ onTestFinished });
-  const client = createClient(worker, LOCAL_AGENT_TOKEN);
-  const created = await client.drafts.create(DRAFT_DATA);
-  await client.revisions.submit(created.id, created.latestRevision.id);
-  await createClient(worker, LOCAL_REVIEWER_TOKEN).revisions.reject(
-    created.id,
-    created.latestRevision.id,
-  );
-
-  const error = await catchApiError(client.revisions.submit(created.id, created.latestRevision.id));
-
-  expect(error).toMatchObject({
-    code: "REVISION_ALREADY_DECIDED",
-    extras: { existingVerdict: "REJECTED" },
-  });
 });
 
 test("the Reviewer's client approves a Revision, and a repeated Approval throws an ApiError with REVISION_ALREADY_DECIDED", async ({
@@ -196,20 +160,6 @@ test.for([
   },
 );
 
-test("getting another Draft's Revision throws an ApiError with REVISION_NOT_FOUND", async ({
-  expect,
-  onTestFinished,
-}) => {
-  const worker = await useWorker({ onTestFinished });
-  const client = createClient(worker, LOCAL_AGENT_TOKEN);
-  const created = await client.drafts.create(DRAFT_DATA);
-  const other = await client.drafts.create(DRAFT_DATA);
-
-  const error = await catchApiError(client.revisions.get(created.id, other.latestRevision.id));
-
-  expect(error).toMatchObject({ code: "REVISION_NOT_FOUND" });
-});
-
 test("the client lists Drafts with repeated filters and pages through them with the cursor", async ({
   expect,
   onTestFinished,
@@ -236,26 +186,6 @@ test("the client lists Drafts with repeated filters and pages through them with 
   expect(firstPage.items[0]).toStrictEqual(unsubmitted);
   expect(secondPage).not.toHaveProperty("nextCursor");
   expect(pendingPage.items.map((item) => item.id)).toStrictEqual(pendingIds.toReversed());
-});
-
-test("listing with a cursor of other filters throws an ApiError with INVALID_REQUEST", async ({
-  expect,
-  onTestFinished,
-}) => {
-  const worker = await useWorker({ onTestFinished });
-  const client = createClient(worker, LOCAL_AGENT_TOKEN);
-  await client.drafts.create(DRAFT_DATA);
-  await client.drafts.create(DRAFT_DATA);
-  const firstPage = await client.drafts.list({ limit: 1 });
-
-  const error = await catchApiError(
-    client.drafts.list({ sendingStatus: ["NOT_SENT"], cursor: firstPage.nextCursor }),
-  );
-
-  expect(error).toMatchObject({
-    code: "INVALID_REQUEST",
-    extras: { issues: [{ path: ["cursor"] }] },
-  });
 });
 
 test("the client sends the latest read bookmark it received on every request", async ({

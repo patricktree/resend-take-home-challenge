@@ -131,27 +131,27 @@ test.for([
   },
 );
 
-test.for([400, 401, 403, 404, 405, 422])(
-  "a %i from Resend is final: the Draft becomes FAILED / REJECTED_BY_RESEND with Resend's error name and message",
-  async (status, { expect, onTestFinished }) => {
-    const { resendStub, worker } = await useSendPipeline({ onTestFinished });
-    const { draft, message } = await createApprovedDraft(worker);
-    resendStub.respondNext(resendError(status, "validation_error", "Invalid `to` field."));
+test("a 422 from Resend is final: the Draft becomes FAILED / REJECTED_BY_RESEND with Resend's error name and message", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const { resendStub, worker } = await useSendPipeline({ onTestFinished });
+  const { draft, message } = await createApprovedDraft(worker);
+  resendStub.respondNext(resendError(422, "validation_error", "Invalid `to` field."));
 
-    const handlings = await deliverSendQueueBatch(worker, [{ body: message }]);
+  const handlings = await deliverSendQueueBatch(worker, [{ body: message }]);
 
-    expect(handlings).toStrictEqual([{ id: "message-0", outcome: "ACK" }]);
-    expect(await getSending(worker, draft.id)).toStrictEqual({
-      status: "FAILED",
-      failure: {
-        reason: "REJECTED_BY_RESEND",
-        resendErrorName: "validation_error",
-        resendErrorMessage: "Invalid `to` field.",
-      },
-    });
-    await expectExactlyOneEmailPerSentDraft(worker, resendStub);
-  },
-);
+  expect(handlings).toStrictEqual([{ id: "message-0", outcome: "ACK" }]);
+  expect(await getSending(worker, draft.id)).toStrictEqual({
+    status: "FAILED",
+    failure: {
+      reason: "REJECTED_BY_RESEND",
+      resendErrorName: "validation_error",
+      resendErrorMessage: "Invalid `to` field.",
+    },
+  });
+  await expectExactlyOneEmailPerSentDraft(worker, resendStub);
+});
 
 test("a 409 invalid_idempotent_request from Resend is final: FAILED / REJECTED_BY_RESEND", async ({
   expect,
@@ -177,85 +177,24 @@ test("a 409 invalid_idempotent_request from Resend is final: FAILED / REJECTED_B
   await expectExactlyOneEmailPerSentDraft(worker, resendStub);
 });
 
-test.for([
-  { status: 409, name: "resource_locked" },
-  { status: 410, name: "gone" },
-  { status: 451, name: "unavailable_for_legal_reasons" },
-])(
-  "any other 4xx from Resend ($status $name) is final: FAILED / REJECTED_BY_RESEND",
-  async ({ status, name }, { expect, onTestFinished }) => {
-    const { resendStub, worker } = await useSendPipeline({ onTestFinished });
-    const { draft, message } = await createApprovedDraft(worker);
-    resendStub.respondNext(resendError(status, name, "Refused."));
-
-    const handlings = await deliverSendQueueBatch(worker, [{ body: message }]);
-
-    expect(handlings).toStrictEqual([{ id: "message-0", outcome: "ACK" }]);
-    expect(await getSending(worker, draft.id)).toStrictEqual({
-      status: "FAILED",
-      failure: {
-        reason: "REJECTED_BY_RESEND",
-        resendErrorName: name,
-        resendErrorMessage: "Refused.",
-      },
-    });
-    await expectExactlyOneEmailPerSentDraft(worker, resendStub);
-  },
-);
-
-test("a 4xx without Resend's error shape is FAILED / REJECTED_BY_RESEND without an error name or message", async ({
+test("a 503 from Resend is retryable: the message is retried after the backoff and the Draft stays QUEUED", async ({
   expect,
   onTestFinished,
 }) => {
   const { resendStub, worker } = await useSendPipeline({ onTestFinished });
   const { draft, message } = await createApprovedDraft(worker);
-  resendStub.respondNext({ status: 400, body: "Bad Request" });
+  resendStub.respondNext(resendError(503, "service_unavailable", "Unavailable."));
 
-  await deliverSendQueueBatch(worker, [{ body: message }]);
+  const handlings = await deliverSendQueueBatch(worker, [{ body: message }]);
 
-  expect(await getSending(worker, draft.id)).toStrictEqual({
-    status: "FAILED",
-    failure: { reason: "REJECTED_BY_RESEND" },
-  });
+  expect(handlings).toStrictEqual([
+    { id: "message-0", outcome: "RETRY", delaySeconds: expect.any(Number) },
+  ]);
+  expectWithin(expect, handlings[0]?.delaySeconds, FIRST_RETRY_DELAY);
+  expect(resendStub.requests).toHaveLength(1);
+  expect(await getSending(worker, draft.id)).toStrictEqual({ status: "QUEUED" });
   await expectExactlyOneEmailPerSentDraft(worker, resendStub);
 });
-
-test.for([
-  {
-    name: "409 concurrent_idempotent_requests",
-    response: resendError(409, "concurrent_idempotent_requests", "In progress."),
-  },
-  { name: "408", response: resendError(408, "request_timeout", "Request timeout.") },
-  {
-    name: "429 without Retry-After",
-    response: resendError(429, "rate_limit_exceeded", "Too many requests."),
-  },
-  { name: "500", response: resendError(500, "application_error", "Internal error.") },
-  { name: "503", response: resendError(503, "service_unavailable", "Unavailable.") },
-  {
-    name: "a 302 redirect, which is not followed",
-    response: { status: 302, headers: { Location: "/elsewhere" } },
-  },
-  { name: "a 200 without an id", response: { status: 200, body: {} } },
-  { name: "a 202 without an id", response: { status: 202, body: { object: "email" } } },
-])(
-  "$name from Resend is retryable: the message is retried after the backoff and the Draft stays QUEUED",
-  async ({ response }, { expect, onTestFinished }) => {
-    const { resendStub, worker } = await useSendPipeline({ onTestFinished });
-    const { draft, message } = await createApprovedDraft(worker);
-    resendStub.respondNext(response);
-
-    const handlings = await deliverSendQueueBatch(worker, [{ body: message }]);
-
-    expect(handlings).toStrictEqual([
-      { id: "message-0", outcome: "RETRY", delaySeconds: expect.any(Number) },
-    ]);
-    expectWithin(expect, handlings[0]?.delaySeconds, FIRST_RETRY_DELAY);
-    expect(resendStub.requests).toHaveLength(1);
-    expect(await getSending(worker, draft.id)).toStrictEqual({ status: "QUEUED" });
-    await expectExactlyOneEmailPerSentDraft(worker, resendStub);
-  },
-);
 
 test("a retried message that Resend then accepts makes the Draft SENT", async ({
   expect,

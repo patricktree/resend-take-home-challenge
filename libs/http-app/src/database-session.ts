@@ -3,7 +3,7 @@ import { createMiddleware } from "hono/factory";
 import { READ_BOOKMARK_HEADER } from "@resend-challenge/api.routes";
 import { drizzleForSession } from "@resend-challenge/email-drafts";
 
-import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
+import type { HttpAppHonoEnvironment } from "./http-app-environment.ts";
 
 /**
  * Runs the request on a D1 session and sets `draftsStorage` on it. Writes start the session on the
@@ -11,7 +11,7 @@ import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
  * client that sends its latest bookmark reads its own writes. The response carries the session's
  * bookmark.
  */
-export const runOnDatabaseSession = createMiddleware<ApiServerHonoEnvironment>(
+export const runOnDatabaseSession = createMiddleware<HttpAppHonoEnvironment>(
   async (context, next) => {
     const isRead = context.req.method === "GET" || context.req.method === "HEAD";
     const presentedBookmark = context.req.header(READ_BOOKMARK_HEADER) || undefined;

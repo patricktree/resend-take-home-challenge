@@ -1,6 +1,6 @@
 /**
  * The Agent's lifecycle of a Draft, shared by the MCP server instructions and the agent quickstart
- * at `/` and `/llms.txt` (libs/api.server), so that the two never describe it differently.
+ * at `/` and `/llms.txt` (libs/http-app), so that the two never describe it differently.
  */
 
 type DescribeLifecycleOptions = {

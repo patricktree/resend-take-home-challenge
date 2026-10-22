@@ -1,16 +1,16 @@
-import { createApiServer, type ApiServerEnvironment } from "@resend-challenge/api.server";
 import {
   handleQueueBatch,
   runScheduledTasks,
   type SendPipelineEnvironment,
 } from "@resend-challenge/email-drafts";
+import { createHttpApp, type HttpAppEnvironment } from "@resend-challenge/http-app";
 
-type WorkerEnvironment = ApiServerEnvironment & SendPipelineEnvironment;
+type WorkerEnvironment = HttpAppEnvironment & SendPipelineEnvironment;
 
-const apiServer = createApiServer();
+const httpApp = createHttpApp();
 
 export default {
-  fetch: (request, env, context) => apiServer.fetch(request, env, context),
+  fetch: (request, env, context) => httpApp.fetch(request, env, context),
   queue: (batch, env) => handleQueueBatch(batch, env),
   scheduled: (_controller, env, _context) => runScheduledTasks(env),
 } satisfies ExportedHandler<WorkerEnvironment>;

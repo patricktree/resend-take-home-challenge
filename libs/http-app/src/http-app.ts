@@ -11,22 +11,22 @@ import {
 import { findRootCause } from "@resend-challenge/email-drafts";
 
 import { mountAgentGuide } from "./agent-guide.ts";
-import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
 import { authenticate, requireReviewer } from "./authentication.ts";
 import { runOnDatabaseSession } from "./database-session.ts";
 import { DRAFT_HANDLERS } from "./draft-handlers.ts";
+import type { HttpAppHonoEnvironment } from "./http-app-environment.ts";
 import { jsonError } from "./http-errors.ts";
 import { createMcpEndpoint, MCP_PATH, requireAgent } from "./mcp-endpoint.ts";
 import { mountReviewUi } from "./review-ui.ts";
 
-export type { ApiServerEnvironment } from "./api-server-environment.ts";
+export type { HttpAppEnvironment } from "./http-app-environment.ts";
 
 /** Requests are buffered and validated as a whole, so their size is capped. */
 const MAX_REQUEST_BODY_BYTES = 128 * 1024;
 
 /** Creates the Hono app that answers every `fetch` of the Worker. */
-export function createApiServer(): Hono<ApiServerHonoEnvironment> {
-  const app = new Hono<ApiServerHonoEnvironment>();
+export function createHttpApp(): Hono<HttpAppHonoEnvironment> {
+  const app = new Hono<HttpAppHonoEnvironment>();
 
   app.use("*", async (context, next) => {
     context.set("requestId", crypto.randomUUID());
@@ -77,7 +77,7 @@ export function createApiServer(): Hono<ApiServerHonoEnvironment> {
     }),
   );
   app.use("/api/v1/*", runOnDatabaseSession);
-  app.route("/", createApiContractApp<ApiServerHonoEnvironment>(DRAFT_HANDLERS));
+  app.route("/", createApiContractApp<HttpAppHonoEnvironment>(DRAFT_HANDLERS));
 
   app.all(MCP_PATH, authenticate, requireAgent, createMcpEndpoint(app));
 

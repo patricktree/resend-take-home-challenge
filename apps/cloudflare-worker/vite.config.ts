@@ -13,7 +13,7 @@ import {
 
 const WORKER_DIRECTORY = import.meta.dirname;
 
-/** Each key is a directive of `SECURITY_HEADERS` in libs/api.server/src/review-ui.ts, verbatim. */
+/** Each key is a directive of `SECURITY_HEADERS` in libs/http-app/src/review-ui.ts, verbatim. */
 const DEV_SERVER_CSP_ADDITIONS = {
   "script-src 'self'": "script-src 'self' 'unsafe-inline'",
   "default-src 'self'": "default-src 'self'; style-src 'self' 'unsafe-inline'",
@@ -76,7 +76,7 @@ function requireReviewUiBuild(): Plugin {
 
 /**
  * Bridges two gaps between Vite's dev server and the Worker's production `/app` serving
- * (libs/api.server/src/review-ui.ts); the production build needs neither.
+ * (libs/http-app/src/review-ui.ts); the production build needs neither.
  *
  * - The Worker falls back to `/app/index.html`. In development the assets binding looks for that file
  *   at `<root>/app/index.html`, ignoring Vite's `base`, so this middleware serves the Review UI's

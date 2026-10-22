@@ -5,8 +5,8 @@ import { createMiddleware } from "hono/factory";
 import { ERROR_CODE } from "@resend-challenge/api.routes";
 import { ApiClient, createResendChallengeMcpServer } from "@resend-challenge/mcp-server";
 
-import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
 import { parseBearerToken, ROLE } from "./authentication.ts";
+import type { HttpAppHonoEnvironment } from "./http-app-environment.ts";
 import { jsonError } from "./http-errors.ts";
 
 /** The path of the MCP server, Streamable HTTP. */
@@ -16,7 +16,7 @@ export const MCP_PATH = "/mcp";
  * Lets only the Agent role through to the MCP server: the Reviewer token gets 403, so it is useless
  * when configured into an Agent host. Runs after `authenticate`, which has set the role.
  */
-export const requireAgent = createMiddleware<ApiServerHonoEnvironment>(async (context, next) => {
+export const requireAgent = createMiddleware<HttpAppHonoEnvironment>(async (context, next) => {
   if (context.get("role") !== ROLE.AGENT) {
     return jsonError(
       context,
@@ -36,9 +36,9 @@ export const requireAgent = createMiddleware<ApiServerHonoEnvironment>(async (co
  * the MCP server has no credential of its own and never fetches the Worker's public hostname.
  */
 export function createMcpEndpoint(
-  app: Hono<ApiServerHonoEnvironment>,
-): (context: Context<ApiServerHonoEnvironment>) => Promise<Response> {
-  return async (context: Context<ApiServerHonoEnvironment>): Promise<Response> => {
+  app: Hono<HttpAppHonoEnvironment>,
+): (context: Context<HttpAppHonoEnvironment>) => Promise<Response> {
+  return async (context: Context<HttpAppHonoEnvironment>): Promise<Response> => {
     const callerToken = parseBearerToken(context.req.header("Authorization"));
     if (callerToken === undefined) {
       throw new Error(

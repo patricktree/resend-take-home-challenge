@@ -139,7 +139,7 @@ test("a verdict with a stored Agent token asks for the Reviewer token", async ({
   const { agentClient, reviewerClient } = reviewEnvironment;
   const draft = await createPendingDraft(agentClient, createDraftData("Quarterly report"));
   // The token screen refuses Agent tokens, so the test stores one directly, under the key of
-  // apps/review-ui/src/reviewer-session.ts.
+  // libs/review-ui/src/reviewer-session.ts.
   await page.addInitScript((agentToken) => {
     localStorage.setItem("resend-challenge.reviewer-token", agentToken);
   }, LOCAL_AGENT_TOKEN);

@@ -131,7 +131,7 @@ flowchart LR
 
 A single Worker exports three handlers:
 
-- `fetch` serves `/api/*`, `/mcp`, the Review UI under `/app` and the agent quickstart (`/`, `/llms.txt`);
+- `fetch` is the Hono app of `libs/http-app`, which serves `/api/*`, `/mcp`, the Review UI under `/app` and the agent quickstart (`/`, `/llms.txt`);
 - `queue` handles the Send Queue and the Send DLQ, dispatching on `batch.queue`;
 - `scheduled` runs the Send reconciler every minute.
 
@@ -162,18 +162,18 @@ Static assets are configured with `run_worker_first: true`, `html_handling: "non
 
 ### Packages
 
-The repository follows cup's layout (`~/workspace/cup`), with package names under `@resend-challenge/*`:
+The repository follows cup's layout (`~/workspace/cup`), with package names under `@resend-challenge/*`. `apps/` holds only what is deployed or installed on its own (the Worker and the CLI); everything they import lives in `libs/`, whether it exports code or a build output. The `api.*` prefix marks only the contract and its typed client.
 
 | Folder                   | Role                                                                                                                                                                                                     |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/cloudflare-worker` | Thin entry: `wrangler.jsonc`, Vite build with `@cloudflare/vite-plugin`; exports `fetch` (from `api.server`), `queue` and `scheduled` (both delegate to `email-drafts`); integration tests in `test/`    |
-| `apps/review-ui`         | React 19 SPA (TanStack Router and Query), served under `/app`                                                                                                                                            |
+| `apps/cloudflare-worker` | Thin entry: `wrangler.jsonc`, Vite build with `@cloudflare/vite-plugin`; exports `fetch` (from `http-app`), `queue` and `scheduled` (both delegate to `email-drafts`); integration tests in `test/`      |
 | `apps/cli`               | The `resend-challenge` CLI, with its committed single-file bundle in `bundle/` (built with Rolldown)                                                                                                     |
 | `libs/api.routes`        | `@hono/zod-openapi` contract: routes, Zod schemas, error schema, `LOCAL_AGENT_TOKEN` and `LOCAL_REVIEWER_TOKEN`                                                                                          |
 | `libs/api.client`        | Typed client (Hono RPC `hc` wrapped in a hand-written class), read-bookmark handling, OpenAPI export                                                                                                     |
-| `libs/api.server`        | Hono app: routing, authentication, error envelope, `/app` serving, `/mcp` mounting, the agent guide; calls into `email-drafts`                                                                           |
+| `libs/http-app`          | Hono app: routing, authentication, error envelope, `/app` serving, `/mcp` mounting, the agent guide; calls into `email-drafts`                                                                           |
 | `libs/email-drafts`      | The Draft domain: Drizzle schema and migrations, R2 body storage, use cases (create, revise, submit, approve, reject, list, get), Queue consumer, DLQ consumer, Send reconciler, internal Resend adapter |
 | `libs/mcp-server`        | The six MCP tools on the typed client; the lifecycle steps shared with the agent quickstart                                                                                                              |
+| `libs/review-ui`         | React 19 SPA (TanStack Router and Query), served under `/app`; the Worker's Vite build imports its config and ships its `dist/` as static assets                                                         |
 | `qa/e2e`                 | Playwright e2e tests                                                                                                                                                                                     |
 | `terraform/`             | Infrastructure                                                                                                                                                                                           |
 
@@ -623,7 +623,7 @@ v1 has no event logging. Paths that already handle an error call a bare `console
 
 ## 11. Review UI
 
-The only human interface and the only place a verdict can be rendered. A React 19 SPA with TanStack Router and Query (following cup's `apps/web-app`), in `apps/review-ui`, served under `/app`, calling the API through the typed client. Review is asynchronous: nothing waits for a verdict. Unsubmitted Drafts never appear in its lists. "Accessible" means reachable at the deployed URL with no setup; no WCAG level is targeted. Every choice below is the simplest one; there is no polish beyond it.
+The only human interface and the only place a verdict can be rendered. A React 19 SPA with TanStack Router and Query (following cup's `apps/web-app`), in `libs/review-ui`, served under `/app`, calling the API through the typed client. Review is asynchronous: nothing waits for a verdict. Unsubmitted Drafts never appear in its lists. "Accessible" means reachable at the deployed URL with no setup; no WCAG level is targeted. Every choice below is the simplest one; there is no polish beyond it.
 
 ### Routes and layout
 

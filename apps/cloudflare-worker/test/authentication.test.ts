@@ -118,6 +118,39 @@ test.for([
 );
 
 test.for([LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN])(
+  "local development accepts the local token %s without AGENT_TOKEN",
+  async (token, { expect, onTestFinished }) => {
+    const worker = await useWorker({ onTestFinished }, { secrets: { AGENT_TOKEN: undefined } });
+
+    const response = await worker.fetch(`http://localhost:8787${PROTECTED_PATH}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    expect(response.status).toBe(404);
+  },
+);
+
+test("outside local development a Worker without AGENT_TOKEN refuses to authenticate", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const worker = await useWorker(
+    { onTestFinished },
+    {
+      vars: { LOCAL_DEVELOPMENT: "false" },
+      secrets: { AGENT_TOKEN: undefined, REVIEWER_TOKEN: TEST_REVIEWER_TOKEN },
+    },
+  );
+
+  const response = await worker.fetch(PRODUCTION_URL, {
+    headers: { Authorization: `Bearer ${TEST_REVIEWER_TOKEN}` },
+  });
+
+  expect(response.status).toBe(500);
+  expect(await response.json()).toMatchObject({ error: { code: "INTERNAL_ERROR" } });
+});
+
+test.for([LOCAL_AGENT_TOKEN, LOCAL_REVIEWER_TOKEN])(
   "the local token %s is refused without LOCAL_DEVELOPMENT",
   async (token, { expect, onTestFinished }) => {
     const worker = await useWorker(

@@ -34,7 +34,7 @@ Lifecycle:
   the sending status. Agents cannot approve or send.
 
 Environment:
-  ${ENVIRONMENT_VARIABLE.TOKEN}    The Agent token (default: the public Agent token committed in this repository)
+  ${ENVIRONMENT_VARIABLE.TOKEN}    The Agent token (required; the repository owner hands it out)
   ${ENVIRONMENT_VARIABLE.API_URL}  The API URL when --api-url is absent (default: ${PRODUCTION_API_URL})
 
 Output:

@@ -76,9 +76,10 @@ test("the vars configure production and the secrets are required", ({ expect }) 
     RESEND_FROM: "drafts@resend-challenge.patricktree.me",
     RESEND_BASE_URL: "https://api.resend.com",
     LOCAL_DEVELOPMENT: "false",
-    AGENT_TOKEN: expect.stringMatching(/^agent_/),
   });
-  expect(config.secrets).toStrictEqual({ required: ["REVIEWER_TOKEN", "RESEND_API_KEY"] });
+  expect(config.secrets).toStrictEqual({
+    required: ["AGENT_TOKEN", "REVIEWER_TOKEN", "RESEND_API_KEY"],
+  });
   expect(config.observability).toBeUndefined();
 });
 

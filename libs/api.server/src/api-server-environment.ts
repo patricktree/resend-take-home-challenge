@@ -2,10 +2,10 @@ import type { DraftsStorage, SendQueue } from "@resend-challenge/email-drafts";
 
 import type { Role } from "./authentication.ts";
 
-/** The Worker bindings and vars the API server reads. */
+/** The Worker bindings, vars and secrets the API server reads. */
 export type ApiServerEnvironment = {
-  /** The public Agent token. */
-  AGENT_TOKEN: string;
+  /** The Agent token, a secret; only local development may leave it unset. */
+  AGENT_TOKEN?: string;
   /** The Reviewer token, a secret; only local development may leave it unset. */
   REVIEWER_TOKEN?: string;
   /** `"true"` enables the local tokens on local hosts. */

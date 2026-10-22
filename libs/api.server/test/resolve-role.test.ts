@@ -57,6 +57,17 @@ test("without a configured Reviewer token only Agent tokens resolve", () => {
   expect(resolveRole(REVIEWER_TOKEN, configuration)).toBeUndefined();
 });
 
+test("without a configured Agent token only the local Agent token resolves to AGENT", () => {
+  const configuration = {
+    agentToken: undefined,
+    reviewerToken: undefined,
+    acceptsLocalTokens: true,
+  };
+
+  expect(resolveRole(LOCAL_AGENT_TOKEN, configuration)).toBe("AGENT");
+  expect(resolveRole(AGENT_TOKEN, configuration)).toBeUndefined();
+});
+
 test("the configured tokens still resolve while local tokens are accepted", () => {
   const configuration = { ...CONFIGURATION, acceptsLocalTokens: true };
 

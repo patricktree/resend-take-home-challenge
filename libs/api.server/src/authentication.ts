@@ -85,9 +85,10 @@ export function resolveRole(
   presentedToken: string,
   configuration: TokenConfiguration,
 ): Role | undefined {
-  const candidates: { token: string; role: Role }[] = [
-    { token: configuration.agentToken, role: ROLE.AGENT },
-  ];
+  const candidates: { token: string; role: Role }[] = [];
+  if (configuration.agentToken !== undefined) {
+    candidates.push({ token: configuration.agentToken, role: ROLE.AGENT });
+  }
   if (configuration.reviewerToken !== undefined) {
     candidates.push({ token: configuration.reviewerToken, role: ROLE.REVIEWER });
   }
@@ -121,7 +122,8 @@ export function parseBearerToken(authorizationHeader: string | undefined): strin
 }
 
 type TokenConfiguration = {
-  agentToken: string;
+  /** Absent only in local development. */
+  agentToken: string | undefined;
   /** Absent only in local development. */
   reviewerToken: string | undefined;
   acceptsLocalTokens: boolean;
@@ -140,14 +142,14 @@ function readTokenConfiguration(
   const agentToken = nonEmpty(environment.AGENT_TOKEN);
   const reviewerToken = nonEmpty(environment.REVIEWER_TOKEN);
 
-  if (agentToken === undefined) {
-    throw new Error("AGENT_TOKEN is not configured.");
+  if (agentToken === undefined && !isLocalDevelopment) {
+    throw new Error("AGENT_TOKEN is not configured; only local development may omit it.");
   }
   if (reviewerToken === undefined && !isLocalDevelopment) {
     throw new Error("REVIEWER_TOKEN is not configured; only local development may omit it.");
   }
   // Equal tokens would let every Agent act as the Reviewer.
-  if (reviewerToken === agentToken) {
+  if (agentToken !== undefined && reviewerToken === agentToken) {
     throw new Error("AGENT_TOKEN and REVIEWER_TOKEN must differ.");
   }
 

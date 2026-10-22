@@ -8,7 +8,7 @@ The Send reconciler makes sure no Send stays `QUEUED` forever. Each tick handles
 
 ## Act as an Agent
 
-The Agent token is public by design, so you can act as an Agent without any setup: `agent_-17WHltuc9F9_Lpa7Yl3yy_tJ5_Upo07v637L_y1330`.
+Agents authenticate with the Agent token, which the repository owner hands out. It lets you create, revise and submit Drafts, but nothing is sent without the Reviewer token. In the examples below, replace `<agent-token>` with it.
 
 ### Over HTTP
 
@@ -16,7 +16,7 @@ Create a Draft:
 
 ```sh
 curl -sS -X POST https://resend-challenge.patricktree.me/api/v1/drafts \
-  -H 'Authorization: Bearer agent_-17WHltuc9F9_Lpa7Yl3yy_tJ5_Upo07v637L_y1330' \
+  -H 'Authorization: Bearer <agent-token>' \
   -H 'Content-Type: application/json' \
   -d '{"to":["delivered@resend.dev"],"subject":"Hello","body":{"plainText":"Hello from an Agent."}}'
 ```
@@ -25,7 +25,7 @@ The response is `201` with the Draft summary; its `id` starts with `drf_`. Get t
 
 ```sh
 curl -sS https://resend-challenge.patricktree.me/api/v1/drafts/<draft-id> \
-  -H 'Authorization: Bearer agent_-17WHltuc9F9_Lpa7Yl3yy_tJ5_Upo07v637L_y1330'
+  -H 'Authorization: Bearer <agent-token>'
 ```
 
 ### Through MCP
@@ -34,7 +34,7 @@ The MCP server speaks Streamable HTTP at `https://resend-challenge.patricktree.m
 
 ```sh
 claude mcp add --transport http resend-challenge https://resend-challenge.patricktree.me/mcp \
-  --header 'Authorization: Bearer agent_-17WHltuc9F9_Lpa7Yl3yy_tJ5_Upo07v637L_y1330'
+  --header 'Authorization: Bearer <agent-token>'
 ```
 
 Hosts configured through JSON take the same URL and header, for example:
@@ -45,7 +45,7 @@ Hosts configured through JSON take the same URL and header, for example:
     "resend-challenge": {
       "type": "http",
       "url": "https://resend-challenge.patricktree.me/mcp",
-      "headers": { "Authorization": "Bearer agent_-17WHltuc9F9_Lpa7Yl3yy_tJ5_Upo07v637L_y1330" }
+      "headers": { "Authorization": "Bearer <agent-token>" }
     }
   }
 }
@@ -55,11 +55,12 @@ The host then lists six tools: `create_draft`, `get_draft`, `list_drafts`, `revi
 
 ### With the CLI
 
-After `pnpm install` (see [AGENTS.md](AGENTS.md#environment-setup)), run the `resend-challenge` CLI from the repository root. It calls production with the public Agent token unless you set `RESEND_CHALLENGE_TOKEN`, and `--api-url` or `RESEND_CHALLENGE_API_URL` points it at another API origin, such as `http://localhost:5173` with the local Agent token. It has no command to approve or reject: only the Reviewer decides, in the Review UI. `pnpm resend-challenge --help` and `--help` on every command describe the options.
+After `pnpm install` (see [AGENTS.md](AGENTS.md#environment-setup)), run the `resend-challenge` CLI from the repository root. It reads the Agent token from `RESEND_CHALLENGE_TOKEN`, which is required, and calls production unless `--api-url` or `RESEND_CHALLENGE_API_URL` points it at another API origin, such as `http://localhost:5173` with the local Agent token. It has no command to approve or reject: only the Reviewer decides, in the Review UI. `pnpm resend-challenge --help` and `--help` on every command describe the options.
 
 Create a Draft, read its id and the id of its latest Revision from the output, then submit that Revision for review:
 
 ```sh
+export RESEND_CHALLENGE_TOKEN=<agent-token>
 pnpm resend-challenge drafts create --to delivered@resend.dev --subject 'Hello' --body 'Hello from an Agent.'
 pnpm resend-challenge drafts submit <draft-id> <revision-id>
 ```
@@ -77,7 +78,7 @@ pnpm resend-challenge drafts revise <draft-id> --base-revision <revision-id> \
   --to delivered@resend.dev --subject 'Hello again' --body-file body.txt
 ```
 
-`drafts list` filters with `--review-status` and `--sending-status` and pages with `--limit` and `--cursor`; `drafts revision <draft-id> <revision-id>` reads any Revision. With `--json`, a command prints exactly one JSON value on stdout. A failure exits with 1 and prints `{"error":{"code","message"}}` as JSON on stderr: API errors keep the API's code, invalid input fails with `INVALID_REQUEST` before any request, an unreachable API fails with `NETWORK_ERROR`, and anything else, such as a response without the API's error envelope, with `UNEXPECTED_ERROR`. pnpm adds its own lines to stderr; run `node apps/cli/src/cli.ts` instead of `pnpm resend-challenge` when a program reads stderr.
+`drafts list` filters with `--review-status` and `--sending-status` and pages with `--limit` and `--cursor`; `drafts revision <draft-id> <revision-id>` reads any Revision. With `--json`, a command prints exactly one JSON value on stdout. A failure exits with 1 and prints `{"error":{"code","message"}}` as JSON on stderr: API errors keep the API's code, invalid input fails with `INVALID_REQUEST` and a missing `RESEND_CHALLENGE_TOKEN` with `TOKEN_NOT_SET`, both before any request, an unreachable API fails with `NETWORK_ERROR`, and anything else, such as a response without the API's error envelope, with `UNEXPECTED_ERROR`. pnpm adds its own lines to stderr; run `node apps/cli/src/cli.ts` instead of `pnpm resend-challenge` when a program reads stderr.
 
 ## Review as the Reviewer
 
@@ -92,7 +93,7 @@ pnpm dev
 pnpm seed
 ```
 
-`pnpm dev` applies the D1 migrations to the local database and serves the Worker at <http://localhost:5173>, with D1, R2 and the Queue running locally in Miniflare. Wrangler warns that the required secret `REVIEWER_TOKEN` is missing; local development uses the local tokens from [`libs/api.routes/src/local-tokens.ts`](libs/api.routes/src/local-tokens.ts) instead, which only a Worker with `LOCAL_DEVELOPMENT="true"` accepts, and only on `localhost`. With `pnpm dev` running, `pnpm seed` adds sample Drafts on each run: three Pending ones, one Rejected with a reason and one Approved to `delivered@resend.dev`.
+`pnpm dev` applies the D1 migrations to the local database and serves the Worker at <http://localhost:5173>, with D1, R2 and the Queue running locally in Miniflare. Wrangler warns that the required secrets `AGENT_TOKEN` and `REVIEWER_TOKEN` are missing; local development uses the local tokens from [`libs/api.routes/src/local-tokens.ts`](libs/api.routes/src/local-tokens.ts) instead, which only a Worker with `LOCAL_DEVELOPMENT="true"` accepts, and only on `localhost`. With `pnpm dev` running, `pnpm seed` adds sample Drafts on each run: three Pending ones, one Rejected with a reason and one Approved to `delivered@resend.dev`.
 
 The Review UI runs at <http://localhost:5173/app/> with hot reload; enter the local Reviewer token `reviewer_local-development-only` on its token screen. Agents call <http://localhost:5173> with the local Agent token `agent_local-development-only`, over HTTP, MCP or the CLI as above. Only the Reviewer token can approve or reject a Revision, for example with `POST /api/v1/drafts/<draft-id>/revisions/<revision-id>/approval` and `Authorization: Bearer reviewer_local-development-only`.
 
@@ -108,7 +109,7 @@ curl -sS 'http://localhost:5173/cdn-cgi/handler/scheduled?cron=*+*+*+*+*'
 | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [Terraform](terraform/)                                   | The D1 database (read replication `auto`), the R2 bucket for Revision bodies, the Send Queue and the Send DLQ                                                                                                                           |
 | [`wrangler.jsonc`](apps/cloudflare-worker/wrangler.jsonc) | The Worker, its custom domain, the cron trigger, the Queue producer and consumers, the bindings and the vars                                                                                                                            |
-| `wrangler secret put`                                     | The secrets `REVIEWER_TOKEN` and `RESEND_API_KEY`                                                                                                                                                                                       |
+| Wrangler secrets                                          | `AGENT_TOKEN` and `REVIEWER_TOKEN` (set by `pnpm secrets:generate`) and `RESEND_API_KEY`                                                                                                                                                |
 | By hand, once                                             | The R2 bucket `resend-challenge-terraform-state` that holds the Terraform state, the Resend sending domain `resend-challenge.patricktree.me` (Resend dashboard) and its DNS records in the zone `patricktree.me` (Cloudflare dashboard) |
 
 There is only a production environment. Deploys run by hand, in this order: `terraform apply`, then `wrangler d1 migrations apply --remote`, then `wrangler deploy`. The next section lists every command.
@@ -139,11 +140,11 @@ These steps need the operator's Cloudflare and Resend accounts, so no agent runs
 - [ ] **Add the sending domain's DNS records.** In the Cloudflare dashboard, open the zone `patricktree.me`, go to **DNS > Records** and choose **Add record** once for each record the Resend domain page lists, typically an MX and an SPF TXT record on `send.resend-challenge` and a DKIM TXT record on `resend._domainkey.resend-challenge`. Copy each record's type, name, value and priority from the Resend domain page, not from this README, enter the name as Resend shows it (Cloudflare appends `.patricktree.me`), keep the TTL at **Auto** and set each record to **DNS only**, never proxied. Alternatively, choose **Sign in to Cloudflare** on the Resend domain page, which adds the records through Domain Connect once you authorize Resend's access to the zone. Success: **DNS > Records** shows every record from the Resend domain page under its full name, such as `send.resend-challenge.patricktree.me`, with the values unchanged.
 - [ ] **Wait for the Resend domain verification.** On the Resend domain page, choose **Verify DNS Records**. Resend keeps checking on its own; verification often takes minutes, and Resend allows up to 72 hours for DNS propagation. Success: **Domains** in the Resend dashboard shows `resend-challenge.patricktree.me` as **Verified**.
 - [ ] **Create the Worker's Resend API key.** In the Resend dashboard, go to **API Keys > Create API Key**, choose **Sending access** and the domain `resend-challenge.patricktree.me`. Resend shows the key only once; keep it for the step **Set the Resend API key**.
-- [ ] **Generate the tokens.** Run `pnpm secrets:generate`. It writes a new public Agent token into `apps/cloudflare-worker/wrangler.jsonc`, this README and the CLI's fallback in `apps/cli/src/production.ts`, and pipes a new Reviewer token into `wrangler secret put REVIEWER_TOKEN`; if the Worker `resend-challenge` does not exist yet, Wrangler creates an empty one to hold the secret. Success: the script prints `Set the Worker secret REVIEWER_TOKEN.` followed by the Reviewer token. If Wrangler fails, the files already hold a new Agent token; fix the cause and run the script again. Store the Reviewer token in the password manager, since it is not shown again, and commit the changed `wrangler.jsonc`, `README.md` and `apps/cli/src/production.ts`.
+- [ ] **Generate the tokens.** Run `pnpm secrets:generate`. It creates a new Agent token and a new Reviewer token and sets them as the Worker secrets `AGENT_TOKEN` and `REVIEWER_TOKEN` with one `wrangler secret bulk`; if the Worker `resend-challenge` does not exist yet, Wrangler creates an empty one to hold the secrets. It changes no file, so there is nothing to commit. Success: the script prints `Set the Worker secrets AGENT_TOKEN and REVIEWER_TOKEN.` followed by both tokens. If Wrangler fails, the script prints no token; fix the cause and run it again. Store both tokens in the password manager, since they are not shown again; hand the Agent token to Agents and the Reviewer token to Reviewers.
 - [ ] **Set the Resend API key.** Run `pnpm --filter '@resend-challenge/cloudflare-worker' exec wrangler secret put RESEND_API_KEY` and paste the sending-only key when Wrangler asks for it. Success: Wrangler prints `Success! Uploaded secret RESEND_API_KEY`.
 - [ ] **Apply the D1 migrations.** Run `pnpm --filter '@resend-challenge/cloudflare-worker' run migrations:apply:remote` and confirm. Success: Wrangler lists every migration in `libs/email-drafts/migrations` with status ✅.
 - [ ] **Deploy the Worker.** Run `pnpm --filter '@resend-challenge/cloudflare-worker' run deploy`, which builds the Worker with the Review UI as its static assets and runs `wrangler deploy`. Success: Wrangler lists the triggers `resend-challenge.patricktree.me (custom domain)`, `schedule: * * * * *`, `Producer for resend-challenge-send`, `Consumer for resend-challenge-send` and `Consumer for resend-challenge-send-dlq`. A first deploy of the custom domain can take a few minutes to serve.
-- [ ] **Verify production.** Create and get a Draft with the public Agent token, as in [Over HTTP](#over-http): creating answers `201`, getting answers `200` with the body. Then check that production refuses the local tokens and redirects the root:
+- [ ] **Verify production.** Create and get a Draft with the Agent token in place of `<agent-token>`, as in [Over HTTP](#over-http): creating answers `201`, getting answers `200` with the body. Then check that production refuses the local tokens and redirects the root:
 
   ```sh
   curl -sS -o /dev/null -w '%{http_code}\n' https://resend-challenge.patricktree.me/api/v1/drafts/drf_00000000-0000-7000-8000-000000000000 \

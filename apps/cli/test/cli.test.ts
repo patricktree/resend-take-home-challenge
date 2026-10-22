@@ -6,7 +6,6 @@ import url from "node:url";
 import { test } from "vitest";
 
 import { getUnreachableUrl, useApiStub, type StubResponse } from "./api-stub.ts";
-import { readProductionVar } from "./production-config.ts";
 
 const CLI_PATH = url.fileURLToPath(new URL("../src/cli.ts", import.meta.url));
 
@@ -153,23 +152,30 @@ test("`drafts create` sends the Draft data with RESEND_CHALLENGE_TOKEN, and --js
   ]);
 });
 
-test("without RESEND_CHALLENGE_TOKEN the CLI sends the public Agent token that production accepts", async ({
-  expect,
-  onTestFinished,
-}) => {
-  const api = await useApiStub(onTestFinished, () => ({ status: 200, body: DRAFT }));
+test.for([
+  ["unset", undefined],
+  ["empty", ""],
+] as const)(
+  "with RESEND_CHALLENGE_TOKEN %s the CLI fails naming the variable, before any request",
+  async ([, token], { expect, onTestFinished }) => {
+    const api = await useApiStub(onTestFinished, () => ({ status: 200, body: DRAFT }));
 
-  const result = await runCli(["drafts", "get", DRAFT_ID], {
-    env: { RESEND_CHALLENGE_API_URL: api.url },
-  });
+    const result = await runCli(["drafts", "get", DRAFT_ID], {
+      env: { RESEND_CHALLENGE_TOKEN: token, RESEND_CHALLENGE_API_URL: api.url },
+    });
 
-  expect(result.exitCode).toBe(0);
-  const productionAgentToken = await readProductionVar("AGENT_TOKEN");
-  expect(api.requests.map((request) => request.authorization)).toStrictEqual([
-    `Bearer ${productionAgentToken}`,
-  ]);
-  expect(`${result.stdout}${result.stderr}`).not.toContain(productionAgentToken);
-});
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toBe("");
+    expect(JSON.parse(result.stderr)).toStrictEqual({
+      error: {
+        code: "TOKEN_NOT_SET",
+        message:
+          "RESEND_CHALLENGE_TOKEN is not set. The CLI sends it as the Agent token; set it to the Agent token, which the repository owner hands out.",
+      },
+    });
+    expect(api.requests).toStrictEqual([]);
+  },
+);
 
 test("`drafts create` prints the ids, the statuses and the reviewUrl", async ({
   expect,
@@ -797,15 +803,24 @@ test("an unreachable API fails with NETWORK_ERROR", async ({ expect }) => {
 type CliResult = { exitCode: number | null; stdout: string; stderr: string };
 
 type RunCliOptions = {
-  /** The CLI's whole environment; nothing leaks in from the environment of the test run. */
-  env?: Record<string, string>;
+  /**
+   * The CLI's whole environment; nothing leaks in from the environment of the test run.
+   * `RESEND_CHALLENGE_TOKEN` is `AGENT_TOKEN` unless set here; `undefined` leaves a variable
+   * unset.
+   */
+  env?: Record<string, string | undefined>;
   stdin?: string;
 };
 
 /** Spawns the real `resend-challenge` process, as `pnpm resend-challenge` does. */
 async function runCli(args: string[], { env = {}, stdin = "" }: RunCliOptions = {}) {
+  const cliEnvironment = Object.fromEntries(
+    Object.entries({ RESEND_CHALLENGE_TOKEN: AGENT_TOKEN, ...env }).flatMap(([name, value]) =>
+      value === undefined ? [] : [[name, value]],
+    ),
+  );
   const cli = childProcess.spawn(process.execPath, [CLI_PATH, ...args], {
-    env,
+    env: cliEnvironment,
     stdio: ["pipe", "pipe", "pipe"],
   });
   cli.stdin.end(stdin);

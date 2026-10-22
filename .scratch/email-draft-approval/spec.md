@@ -399,7 +399,7 @@ Header `X-Read-Bookmark` on requests and responses, documented on every operatio
   - the **Agent token**, shared by every Agent (HTTP API, CLI, MCP server);
   - the **Reviewer token**, for the Review UI.
 - Both are `agent_` / `reviewer_` followed by base64url of 32 random bytes. The prefix makes a leaked token recognizable and lets the Review UI refuse an Agent token before any request; authorization never looks at it.
-- The Worker reads them from `env.AGENT_TOKEN` (a committed var: the Agent token is public by design) and `env.REVIEWER_TOKEN` (a secret, never committed). Each holds exactly one value.
+- The Worker reads them from the secrets `env.AGENT_TOKEN` and `env.REVIEWER_TOKEN`; neither is ever committed. Each holds exactly one value.
 - Tokens never appear in any log, error message or CLI output.
 - There is no rate limiting on authentication; brute-forcing 256 bits is not realistic.
 - Rotation: generate a new token and redeploy; the old one stops working immediately, with no overlap and no expiry.
@@ -420,7 +420,7 @@ Header `X-Read-Bookmark` on requests and responses, documented on every operatio
 
 - `LOCAL_AGENT_TOKEN` and `LOCAL_REVIEWER_TOKEN` are fixed values exported from `libs/api.routes`.
 - They are accepted only when `LOCAL_DEVELOPMENT === "true"` **and** the request host is `localhost`, `127.0.0.1`, `[::1]` or `host.docker.internal`. On Cloudflare the request host is the routed hostname, which a client cannot set to one of these, so a production Worker deployed with the flag misset still rejects them.
-- With the flag on, `REVIEWER_TOKEN` and `RESEND_API_KEY` may be absent.
+- With the flag on, `AGENT_TOKEN`, `REVIEWER_TOKEN` and `RESEND_API_KEY` may be absent.
 
 ### Browser hardening
 
@@ -604,7 +604,7 @@ v1 has no event logging. Paths that already handle an error call a bare `console
   - `drafts revise <draftId> --base-revision <revisionId> --to … --subject … (--body … | --body-file …)`;
   - `drafts submit <draftId> <revisionId>`;
   - `drafts revision <draftId> <revisionId>`.
-- Token: `RESEND_CHALLENGE_TOKEN`, falling back to the committed public Agent token.
+- Token: `RESEND_CHALLENGE_TOKEN`, required; without it the CLI fails with an error naming the variable, before any request.
 - API URL: `--api-url`, then `RESEND_CHALLENGE_API_URL`, then the production URL built in as a constant (equal to `PUBLIC_BASE_URL`). HTTPS is required except on loopback.
 - Output: human-readable by default; `--json` prints one JSON value on stdout. Errors print `{ "error": { "code", "message" } }` on stderr and exit with 1. Inputs are validated with the contract's Zod schemas before any request.
 - `--help` on the root and every command; the root help links the OpenAPI document.
@@ -710,15 +710,13 @@ Production only, on the custom domain `resend-challenge.patricktree.me`. There i
   | `RESEND_FROM`       | An address on the sending domain, for example `drafts@resend-challenge.patricktree.me` |
   | `RESEND_BASE_URL`   | `https://api.resend.com`                                                               |
   | `LOCAL_DEVELOPMENT` | `"false"`                                                                              |
-  | `AGENT_TOKEN`       | The public Agent token                                                                 |
 
-- Secrets, listed in `secrets.required` so a deploy without them fails, set with `wrangler secret put`: `REVIEWER_TOKEN`, `RESEND_API_KEY` (a sending-only key).
+- Secrets, listed in `secrets.required` so a deploy without them fails, set with Wrangler: `AGENT_TOKEN`, `REVIEWER_TOKEN`, `RESEND_API_KEY` (a sending-only key).
 
 ### Tokens
 
-- `pnpm secrets:generate` creates both tokens once. It writes the Agent token into `wrangler.jsonc` and pipes the Reviewer token into `wrangler secret put REVIEWER_TOKEN`, printing it once.
-- The Agent token is public: committed in `wrangler.jsonc`, shown in the README, used as the CLI fallback and in the MCP setup instructions, so nobody needs setup to act as an Agent.
-- The Reviewer token is never committed. The repository owner hands it to Reviewers out of band.
+- `pnpm secrets:generate` creates both tokens once. It pipes them into one `wrangler secret bulk` call, which sets the Worker secrets `AGENT_TOKEN` and `REVIEWER_TOKEN`, and prints both once. It changes no file.
+- Neither token is ever committed. The repository owner hands the Agent token to Agents and the Reviewer token to Reviewers, both out of band.
 
 ### Deploying
 
@@ -783,7 +781,7 @@ Priorities: integration tests first, e2e second, unit tests third. Vitest and Pl
 
 ### CLI process tests
 
-`--help` on the root and every command (no approve or reject anywhere, the OpenAPI URL linked); `--json` output parses; `RESEND_CHALLENGE_TOKEN` is sent and the committed Agent token is the fallback; the token never appears in stdout or stderr; a 409 prints its code and exits non-zero; the built-in production URL equals `PUBLIC_BASE_URL` (a constant check, no network).
+`--help` on the root and every command (no approve or reject anywhere, the OpenAPI URL linked); `--json` output parses; `RESEND_CHALLENGE_TOKEN` is sent, and without it the CLI fails naming the variable; the token never appears in stdout or stderr; a 409 prints its code and exits non-zero; the built-in production URL equals `PUBLIC_BASE_URL` (a constant check, no network).
 
 ### e2e
 
@@ -820,7 +818,7 @@ Each entry is a shortcut taken for the demo and what a real deployment does inst
 
 - **Single shared Reviewer token.** _Demo:_ one preconfigured Reviewer token, pasted into the Review UI and kept in `localStorage`. Several humans share it, so verdicts are not attributed to a person and "already decided" cannot say by whom. _Real deployment:_ Reviewers sign in through the organisation's IdP via OpenID Connect, each person with their own identity and a Reviewer role; the server keeps its own session in an `HttpOnly` cookie with CSRF and origin checks, and the audit trail names who decided.
 - **Single shared Agent token.** _Demo:_ every Agent uses the same token, and Drafts are not scoped per Agent: every Agent sees and can revise every Draft. _Real deployment:_ one credential per Agent, recorded as the Draft's creator, with reads and writes scoped to it.
-- **Public Agent token.** _Demo:_ the Agent token is committed to the repository and shown in the README, so anyone can create, revise and submit Drafts (and fill the Pending list). Nothing is sent without the Reviewer token, which is never committed. _Real deployment:_ per-Agent credentials issued and rotated through an authorization server, never in source control.
+- **Agent token handed out by hand.** _Demo:_ the repository owner hands the one Agent token to whoever should act as an Agent, out of band; anyone holding it can create, revise and submit Drafts (and fill the Pending list). Nothing is sent without the Reviewer token. _Real deployment:_ per-Agent credentials issued and rotated through an authorization server.
 - **Static, non-expiring tokens.** _Demo:_ rotating a token means generating a new one and redeploying; the old one stops working immediately, with no overlap. _Real deployment:_ an OAuth 2.1 authorization server issues each Agent short-lived access tokens (authorization code with PKCE for interactive hosts, client credentials for headless Agents), with overlap during rotation and revocation.
 - **Static bearer for MCP.** _Demo:_ `/mcp` takes the Agent token as a static header, so hosts that only accept OAuth connectors cannot connect. _Real deployment:_ the same OAuth 2.1 authorization server in front of `/mcp` (`workers-oauth-provider`).
 - **Agents on the Reviewer's OS account are not defended against.** _Demo:_ an Agent running as the Reviewer's OS user, able to drive their browser or read their files, can use the stored Reviewer token. _Real deployment:_ per-verdict passkey confirmation (WebAuthn user verification over a challenge bound to Draft, Revision and verdict), and Agents run isolated from the Reviewer's OS account.

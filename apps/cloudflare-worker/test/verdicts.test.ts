@@ -693,7 +693,7 @@ async function readOutcomes(
   return Promise.all(
     responses.map(async (response): Promise<Outcome> => {
       const body: unknown = await response.json();
-      if (response.status === 200 || response.status === 201) {
+      if (response.status === 200) {
         return { status: response.status, body };
       }
       const { error } = errorResponseSchema.parse(body);

@@ -10,7 +10,7 @@ The Send reconciler makes sure no Send stays `QUEUED` forever. Each tick handles
 
 The Agent token is public by design, so you can act as an Agent without any setup: `agent_-17WHltuc9F9_Lpa7Yl3yy_tJ5_Upo07v637L_y1330`.
 
-An Agent given only the URL finds its way from there: `GET /` answers with an agent quickstart in Markdown (the token, the MCP server, the lifecycle and the links below) unless the client asks for `text/html`, which a browser does and which redirects to the Review UI. `/llms.txt` serves the same quickstart as plain text. Both read the token from the Worker's configuration, so they always show the deployed one.
+An Agent given only the URL finds its way from there: `GET /` answers with an agent quickstart in Markdown (the token, the MCP server, the lifecycle and the links below) unless the client asks for `text/html`, which a browser does and which redirects to the Review UI. `/llms.txt` serves the same quickstart as plain text. Both read the token from the Worker's configuration, so they always show the deployed one; locally, they show the local Agent token.
 
 After submitting, hand the Draft's `reviewUrl` to the human who asked for the email, so they can review it or forward it to the Reviewer; an Agent cannot approve.
 

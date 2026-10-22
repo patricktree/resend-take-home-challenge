@@ -1,10 +1,11 @@
 import type { Context, Hono } from "hono";
 
-import { OPENAPI_DOCUMENT_PATH } from "@resend-challenge/api.routes";
+import { LOCAL_AGENT_TOKEN, OPENAPI_DOCUMENT_PATH } from "@resend-challenge/api.routes";
 import { describeLifecycle } from "@resend-challenge/mcp-server";
 
 import AGENT_SKILL from "../../../skills/email-draft-approval/SKILL.md";
 import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
+import { acceptsLocalTokens } from "./authentication.ts";
 import { MCP_PATH } from "./mcp-endpoint.ts";
 
 /** Where the Worker serves the Agent Skill of `skills/email-draft-approval/SKILL.md`. */
@@ -66,12 +67,15 @@ function isAskingForHtml(acceptHeader: string | undefined): boolean {
 
 /**
  * The agent quickstart, in Markdown. Its URLs use the request's origin, so local development links
- * to itself. The token is the Worker's configured Agent token, read per request, so rotating it
- * (`pnpm secrets:generate`) needs no change here; the Worker accepts it in every environment.
+ * to itself. The token is the local Agent token wherever the Worker accepts it, and the configured
+ * Agent token otherwise, read per request, so rotating it (`pnpm secrets:generate`) needs no change
+ * here.
  */
 function describeQuickstart(context: Context<ApiServerHonoEnvironment>): string {
   const origin = new URL(context.req.url).origin;
-  const agentToken = context.env.AGENT_TOKEN;
+  const agentToken = acceptsLocalTokens(context.env, context.req.url)
+    ? LOCAL_AGENT_TOKEN
+    : context.env.AGENT_TOKEN;
   const mcpUrl = `${origin}${MCP_PATH}`;
   const agentSkillUrl = `${origin}${AGENT_SKILL_PATH}`;
 

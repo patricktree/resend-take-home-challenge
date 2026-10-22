@@ -5,6 +5,8 @@ const config: KnipConfig = {
   ignore: [
     /* ignore the patricktree-stack packages themselves, since they are not part of this monorepo */
     ".patricktree-stack/**",
+    /* the CLI bundle is build output (committed, unlike dist): its bundled packages' JSDoc import types are no imports of this repository */
+    "apps/cli/bundle/**",
   ],
   workspaces: {
     ".": {

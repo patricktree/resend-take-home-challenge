@@ -77,30 +77,30 @@ The host then lists six tools: `create_draft`, `get_draft`, `list_drafts`, `revi
 
 ### With the CLI
 
-After `pnpm install` (see [AGENTS.md](AGENTS.md#environment-setup)), run the `resend-challenge` CLI from the repository root. It reads the Agent token from `RESEND_CHALLENGE_TOKEN`, which is required, and calls production unless `--api-url` or `RESEND_CHALLENGE_API_URL` points it at another API origin, such as `http://localhost:5173` with the local Agent token. It has no command to approve or reject: only the Reviewer decides, in the Review UI. `pnpm resend-challenge --help` and `--help` on every command describe the options.
+The `resend-challenge` CLI needs nothing but Node 24: no `pnpm install` and no build. Run its committed single-file bundle with `node` from the repository root. It reads the Agent token from `RESEND_CHALLENGE_TOKEN`, which is required, and calls production unless `--api-url` or `RESEND_CHALLENGE_API_URL` points it at another API origin, such as `http://localhost:5173` with the local Agent token. It has no command to approve or reject: only the Reviewer decides, in the Review UI. `node apps/cli/bundle/resend-challenge.mjs --help` and `--help` on every command describe the options.
 
 Create a Draft, read its id and the id of its latest Revision from the output, then submit that Revision for review:
 
 ```sh
 export RESEND_CHALLENGE_TOKEN=<agent-token>
-pnpm resend-challenge drafts create --to delivered@resend.dev --subject 'Hello' --body 'Hello from an Agent.'
-pnpm resend-challenge drafts submit <draft-id> <revision-id>
+node apps/cli/bundle/resend-challenge.mjs drafts create --to delivered@resend.dev --subject 'Hello' --body 'Hello from an Agent.'
+node apps/cli/bundle/resend-challenge.mjs drafts submit <draft-id> <revision-id>
 ```
 
 Show the printed `Review URL` to the human who asked for the email; the Reviewer opens it. Poll the Draft for its review status and sending status:
 
 ```sh
-pnpm resend-challenge drafts get <draft-id>
+node apps/cli/bundle/resend-challenge.mjs drafts get <draft-id>
 ```
 
 After a Rejection, revise the Draft on top of the Revision you read, with the body from a file or from stdin (`--body-file -`), and submit the new Revision:
 
 ```sh
-pnpm resend-challenge drafts revise <draft-id> --base-revision <revision-id> \
+node apps/cli/bundle/resend-challenge.mjs drafts revise <draft-id> --base-revision <revision-id> \
   --to delivered@resend.dev --subject 'Hello again' --body-file body.txt
 ```
 
-`drafts list` filters with `--review-status` and `--sending-status` and pages with `--limit` and `--cursor`; `drafts revision <draft-id> <revision-id>` reads any Revision. With `--json`, a command prints exactly one JSON value on stdout. A failure exits with 1 and prints `{"error":{"code","message"}}` as JSON on stderr: API errors keep the API's code, invalid input fails with `INVALID_REQUEST` and a missing `RESEND_CHALLENGE_TOKEN` with `TOKEN_NOT_SET`, both before any request, an unreachable API fails with `NETWORK_ERROR`, and anything else, such as a response without the API's error envelope, with `UNEXPECTED_ERROR`. pnpm adds its own lines to stderr; run `node apps/cli/src/cli.ts` instead of `pnpm resend-challenge` when a program reads stderr.
+`drafts list` filters with `--review-status` and `--sending-status` and pages with `--limit` and `--cursor`; `drafts revision <draft-id> <revision-id>` reads any Revision. With `--json`, a command prints exactly one JSON value on stdout. A failure exits with 1 and prints `{"error":{"code","message"}}` as JSON on stderr: API errors keep the API's code, invalid input fails with `INVALID_REQUEST` and a missing `RESEND_CHALLENGE_TOKEN` with `TOKEN_NOT_SET`, both before any request, an unreachable API fails with `NETWORK_ERROR`, and anything else, such as a response without the API's error envelope, with `UNEXPECTED_ERROR`.
 
 ## Review as the Reviewer
 
@@ -188,4 +188,4 @@ The [spec](.scratch/email-draft-approval/spec.md) is the detailed source for eac
 
 - [Demo simplifications](.scratch/email-draft-approval/spec.md#14-demo-simplifications): shared static tokens instead of per-person sign-in and per-Agent credentials, no observability, one production environment with manual deploys and no CI, and no retention policy.
 - [Known limitations](.scratch/email-draft-approval/spec.md#15-known-limitations): CLI and MCP reads may briefly miss a write, create is not idempotent, a long Resend outage ends in `OUTCOME_UNKNOWN`, and other readers may see changes a moment late.
-- [Future increments](.scratch/email-draft-approval/spec.md#16-future-increments): HTML bodies, discarding Drafts, delivery tracking, OAuth for `/mcp`, CI/CD, and a distributable CLI, among others.
+- [Future increments](.scratch/email-draft-approval/spec.md#16-future-increments): HTML bodies, discarding Drafts, delivery tracking, OAuth for `/mcp`, CI/CD, and a CLI published to npm, among others.

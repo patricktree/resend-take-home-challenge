@@ -29,6 +29,8 @@ catalog:
   oxfmt: ^0.72.0
   oxlint: ^1.87.0
   oxlint-tsgolint: ^7.0.2004
+  # keep on the version vite resolves (it bundles with Rolldown internally), so the workspace installs one Rolldown
+  rolldown: 1.2.14
   typescript: "npm:@typescript/typescript6@^6.0.2"
   vite: ^8.3.4
   vitest: 4.1.11

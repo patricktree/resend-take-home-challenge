@@ -14,6 +14,8 @@ export default defineConfig({
     "apps/cloudflare-worker/test/__snapshots__/openapi.json",
     /* written by `drizzle-kit generate` */
     "libs/email-drafts/migrations/**",
+    /* written by `turbo:build` of apps/cli (Rolldown) */
+    "apps/cli/bundle/**",
   ],
   sortImports: {
     customGroups: [

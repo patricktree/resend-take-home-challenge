@@ -13,7 +13,7 @@ The service's origin is `https://resend-challenge.patricktree.me`, unless your u
 
 1. **MCP**, preferred: Streamable HTTP at `<origin>/mcp`, with `Authorization: Bearer <Agent token>` as a static header and no OAuth; in Codex, `codex mcp add resend-challenge --url <origin>/mcp --bearer-token-env-var RESEND_CHALLENGE_TOKEN` with the token in that environment variable. The tools are `create_draft`, `submit_draft`, `get_draft`, `list_drafts`, `revise_draft` and `get_revision`.
 2. **HTTP API**, the fallback: the same header on every request under `<origin>/api/v1`. `<origin>/api/openapi.json` describes every operation; a tool's HTTP twin is named below in parentheses.
-3. **CLI**, only inside a checkout of the service's repository: `pnpm resend-challenge --help`.
+3. **CLI**, only inside a checkout of the service's repository, with nothing but Node 24: `node apps/cli/bundle/resend-challenge.mjs --help`.
 
 ## Workflow
 

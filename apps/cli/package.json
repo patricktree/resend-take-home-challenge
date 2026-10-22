@@ -2,9 +2,6 @@
   "name": "@resend-challenge/cli",
   "private": true,
   "description": "The resend-challenge CLI for Agents",
-  "bin": {
-    "resend-challenge": "./src/cli.ts"
-  },
   "type": "module",
   "exports": {
     "./package.json": "./package.json"
@@ -17,7 +14,7 @@
     "start": "node ./src/cli.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "turbo:build": "del-cli --dot=true \"dist/types\" \"dist/tsconfig.build.tsbuildinfo\" && tsc --build ./tsconfig.json",
+    "turbo:build": "del-cli --dot=true \"dist/types\" \"dist/tsconfig.build.tsbuildinfo\" && tsc --build ./tsconfig.json && rolldown --config ./rolldown.config.ts",
     "turbo:lint": "oxlint .",
     "turbo:lint:fix": "pnpm run turbo:lint --fix",
     "turbo:test": "pnpm run test"
@@ -38,6 +35,7 @@
     "jsonc-parser": "^3.3.1",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
+    "rolldown": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"

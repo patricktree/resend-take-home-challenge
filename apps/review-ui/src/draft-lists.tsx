@@ -2,6 +2,7 @@ import { css } from "@linaria/core";
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { createRoute, Link } from "@tanstack/react-router";
 import React from "react";
+import { Temporal } from "temporal-polyfill";
 
 import type { DraftSummaryResponse } from "@resend-challenge/api.routes";
 
@@ -12,7 +13,12 @@ import {
   sendingStatusLabel,
   shortRecipientsLabel,
 } from "./draft-labels.ts";
-import { decidedDraftsQuery, type DraftListQuery, pendingDraftsQuery } from "./draft-queries.ts";
+import {
+  decidedDraftsQuery,
+  type DraftListQuery,
+  LIST_REFRESH_INTERVAL_MILLISECONDS,
+  pendingDraftsQuery,
+} from "./draft-queries.ts";
 import { ErrorMessage } from "./error-message.tsx";
 import { rootRoute } from "./root-route.tsx";
 
@@ -85,7 +91,18 @@ function DraftList({ heading, emptyText, listQuery, columns }: DraftListProps): 
 
   return (
     <section className={listStyles}>
-      <h1 id={headingId}>{heading}</h1>
+      <div className={headerStyles}>
+        <h1 id={headingId}>{heading}</h1>
+        <DSButton
+          variant="outlined"
+          type="button"
+          disabled={list.isFetching}
+          onClick={() => void list.refetch()}
+        >
+          Refresh
+        </DSButton>
+        <RefreshCountdown dataUpdatedAt={list.dataUpdatedAt} />
+      </div>
       {drafts.length === 0 ? (
         <p>{emptyText}</p>
       ) : (
@@ -138,6 +155,25 @@ function DraftList({ heading, emptyText, listQuery, columns }: DraftListProps): 
   );
 }
 
+/** Seconds until the list's next automatic refresh, counted from its last read. */
+function RefreshCountdown({ dataUpdatedAt }: { dataUpdatedAt: number }): React.ReactNode {
+  const [now, setNow] = React.useState(nowEpochMilliseconds);
+  React.useEffect(() => {
+    const timer = setInterval(() => setNow(nowEpochMilliseconds()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const remainingMilliseconds = Math.max(
+    0,
+    dataUpdatedAt + LIST_REFRESH_INTERVAL_MILLISECONDS - Math.max(now, dataUpdatedAt),
+  );
+
+  return <span>Next refresh in {Math.ceil(remainingMilliseconds / 1000)} s</span>;
+}
+
+function nowEpochMilliseconds(): number {
+  return Temporal.Now.instant().epochMilliseconds;
+}
+
 function optionalTimeLabel(timestamp: string | undefined): string {
   return timestamp === undefined ? "" : localTimeLabel(timestamp);
 }
@@ -186,6 +222,13 @@ const rowLinkStyles = css`
     inset: 0;
     content: "";
   }
+`;
+
+const headerStyles = css`
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(2 * var(--spacing-base));
+  align-items: center;
 `;
 
 const loadMoreStyles = css`

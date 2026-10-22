@@ -32,6 +32,8 @@ test("Pending list", async ({ page, reviewEnvironment }) => {
   );
   await createPendingDraft(agentClient, createDraftData("Your invoice for October"));
   await pinServerGeneratedValues(page);
+  // A frozen `Date` (timers keep running), so the refresh countdown stays at its start.
+  await page.clock.setFixedTime(PINNED_TIMESTAMP);
 
   await openReviewUi(page);
   await expect(page.getByRole("table", { name: "Pending Drafts" }).getByRole("row")).toHaveCount(3);

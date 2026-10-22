@@ -20,6 +20,9 @@ export const pendingDraftsQuery = createDraftListQuery("pending", PENDING_LIST_Q
 
 export const decidedDraftsQuery = createDraftListQuery("decided", DECIDED_LIST_QUERY);
 
+/** How often a shown list reads its Drafts again; the list counts down to the next read. */
+export const LIST_REFRESH_INTERVAL_MILLISECONDS = 5000;
+
 /** How often the Draft page reads the Draft again while its Send is `QUEUED`. */
 const SENDING_POLL_INTERVAL_MILLISECONDS = 3000;
 
@@ -48,5 +51,7 @@ function createDraftListQuery(listName: string, listQuery: ListDraftsQuery) {
       }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
+    // TanStack Query restarts this interval after every read, including manual and focus refreshes.
+    refetchInterval: LIST_REFRESH_INTERVAL_MILLISECONDS,
   });
 }

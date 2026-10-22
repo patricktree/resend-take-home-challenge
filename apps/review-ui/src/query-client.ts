@@ -11,7 +11,7 @@ export const queryClient = new QueryClient({
     queries: {
       // Errors show at once; a 401 in particular must not be retried.
       retry: false,
-      // The only refresh of the lists (no polling).
+      // Besides the lists' polling and their Refresh button.
       refetchOnWindowFocus: true,
     },
     mutations: { retry: false },

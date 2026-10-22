@@ -3,20 +3,26 @@ import type { Context, Hono } from "hono";
 import { LOCAL_AGENT_TOKEN, OPENAPI_DOCUMENT_PATH } from "@resend-challenge/api.routes";
 import { describeLifecycle } from "@resend-challenge/mcp-server";
 
-import AGENT_SKILL from "../../../skills/email-draft-approval/SKILL.md";
 import type { ApiServerHonoEnvironment } from "./api-server-environment.ts";
 import { acceptsLocalTokens } from "./authentication.ts";
 import { MCP_PATH } from "./mcp-endpoint.ts";
 
-/** Where the Worker serves the Agent Skill of `skills/email-draft-approval/SKILL.md`. */
-const AGENT_SKILL_PATH = "/skills/email-draft-approval/SKILL.md";
+/**
+ * The Agent Skill `skills/email-draft-approval/SKILL.md`, distributed through the public
+ * repository.
+ */
+const AGENT_SKILL_URL =
+  "https://github.com/patricktree/resend-take-home-challenge/tree/main/skills/email-draft-approval";
+
+const AGENT_SKILL_RAW_URL =
+  "https://raw.githubusercontent.com/patricktree/resend-take-home-challenge/main/skills/email-draft-approval/SKILL.md";
 
 const MARKDOWN_CONTENT_TYPE = "text/markdown; charset=utf-8";
 
 /**
  * Serves what an Agent needs that was given nothing but the Worker's URL: the agent quickstart at
- * `/` (unless a browser asks for HTML, which goes to the Review UI) and at `/llms.txt`, and the
- * Agent Skill. All three are public and never reach D1.
+ * `/` (unless a browser asks for HTML, which goes to the Review UI) and at `/llms.txt`. Both are
+ * public and never reach D1.
  */
 export function mountAgentGuide(app: Hono<ApiServerHonoEnvironment>): void {
   app.get("/", (context) => {
@@ -36,10 +42,6 @@ export function mountAgentGuide(app: Hono<ApiServerHonoEnvironment>): void {
     context.body(describeQuickstart(context), 200, {
       "Content-Type": "text/plain; charset=utf-8",
     }),
-  );
-
-  app.get(AGENT_SKILL_PATH, (context) =>
-    context.body(AGENT_SKILL, 200, { "Content-Type": MARKDOWN_CONTENT_TYPE }),
   );
 }
 
@@ -77,7 +79,6 @@ function describeQuickstart(context: Context<ApiServerHonoEnvironment>): string 
     ? LOCAL_AGENT_TOKEN
     : context.env.AGENT_TOKEN;
   const mcpUrl = `${origin}${MCP_PATH}`;
-  const agentSkillUrl = `${origin}${AGENT_SKILL_PATH}`;
 
   return [
     "# Email Draft Approval",
@@ -110,10 +111,11 @@ function describeQuickstart(context: Context<ApiServerHonoEnvironment>): string 
     "",
     "## Agent Skill",
     "",
-    `The Agent Skill at ${agentSkillUrl} covers the whole workflow, polling and the error codes that need a specific reaction. Install it for Claude Code:`,
+    `The Agent Skill at ${AGENT_SKILL_URL} covers the whole workflow, polling and the error codes that need a specific reaction. Install it with the skills CLI, or for Claude Code by hand:`,
     "",
     "```sh",
-    `mkdir -p ~/.claude/skills/email-draft-approval && curl -sSo ~/.claude/skills/email-draft-approval/SKILL.md ${agentSkillUrl}`,
+    "npx skills add patricktree/resend-take-home-challenge",
+    `mkdir -p ~/.claude/skills/email-draft-approval && curl -sSo ~/.claude/skills/email-draft-approval/SKILL.md ${AGENT_SKILL_RAW_URL}`,
     "```",
     "",
   ].join("\n");

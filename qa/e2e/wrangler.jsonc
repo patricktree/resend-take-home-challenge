@@ -8,9 +8,6 @@
   "main": "../../apps/cloudflare-worker/src/index.ts",
   "compatibility_flags": ["nodejs_compat"],
   "compatibility_date": "2026-08-18",
-  // `wrangler dev` bundles the source entry itself, so the Agent Skill's Markdown import needs the
-  // same `Text` module rule as the integration tests (apps/cloudflare-worker/test/wrangler.test.jsonc).
-  "rules": [{ "type": "Text", "globs": ["**/*.md"] }],
   "assets": {
     // Built by `pnpm --filter '@resend-challenge/e2e' test:e2e` before the tests run.
     "directory": "../../apps/cloudflare-worker/dist/client",

@@ -7,9 +7,6 @@
   "main": "worker.ts",
   "compatibility_flags": ["nodejs_compat"],
   "compatibility_date": "2026-08-18",
-  // The Agent Skill (libs/api.server/src/agent-guide.ts) imports as text, as the `markdownAsText`
-  // plugin of vite.config.ts does for the production build.
-  "rules": [{ "type": "Text", "globs": ["**/*.md"] }],
   // A small fixed stand-in for the built Review UI, so the `/app` tests need no build.
   "assets": {
     "directory": "./assets",

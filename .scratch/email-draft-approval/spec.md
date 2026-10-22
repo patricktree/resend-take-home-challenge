@@ -131,7 +131,7 @@ flowchart LR
 
 A single Worker exports three handlers:
 
-- `fetch` serves `/api/*`, `/mcp`, the Review UI under `/app` and the agent guide (`/`, `/llms.txt`, the Agent Skill);
+- `fetch` serves `/api/*`, `/mcp`, the Review UI under `/app` and the agent quickstart (`/`, `/llms.txt`);
 - `queue` handles the Send Queue and the Send DLQ, dispatching on `batch.queue`;
 - `scheduled` runs the Send reconciler every minute.
 
@@ -141,19 +141,17 @@ There is no separate sender Worker: `RESEND_API_KEY` is a secret on this Worker,
 
 Static assets are configured with `run_worker_first: true`, `html_handling: "none"` and `not_found_handling: "none"`, so every request goes through the Hono app first.
 
-| Path                                    | Handling                                                                                              |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `/api/*`                                | API routes; an unknown `/api/…` path → JSON 404 `NOT_FOUND`                                           |
-| `/mcp`                                  | MCP server (Agent token only)                                                                         |
-| `/app`, `/app/*`                        | `env.ASSETS`; a path without a matching file → `/app/index.html` with 200, so client routes deep-link |
-| `/`                                     | Content negotiation on `Accept`, see below                                                            |
-| `/llms.txt`                             | The agent quickstart, `text/plain; charset=utf-8`                                                     |
-| `/skills/email-draft-approval/SKILL.md` | The Agent Skill, `text/markdown; charset=utf-8`                                                       |
-| anything else                           | JSON 404 `NOT_FOUND`                                                                                  |
+| Path             | Handling                                                                                              |
+| ---------------- | ----------------------------------------------------------------------------------------------------- |
+| `/api/*`         | API routes; an unknown `/api/…` path → JSON 404 `NOT_FOUND`                                           |
+| `/mcp`           | MCP server (Agent token only)                                                                         |
+| `/app`, `/app/*` | `env.ASSETS`; a path without a matching file → `/app/index.html` with 200, so client routes deep-link |
+| `/`              | Content negotiation on `Accept`, see below                                                            |
+| `/llms.txt`      | The agent quickstart, `text/plain; charset=utf-8`                                                     |
+| anything else    | JSON 404 `NOT_FOUND`                                                                                  |
 
 - `/` answers with the agent quickstart (`text/markdown; charset=utf-8`) when `Accept` contains `text/markdown`, even next to `text/html`; with 302 to `/app/` when `Accept` contains `text/html` (browsers) but not `text/markdown`; and with the quickstart for `*/*`, anything else or no `Accept` (curl, scripts, most agent HTTP tools). A media range with `q=0` counts as absent; other q-values do not rank the two types. Every response of `/` carries `Vary: Accept`.
-- The agent quickstart and the Agent Skill are public and never reach D1. The quickstart is about one screen of Markdown: what the service does, the Agent token (read per request from `env.AGENT_TOKEN`, so rotation changes nothing else; the local Agent token instead wherever the Worker accepts the local tokens), the MCP URL with the `claude mcp add` command, the lifecycle (its steps shared with the MCP server instructions), and links to the OpenAPI document and the Agent Skill with an install command. All of its URLs use the request's origin, so local development links to itself.
-- The Agent Skill is `skills/email-draft-approval/SKILL.md` at the repository root, bundled into the Worker at build time and served byte for byte; see [section 10](#agent-skill).
+- The agent quickstart is public and never reaches D1. The quickstart is about one screen of Markdown: what the service does, the Agent token (read per request from `env.AGENT_TOKEN`, so rotation changes nothing else; the local Agent token instead wherever the Worker accepts the local tokens), the MCP URL with the `claude mcp add` command, the lifecycle (its steps shared with the MCP server instructions), and links to the OpenAPI document and to the Agent Skill on GitHub with its install commands. Its service URLs use the request's origin, so local development links to itself.
 - The Review UI is built by Vite with `base: "/app/"` into an `app/` subfolder of the Worker's assets, so request paths map to asset paths without rewriting. TanStack Router uses `basepath: "/app"`.
 - One Hono middleware sets the security headers ([section 7](#browser-hardening)) on every `/app` response. No caching is configured anywhere: neither the Worker nor the API sets `Cache-Control` of its own, and there is no CDN cache rule.
 - Every response carries an `X-Request-Id` header with a per-request UUID, the same value as `requestId` in error envelopes.
@@ -412,7 +410,7 @@ Header `X-Read-Bookmark` on requests and responses, documented on every operatio
 ### Roles
 
 - One middleware computes the SHA-256 digest of the presented bearer and compares it in constant time with the digests of both configured tokens (and of the local tokens, see below). It sets `role: AGENT | REVIEWER` on the request context. The role comes only from which token matched.
-- A missing or unknown token gets 401 `UNAUTHENTICATED`, with no hint about which kind was expected. Only `GET /api/openapi.json`, the Review UI's static files and the agent guide (`/`, `/llms.txt`, the Agent Skill) are public.
+- A missing or unknown token gets 401 `UNAUTHENTICATED`, with no hint about which kind was expected. Only `GET /api/openapi.json`, the Review UI's static files and the agent quickstart (`/`, `/llms.txt`) are public.
 - Approval and Rejection run a `requireReviewer` guard before any database access; an Agent token gets 403 `REVIEWER_ONLY`. Every other API route accepts both roles.
 - OpenAPI declares two `http bearer` schemes, `agentAuth` and `reviewerAuth`. The verdict routes list only `reviewerAuth`; every other route lists both.
 
@@ -621,7 +619,7 @@ v1 has no event logging. Paths that already handle an error call a bare `console
 - `skills/email-draft-approval/SKILL.md` at the repository root, outside `.claude/` so that the repository's own development agents do not load it. Its frontmatter names it `email-draft-approval` and says when to use it: sending an email that needs human approval through this service.
 - It covers connecting (MCP preferred, the HTTP API as the fallback, the CLI only inside the repository), the workflow (create → submit the latest Revision → hand the `reviewUrl` to the user → poll every 10 to 30 s and hand back to the user after about 15 minutes → on `REJECTED`, revise on the latest Revision and submit again → on `APPROVED`, follow `sending.status` to `SENT` or `FAILED`), the rules (claim a Send only at `SENT`, never approve, address only recipients the user named) and the reactions to `REVISION_SUPERSEDED`, `REVISION_ALREADY_SUBMITTED`, `REVISION_ALREADY_DECIDED`, `DRAFT_APPROVED` and `FAILED` (with `OUTCOME_UNKNOWN`, the email may have been sent: tell the user rather than create a new Draft). Create is not idempotent: after a timeout, list Drafts before creating again.
 - It holds no token: it points to `/llms.txt`, so rotating the Agent token stays a change of `wrangler.jsonc`, the README and the CLI only.
-- The Worker serves it at `/skills/email-draft-approval/SKILL.md`. The Worker's Vite build imports the file as text through a small plugin, and the test runtime through a Wrangler `Text` module rule; an integration test compares the served bytes with the file.
+- It is distributed through the public GitHub repository, not by the Worker: `npx skills add patricktree/resend-take-home-challenge`, or a copy of the raw file into `~/.claude/skills/email-draft-approval/`.
 
 ## 11. Review UI
 

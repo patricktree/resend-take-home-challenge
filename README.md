@@ -16,10 +16,16 @@ After submitting, hand the Draft's `reviewUrl` to the human who asked for the em
 
 ### Agent Skill
 
-[`skills/email-draft-approval/SKILL.md`](skills/email-draft-approval/SKILL.md) is an Agent Skill for the whole workflow: connecting, submitting, handing over the `reviewUrl`, polling with backoff, revising after a Rejection, following the Send, and the error codes that need a specific reaction. The Worker serves the same file at <https://resend-challenge.patricktree.me/skills/email-draft-approval/SKILL.md>. Install it for Claude Code:
+[`skills/email-draft-approval/SKILL.md`](skills/email-draft-approval/SKILL.md) is an Agent Skill for the whole workflow: connecting, submitting, handing over the `reviewUrl`, polling with backoff, revising after a Rejection, following the Send, and the error codes that need a specific reaction. Install it with the [skills CLI](https://github.com/vercel-labs/skills):
 
 ```sh
-mkdir -p ~/.claude/skills/email-draft-approval && curl -sSo ~/.claude/skills/email-draft-approval/SKILL.md https://resend-challenge.patricktree.me/skills/email-draft-approval/SKILL.md
+npx skills add patricktree/resend-take-home-challenge
+```
+
+Or copy it into Claude Code by hand:
+
+```sh
+mkdir -p ~/.claude/skills/email-draft-approval && curl -sSo ~/.claude/skills/email-draft-approval/SKILL.md https://raw.githubusercontent.com/patricktree/resend-take-home-challenge/main/skills/email-draft-approval/SKILL.md
 ```
 
 ### Over HTTP

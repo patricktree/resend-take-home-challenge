@@ -30,7 +30,6 @@ export default defineConfig(({ command }) => {
         // Vite's root, which is the Review UI's directory in development.
         persistState: { path: path.join(WORKER_DIRECTORY, ".wrangler/state") },
       }),
-      markdownAsText(),
     ],
   });
 
@@ -71,25 +70,6 @@ function requireReviewUiBuild(): Plugin {
           `${reviewUiIndexHtml} is missing: build @resend-challenge/review-ui first (\`pnpm build\` does).`,
         );
       }
-    },
-  };
-}
-
-/**
- * Imports a Markdown file as its text, unchanged, the way the test runtime's `Text` module rule
- * (test/wrangler.test.jsonc) does: the Worker serves the Agent Skill from
- * `skills/email-draft-approval/SKILL.md` (libs/api.server/src/agent-guide.ts).
- */
-function markdownAsText(): Plugin {
-  return {
-    name: "resend-challenge:markdown-as-text",
-    async load(id) {
-      if (!id.endsWith(".md")) {
-        return null;
-      }
-
-      const text = await fsPromises.readFile(id, "utf8");
-      return `export default ${JSON.stringify(text)};`;
     },
   };
 }

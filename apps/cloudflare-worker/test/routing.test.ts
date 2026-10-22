@@ -1,4 +1,3 @@
-import fs from "node:fs/promises";
 import { test } from "vitest";
 
 import { LOCAL_AGENT_TOKEN } from "@resend-challenge/api.routes";
@@ -9,8 +8,6 @@ const AUTHORIZATION = { Authorization: `Bearer ${LOCAL_AGENT_TOKEN}` };
 
 /** An absolute URL, so that the quickstart's links have a known origin. */
 const ROOT_URL = "http://localhost/";
-
-const AGENT_SKILL_FILE = new URL("../../../skills/email-draft-approval/SKILL.md", import.meta.url);
 
 /** What a browser sends when it navigates to a page. */
 const BROWSER_ACCEPT =
@@ -72,7 +69,7 @@ test("/llms.txt serves the agent quickstart as plain text to any client, without
   expect(await llmsTxtResponse.text()).toBe(await rootResponse.text());
 });
 
-test("the agent quickstart links the MCP server, the OpenAPI document and the Agent Skill on the request's origin", async ({
+test("the agent quickstart links the MCP server, the OpenAPI document and the Agent Skill", async ({
   expect,
   onTestFinished,
 }) => {
@@ -84,7 +81,10 @@ test("the agent quickstart links the MCP server, the OpenAPI document and the Ag
   expect(quickstart).toContain("http://127.0.0.1/mcp");
   expect(quickstart).toContain("claude mcp add --transport http");
   expect(quickstart).toContain("http://127.0.0.1/api/openapi.json");
-  expect(quickstart).toContain("http://127.0.0.1/skills/email-draft-approval/SKILL.md");
+  expect(quickstart).toContain(
+    "https://github.com/patricktree/resend-take-home-challenge/tree/main/skills/email-draft-approval",
+  );
+  expect(quickstart).toContain("npx skills add patricktree/resend-take-home-challenge");
   expect(quickstart).toContain("`reviewUrl`");
   expect(quickstart).not.toContain("https://resend-challenge.patricktree.me");
 });
@@ -139,21 +139,6 @@ test.for([
     expect(createResponse.status).toBe(201);
   },
 );
-
-test("the Agent Skill is served byte for byte from skills/email-draft-approval/SKILL.md, without authentication", async ({
-  expect,
-  onTestFinished,
-}) => {
-  const worker = await useWorker({ onTestFinished });
-
-  const response = await worker.fetch("http://localhost/skills/email-draft-approval/SKILL.md");
-
-  expect(response.status).toBe(200);
-  expect(response.headers.get("Content-Type")).toBe("text/markdown; charset=utf-8");
-  expect(Buffer.from(await response.arrayBuffer())).toStrictEqual(
-    await fs.readFile(AGENT_SKILL_FILE),
-  );
-});
 
 test("an unknown API path answers with a JSON 404 NOT_FOUND", async ({
   expect,

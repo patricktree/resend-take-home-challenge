@@ -59,8 +59,8 @@
     "RESEND_FROM": "drafts@resend-challenge.patricktree.me",
     // RESEND_BASE_URL and a dummy RESEND_API_KEY come from each test's `wrangler dev --var`, which
     // points them at the test's own Resend stub: the tests never call Resend.
-    // Accepts LOCAL_AGENT_TOKEN and LOCAL_REVIEWER_TOKEN on local hosts, host.docker.internal included.
+    // Accepts LOCAL_AGENT_TOKEN and LOCAL_REVIEWER_TOKEN on local hosts, host.docker.internal included,
+    // so the secrets AGENT_TOKEN and REVIEWER_TOKEN stay unset, as in local development.
     "LOCAL_DEVELOPMENT": "true",
-    "AGENT_TOKEN": "agent_e2e-configured-agent-token",
   },
 }

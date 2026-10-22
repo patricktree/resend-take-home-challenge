@@ -88,7 +88,7 @@ Each race names its winner and the loser's outcome; both the gated and the concu
 ### CLI process test
 
 - cup's pattern: spawn the real CLI against a `node:http` stub of the API (API behavior is already proven at integration level).
-- Cases: `--help` on the root and every command, with no approve or reject anywhere and the OpenAPI URL linked; `--json` output parses; `RESEND_CHALLENGE_TOKEN` is sent and the committed Agent token is the fallback; the token never appears in stdout or stderr; a 409 prints its code and exits non-zero; the built-in production URL equals `PUBLIC_BASE_URL` (a constant check, no network).
+- Cases: `--help` on the root and every command, with no approve or reject anywhere and the OpenAPI URL linked; `--json` output parses; `RESEND_CHALLENGE_TOKEN` is sent, and without it the CLI fails naming the variable (later changed: the Agent token became a Worker secret too; the CLI first fell back to a committed Agent token); the token never appears in stdout or stderr; a 409 prints its code and exits non-zero; the built-in production URL equals `PUBLIC_BASE_URL` (a constant check, no network).
 
 ### e2e
 

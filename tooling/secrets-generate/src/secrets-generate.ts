@@ -1,58 +1,42 @@
-import * as jsonc from "jsonc-parser";
 import childProcess from "node:child_process";
 import crypto from "node:crypto";
-import fs from "node:fs/promises";
-import path from "node:path";
 
 export type GenerateSecretsOptions = {
-  /** The repository whose `wrangler.jsonc`, `README.md` and CLI receive the Agent token. */
-  repositoryRoot: string;
-  /** The `wrangler` binary that sets the Reviewer token as a Worker secret. */
+  /**
+   * The Worker's directory: `wrangler` runs there, so the secrets land on the Worker its
+   * `wrangler.jsonc` names.
+   */
+  workerDirectory: string;
+  /** The `wrangler` binary that sets both tokens as Worker secrets. */
   wranglerExecutable: string;
-  /** Receives the only output that contains a token: the Reviewer token, once. */
+  /** Receives the only output that contains a token: both tokens, once each. */
   print: (line: string) => void;
 };
 
-const AGENT_TOKEN_PATH = ["vars", "AGENT_TOKEN"];
-
-/** The CLI's production defaults; their `PUBLIC_AGENT_TOKEN` is the CLI's fallback token. */
-const CLI_PRODUCTION_DEFAULTS_PATH = "apps/cli/src/production.ts";
-
 /**
- * Creates a new Agent token and a new Reviewer token (spec section 7, "Credentials"). The Agent
- * token is public and goes into the committed files; the Reviewer token becomes the Worker secret
- * `REVIEWER_TOKEN` and is printed once, since it is never stored anywhere else.
+ * Creates a new Agent token and a new Reviewer token (spec section 7, "Credentials"), sets them as
+ * the Worker secrets `AGENT_TOKEN` and `REVIEWER_TOKEN` and prints both once, since neither is
+ * stored anywhere else. It changes no file.
  */
 export async function generateSecrets({
-  repositoryRoot,
+  workerDirectory,
   wranglerExecutable,
   print,
 }: GenerateSecretsOptions): Promise<void> {
   const agentToken = generateToken("agent");
   const reviewerToken = generateToken("reviewer");
 
-  await writeAgentToken(repositoryRoot, agentToken);
-  print(
-    `Wrote the new Agent token into apps/cloudflare-worker/wrangler.jsonc, README.md and ${CLI_PRODUCTION_DEFAULTS_PATH}.`,
-  );
+  await putWorkerSecrets({
+    wranglerExecutable,
+    workerDirectory,
+    secrets: { AGENT_TOKEN: agentToken, REVIEWER_TOKEN: reviewerToken },
+  });
 
-  try {
-    await putWorkerSecret({
-      wranglerExecutable,
-      workerDirectory: getWorkerDirectory(repositoryRoot),
-      secretName: "REVIEWER_TOKEN",
-      secretValue: reviewerToken,
-    });
-  } catch (error) {
-    throw new Error(
-      `${error instanceof Error ? error.message : "Setting REVIEWER_TOKEN failed."} wrangler.jsonc, README.md and ${CLI_PRODUCTION_DEFAULTS_PATH} already hold the new Agent token; fix the cause and run the script again, or revert them.`,
-      { cause: error },
-    );
-  }
   print(
-    "Set the Worker secret REVIEWER_TOKEN. Store the Reviewer token now; it is not shown again:",
+    "Set the Worker secrets AGENT_TOKEN and REVIEWER_TOKEN. Store both tokens now; they are not shown again.",
   );
-  print(reviewerToken);
+  print(`Agent token:    ${agentToken}`);
+  print(`Reviewer token: ${reviewerToken}`);
 }
 
 /** `agent_` or `reviewer_` followed by base64url of 32 random bytes. */
@@ -60,80 +44,34 @@ function generateToken(prefix: "agent" | "reviewer"): string {
   return `${prefix}_${crypto.randomBytes(32).toString("base64url")}`;
 }
 
-/**
- * Replaces the Agent token everywhere it is committed: the `AGENT_TOKEN` var of `wrangler.jsonc`
- * (edited in place, so comments and formatting survive), every occurrence in `README.md`, and the
- * CLI's `PUBLIC_AGENT_TOKEN`. It checks every file before writing any, so a refusal changes
- * nothing.
- */
-async function writeAgentToken(repositoryRoot: string, agentToken: string): Promise<void> {
-  const wranglerConfigPath = path.join(getWorkerDirectory(repositoryRoot), "wrangler.jsonc");
-  const readmePath = path.join(repositoryRoot, "README.md");
-  const cliProductionDefaultsPath = path.join(repositoryRoot, CLI_PRODUCTION_DEFAULTS_PATH);
-  const wranglerConfig = await fs.readFile(wranglerConfigPath, "utf8");
-  const readme = await fs.readFile(readmePath, "utf8");
-  const cliProductionDefaults = await fs.readFile(cliProductionDefaultsPath, "utf8");
-
-  const configTree = jsonc.parseTree(wranglerConfig);
-  const previousAgentToken: unknown =
-    configTree && jsonc.findNodeAtLocation(configTree, AGENT_TOKEN_PATH)?.value;
-  if (typeof previousAgentToken !== "string" || previousAgentToken === "") {
-    throw new Error("wrangler.jsonc has no `vars.AGENT_TOKEN` to replace.");
-  }
-  if (!readme.includes(previousAgentToken)) {
-    throw new Error(
-      "README.md does not show the configured Agent token; restore it before generating new tokens.",
-    );
-  }
-
-  const previousCliTokenDeclaration = `PUBLIC_AGENT_TOKEN = "${previousAgentToken}";`;
-  if (!cliProductionDefaults.includes(previousCliTokenDeclaration)) {
-    throw new Error(
-      `${CLI_PRODUCTION_DEFAULTS_PATH} does not hold the configured Agent token as PUBLIC_AGENT_TOKEN; restore it before generating new tokens.`,
-    );
-  }
-
-  const edits = jsonc.modify(wranglerConfig, AGENT_TOKEN_PATH, agentToken, {});
-  await fs.writeFile(wranglerConfigPath, jsonc.applyEdits(wranglerConfig, edits));
-  await fs.writeFile(readmePath, readme.replaceAll(previousAgentToken, agentToken));
-  await fs.writeFile(
-    cliProductionDefaultsPath,
-    cliProductionDefaults.replace(
-      previousCliTokenDeclaration,
-      `PUBLIC_AGENT_TOKEN = "${agentToken}";`,
-    ),
-  );
-}
-
-type PutWorkerSecretOptions = {
+type PutWorkerSecretsOptions = {
   wranglerExecutable: string;
   workerDirectory: string;
-  secretName: string;
-  secretValue: string;
+  secrets: Record<string, string>;
 };
 
-/** Runs `wrangler secret put` with the value on stdin, so it never shows up in a process list. */
-async function putWorkerSecret({
+/**
+ * Runs one `wrangler secret bulk` with the secrets as JSON on stdin, so no value shows up in a
+ * process list.
+ */
+async function putWorkerSecrets({
   wranglerExecutable,
   workerDirectory,
-  secretName,
-  secretValue,
-}: PutWorkerSecretOptions): Promise<void> {
-  const wrangler = childProcess.spawn(wranglerExecutable, ["secret", "put", secretName], {
+  secrets,
+}: PutWorkerSecretsOptions): Promise<void> {
+  const wrangler = childProcess.spawn(wranglerExecutable, ["secret", "bulk"], {
     cwd: workerDirectory,
     stdio: ["pipe", "inherit", "inherit"],
   });
-  wrangler.stdin.end(secretValue);
+  wrangler.stdin.end(JSON.stringify(secrets));
 
   const exitCode = await new Promise<number | null>((resolve, reject) => {
     wrangler.once("error", reject);
     wrangler.once("close", resolve);
   });
   if (exitCode !== 0) {
-    throw new Error(`\`wrangler secret put ${secretName}\` exited with code ${exitCode}.`);
+    throw new Error(
+      `\`wrangler secret bulk\` exited with code ${exitCode}. No token was printed; fix the cause and run the script again.`,
+    );
   }
-}
-
-function getWorkerDirectory(repositoryRoot: string): string {
-  return path.join(repositoryRoot, "apps", "cloudflare-worker");
 }

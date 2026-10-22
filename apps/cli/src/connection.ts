@@ -2,7 +2,7 @@ import { ApiClient } from "@resend-challenge/api.client";
 import { ERROR_CODE } from "@resend-challenge/api.client";
 
 import { CLI_ERROR_CODE, CliError } from "./cli-error.ts";
-import { PRODUCTION_API_URL, PUBLIC_AGENT_TOKEN } from "./production.ts";
+import { PRODUCTION_API_URL } from "./production.ts";
 
 export const ENVIRONMENT_VARIABLE = {
   TOKEN: "RESEND_CHALLENGE_TOKEN",
@@ -14,8 +14,8 @@ const LOOPBACK_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 /**
  * Creates the typed client for one invocation: the API URL from `--api-url`, then
- * `RESEND_CHALLENGE_API_URL`, then production; the token from `RESEND_CHALLENGE_TOKEN`, then the
- * public Agent token.
+ * `RESEND_CHALLENGE_API_URL`, then production; the token from `RESEND_CHALLENGE_TOKEN`, which is
+ * required.
  */
 export function createClient(
   apiUrlOption: string | undefined,
@@ -24,7 +24,13 @@ export function createClient(
   const apiUrl = resolveApiUrl(
     apiUrlOption ?? readNonEmpty(environment, ENVIRONMENT_VARIABLE.API_URL) ?? PRODUCTION_API_URL,
   );
-  const token = readNonEmpty(environment, ENVIRONMENT_VARIABLE.TOKEN) ?? PUBLIC_AGENT_TOKEN;
+  const token = readNonEmpty(environment, ENVIRONMENT_VARIABLE.TOKEN);
+  if (token === undefined) {
+    throw new CliError(
+      CLI_ERROR_CODE.TOKEN_NOT_SET,
+      `${ENVIRONMENT_VARIABLE.TOKEN} is not set. The CLI sends it as the Agent token; set it to the Agent token, which the repository owner hands out.`,
+    );
+  }
 
   return new ApiClient({
     baseUrl: apiUrl.origin,

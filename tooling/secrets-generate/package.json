@@ -1,7 +1,7 @@
 {
   "name": "@resend-challenge/secrets-generate",
   "private": true,
-  "description": "`pnpm secrets:generate`: creates the Agent and Reviewer tokens, commits the Agent token to the config and sets the Reviewer token as a Worker secret",
+  "description": "`pnpm secrets:generate`: creates the Agent and Reviewer tokens, sets both as Worker secrets and prints them once",
   "type": "module",
   "exports": {
     "./package.json": "./package.json"
@@ -19,9 +19,6 @@
     "turbo:lint": "oxlint .",
     "turbo:lint:fix": "pnpm run turbo:lint --fix",
     "turbo:test": "pnpm run test"
-  },
-  "dependencies": {
-    "jsonc-parser": "^3.3.1"
   },
   "devDependencies": {
     "@patricktree-stack/config-typescript": "workspace:*",

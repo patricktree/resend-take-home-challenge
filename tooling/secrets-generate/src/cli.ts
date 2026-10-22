@@ -1,17 +1,18 @@
 #!/usr/bin/env node
+import path from "node:path";
 import url from "node:url";
 
 import { generateSecrets } from "./secrets-generate.ts";
 
-const REPOSITORY_ROOT = url.fileURLToPath(new URL("../../..", import.meta.url));
-// The Worker package's own Wrangler, so the secret lands on the Worker its wrangler.jsonc names.
-const WRANGLER_EXECUTABLE = url.fileURLToPath(
-  new URL("../../../apps/cloudflare-worker/node_modules/.bin/wrangler", import.meta.url),
+const WORKER_DIRECTORY = url.fileURLToPath(
+  new URL("../../../apps/cloudflare-worker", import.meta.url),
 );
+// The Worker package's own Wrangler, so the secrets land on the Worker its wrangler.jsonc names.
+const WRANGLER_EXECUTABLE = path.join(WORKER_DIRECTORY, "node_modules", ".bin", "wrangler");
 
 try {
   await generateSecrets({
-    repositoryRoot: REPOSITORY_ROOT,
+    workerDirectory: WORKER_DIRECTORY,
     wranglerExecutable: WRANGLER_EXECUTABLE,
     print: (line) => console.log(line),
   });

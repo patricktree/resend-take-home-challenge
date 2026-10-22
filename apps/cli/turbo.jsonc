@@ -1,4 +1,15 @@
 {
   "$schema": "../../node_modules/turbo/schema.json",
   "extends": ["//", "@patricktree-stack/config-turbo-typescript"],
+  "tasks": {
+    "turbo:build": {
+      /* The build writes the committed bundle; as an input, it would invalidate its own cache. */
+      "inputs": ["$TURBO_EXTENDS$", "!bundle/**"],
+      "outputs": ["$TURBO_EXTENDS$", "bundle/**"],
+    },
+    "turbo:test": {
+      /* The process tests spawn the bundle that this package's build writes. */
+      "dependsOn": ["$TURBO_EXTENDS$", "turbo:build"],
+    },
+  },
 }

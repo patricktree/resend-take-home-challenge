@@ -185,6 +185,9 @@ catalogs:
     oxlint-tsgolint:
       specifier: ^7.0.2004
       version: 7.0.2004
+    rolldown:
+      specifier: 1.2.14
+      version: 1.2.14
     typescript:
       specifier: npm:@typescript/typescript6@^6.0.2
       version: 6.0.2
@@ -352,6 +355,9 @@ importers:
       oxlint-tsgolint:
         specifier: 'catalog:'
         version: 7.0.2004
+      rolldown:
+        specifier: 'catalog:'
+        version: 1.2.14
       typescript:
         specifier: 'catalog:'
         version: '@typescript/typescript6@6.0.2'

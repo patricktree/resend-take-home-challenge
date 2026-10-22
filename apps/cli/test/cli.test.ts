@@ -7,7 +7,8 @@ import { test } from "vitest";
 
 import { getUnreachableUrl, useApiStub, type StubResponse } from "./api-stub.ts";
 
-const CLI_PATH = url.fileURLToPath(new URL("../src/cli.ts", import.meta.url));
+/** The committed bundle Agents run; this package's `turbo:build` writes it before the tests. */
+const CLI_PATH = url.fileURLToPath(new URL("../bundle/resend-challenge.mjs", import.meta.url));
 
 const DRAFTS_COMMANDS = ["create", "get", "list", "revise", "submit", "revision"];
 
@@ -823,7 +824,7 @@ type RunCliOptions = {
   stdin?: string;
 };
 
-/** Spawns the real `resend-challenge` process, as `pnpm resend-challenge` does. */
+/** Spawns the real `resend-challenge` process, as `node apps/cli/bundle/resend-challenge.mjs` does. */
 async function runCli(args: string[], { env = {}, stdin = "" }: RunCliOptions = {}) {
   const cliEnvironment = Object.fromEntries(
     Object.entries({ RESEND_CHALLENGE_TOKEN: AGENT_TOKEN, ...env }).flatMap(([name, value]) =>

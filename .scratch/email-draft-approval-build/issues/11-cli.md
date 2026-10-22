@@ -1,6 +1,6 @@
 # 11: CLI
 
-**What to build:** Anyone runs `pnpm resend-challenge drafts …` from a checkout and works as an Agent against production with no setup. Spec: [CLI](../../email-draft-approval/spec.md#cli), [CLI process tests](../../email-draft-approval/spec.md#cli-process-tests).
+**What to build:** Anyone runs `pnpm resend-challenge drafts …` from a checkout and works as an Agent against production with no setup (later changed by [14](14-runnable-cli-bundle.md): Agents run the committed bundle with `node apps/cli/bundle/resend-challenge.mjs drafts …`, with nothing but Node 24). Spec: [CLI](../../email-draft-approval/spec.md#cli), [CLI process tests](../../email-draft-approval/spec.md#cli-process-tests).
 
 **Blocked by:** 05 (List Drafts)
 

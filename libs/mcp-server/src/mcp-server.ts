@@ -178,7 +178,8 @@ function describeInstructions(publicBaseUrl: string): string {
  * same JSON for hosts that ignore structured content. An error response of the API becomes a tool
  * error whose only content is a text block with the JSON of its code, message, request id and
  * extras (such as `existingVerdict`). It carries no structured content: the MCP spec requires
- * structured content to conform to the tool's `outputSchema`, and an error matches none.
+ * structured content to conform to the tool's `outputSchema`, and an error matches none
+ * (https://modelcontextprotocol.io/specification/2025-06-18/server/tools#output-schema).
  */
 async function runAsToolResult(
   call: () => Promise<Record<string, unknown>>,

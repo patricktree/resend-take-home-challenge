@@ -130,7 +130,7 @@ Resolved in a grilling session with the repository owner on 2026-10-20.
 ### MCP server
 
 - Six tools, hand-written on the typed client: `create_draft`, `get_draft`, `list_drafts`, `revise_draft` (needs `baseRevisionId`), `submit_draft` (needs `draftId` and `revisionId`), `get_revision`.
-- Input schemas reuse the contract's Zod schemas; every tool declares an `outputSchema` and returns `structuredContent`; `readOnlyHint` on reads. API errors become `isError` results carrying code and message.
+- Input schemas reuse the contract's Zod schemas; every tool declares an `outputSchema` and returns `structuredContent` on success; `readOnlyHint` on reads. API errors become `isError` results carrying code and message.
 - Server `instructions` describe the lifecycle (create → submit → a human reviews at `reviewUrl` → poll `get_draft`), state that Agents cannot approve or send, and link the OpenAPI document. No revise-and-submit tool.
 
 ### CLI

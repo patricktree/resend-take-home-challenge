@@ -331,6 +331,7 @@ test("submit_draft of a Rejected Revision is a tool error with REVISION_ALREADY_
 
   expect(result.isError).toBe(true);
   expect(result.structuredContent).toBeUndefined();
+  expect(result.content).toHaveLength(1);
   expect(JSON.parse(readTextContent(result))).toMatchObject({
     error: { code: "REVISION_ALREADY_DECIDED", existingVerdict: "REJECTED" },
   });

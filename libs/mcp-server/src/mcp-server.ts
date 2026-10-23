@@ -178,7 +178,7 @@ function describeInstructions(publicBaseUrl: string): string {
     "",
     "Agents cannot approve, reject or send: no tool does that, and none will.",
     "",
-    "A failed call is a tool error whose structured content is `{ error: { code, message, requestId, ... } }`, with the API's error codes, for example REVISION_SUPERSEDED.",
+    "A failed call is a tool error without structured content; its text content is the JSON `{ error: { code, message, requestId, ... } }`, with the API's error codes, for example REVISION_SUPERSEDED.",
     "",
     `The HTTP API behind these tools is described by its OpenAPI document: ${openApiDocumentUrl}`,
   ].join("\n");
@@ -187,14 +187,20 @@ function describeInstructions(publicBaseUrl: string): string {
 /**
  * Runs one API call and answers with its response as structured content, plus a text block with the
  * same JSON for hosts that ignore structured content. An error response of the API becomes a tool
- * error carrying its code, message, request id and extras (such as `existingVerdict`).
+ * error whose only content is a text block with the JSON of its code, message, request id and
+ * extras (such as `existingVerdict`). It carries no structured content: the MCP spec requires
+ * structured content to conform to the tool's `outputSchema`, and an error matches none
+ * (https://modelcontextprotocol.io/specification/2025-06-18/server/tools#output-schema).
  */
 async function runAsToolResult(
   call: () => Promise<Record<string, unknown>>,
 ): Promise<CallToolResult> {
   try {
     const response = await call();
-    return toToolResult(response, { isError: false });
+    return {
+      content: [{ type: "text", text: JSON.stringify(response) }],
+      structuredContent: response,
+    };
   } catch (error) {
     if (!(error instanceof ApiError)) {
       throw error;
@@ -207,17 +213,9 @@ async function runAsToolResult(
         ...error.extras,
       },
     };
-    return toToolResult(toolError, { isError: true });
+    return {
+      content: [{ type: "text", text: JSON.stringify(toolError) }],
+      isError: true,
+    };
   }
-}
-
-function toToolResult(
-  structuredContent: Record<string, unknown>,
-  { isError }: { isError: boolean },
-): CallToolResult {
-  return {
-    content: [{ type: "text", text: JSON.stringify(structuredContent) }],
-    structuredContent,
-    ...(isError ? { isError } : {}),
-  };
 }

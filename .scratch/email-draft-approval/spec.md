@@ -191,26 +191,49 @@ Review status and sending status are independent fields. Sending status is not `
 
 ```mermaid
 flowchart LR
-  agentHost[Agent via MCP host] -->|/mcp, Agent token| worker
-  cli[resend-challenge CLI] -->|/api/v1, Agent token| worker
-  agentHttp[Agent via HTTP] -->|/api/v1, Agent token| worker
-  browser[Reviewer's browser] -->|/app and /api/v1, Reviewer token| worker
-  subgraph cloudflare[Cloudflare]
-    worker[Worker: fetch, queue, scheduled]
-    d1[(D1: Drafts, Revisions, outbox)]
-    r2[(R2: Revision bodies)]
-    queue[[Send Queue]]
-    dlq[[Send DLQ]]
-    cron((cron, every minute))
-    worker --> d1
-    worker --> r2
-    worker -->|Approval hand-off, reconciler| queue
-    queue -->|consumer| worker
-    queue -->|retries exhausted| dlq
-    dlq -->|DLQ consumer| worker
-    cron -->|Send reconciler| worker
+  subgraph clients[Clients]
+    agentHost[Agent via MCP host]
+    cli[resend-challenge CLI]
+    agentHttp[Agent via HTTP]
+    browser[Reviewer's browser]
   end
-  worker -->|POST /emails, Idempotency-Key| resend[Resend API]
+  %% Invisible link: keeps the clients in their own column left of the cron.
+  browser ~~~ cron
+  agentHost -->|/mcp, Agent token| fetch
+  cli -->|/api/v1, Agent token| fetch
+  agentHttp -->|/api/v1, Agent token| fetch
+  browser -->|/app and /api/v1, Reviewer token| fetch
+  subgraph cloudflare[Cloudflare]
+    cron((cron, every minute))
+    subgraph entry[Worker: fetch and scheduled handlers]
+      fetch[fetch: Hono app]
+      reconciler[scheduled: Send reconciler]
+    end
+    subgraph state[Storage and queues]
+      d1[(D1: Drafts, Revisions, outbox)]
+      r2[(R2: Revision bodies)]
+      queue[[Send Queue]]
+      dlq[[Send DLQ]]
+    end
+    subgraph consumers[Worker: queue handler]
+      sendConsumer[Send consumer]
+      dlqConsumer[DLQ consumer]
+    end
+    cron --> reconciler
+    fetch --> d1
+    fetch --> r2
+    fetch -->|Approval hand-off| queue
+    reconciler -->|outbox| d1
+    reconciler -->|re-enqueue lost hand-offs| queue
+    queue -->|retries exhausted| dlq
+    queue -->|batch| sendConsumer
+    dlq -->|batch| dlqConsumer
+    %% Undirected links keep the consumers in the column after D1.
+    d1 --- sendConsumer
+    r2 -->|Revision body| sendConsumer
+    d1 ---|record failure| dlqConsumer
+  end
+  sendConsumer -->|POST /emails, Idempotency-Key| resend[Resend API]
 ```
 
 ### One Worker
@@ -706,17 +729,19 @@ v1 has no event logging. Paths that already handle an error call a bare `console
 - Mounted at `/mcp` in the same Worker: stateless `createMcpHandler` from `agents/mcp/server` with the MCP TypeScript SDK v2 over Streamable HTTP, no Durable Object, no OAuth.
 - Six tools, hand-written on the typed client (no verdict tool):
 
-  | Tool                                                  | API operation | Annotations    |
-  | ----------------------------------------------------- | ------------- | -------------- |
-  | `create_draft`                                        | Create        |                |
-  | `get_draft`                                           | Get           | `readOnlyHint` |
-  | `list_drafts`                                         | List          | `readOnlyHint` |
-  | `revise_draft` (requires `draftId`, `baseRevisionId`) | Revise        |                |
-  | `submit_draft` (requires `draftId`, `revisionId`)     | Submit        |                |
-  | `get_revision`                                        | Get Revision  | `readOnlyHint` |
+  | Tool                                                  | API operation | Annotations              |
+  | ----------------------------------------------------- | ------------- | ------------------------ |
+  | `create_draft`                                        | Create        | `destructiveHint: false` |
+  | `get_draft`                                           | Get           | `readOnlyHint`           |
+  | `list_drafts`                                         | List          | `readOnlyHint`           |
+  | `revise_draft` (requires `draftId`, `baseRevisionId`) | Revise        | `destructiveHint: false` |
+  | `submit_draft` (requires `draftId`, `revisionId`)     | Submit        | `destructiveHint: false` |
+  | `get_revision`                                        | Get Revision  | `readOnlyHint`           |
+
+  The write tools add Drafts, Revisions and Submissions and never delete anything (a revise only withdraws a pending Submission), so they set `destructiveHint: false`; none is idempotent, so none sets `idempotentHint`.
 
 - Input schemas reuse the contract's Zod schemas. Every tool declares an `outputSchema` and returns `structuredContent` on success, with the same JSON as a text block. An API error becomes an `isError` result without `structuredContent` (the MCP spec requires structured content to conform to the `outputSchema`, which an error does not); its one text block holds the JSON `{ error: { code, message, requestId, ... } }`, with extras such as `existingVerdict`.
-- The server `instructions` describe the lifecycle (create → submit → show the Draft's `reviewUrl` to the user, the human who asked for the email, who reviews it or forwards it to the Reviewer → poll `get_draft` for review and sending status), state that Agents cannot approve or send, and link the OpenAPI document. The `submit_draft` description repeats the hand-over of `reviewUrl` in one sentence; `create_draft` and `revise_draft` return no `reviewUrl`, and their descriptions point to `submit_draft` for it. There is no revise-and-submit tool.
+- The server `instructions` describe the lifecycle (create → submit → show the Draft's `reviewUrl` to the user, the human who asked for the email, who reviews it or forwards it to the Reviewer → poll `get_draft` for review and sending status, at intervals rather than in a tight loop, since the verdict comes from the human Reviewer), state that Agents cannot approve or send, and link the OpenAPI document. The `submit_draft` description repeats the hand-over of `reviewUrl` in one sentence and tells the Agent to treat `REVISION_ALREADY_SUBMITTED` as success; `create_draft` and `revise_draft` return no `reviewUrl`, and their descriptions point to `submit_draft` for it. There is no revise-and-submit tool.
 
 ### CLI
 

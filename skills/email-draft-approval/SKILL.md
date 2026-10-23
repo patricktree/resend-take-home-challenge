@@ -35,7 +35,7 @@ The workflow is done when `sending.status` is `SENT` or `FAILED` and your user k
 
 ## Errors that need a specific reaction
 
-A failed MCP call is a tool error with `{ error: { code, message, requestId, ... } }`; the HTTP API answers with the same envelope.
+A failed MCP call is a tool error whose text content is the JSON `{ error: { code, message, requestId, ... } }`, without structured content; the HTTP API answers with the same envelope.
 
 | Code or state                                       | Meaning                                                 | Reaction                                                                                                                                |
 | --------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |

@@ -292,16 +292,15 @@ test("revise_draft on a superseded base is a tool error with REVISION_SUPERSEDED
   const result = await mcpClient.callTool({ name: "revise_draft", arguments: revise });
 
   expect(result.isError).toBe(true);
-  expect(result.structuredContent).toStrictEqual({
+  expect(result.structuredContent).toBeUndefined();
+  expect(result.content).toHaveLength(1);
+  expect(JSON.parse(readTextContent(result))).toStrictEqual({
     error: {
       code: "REVISION_SUPERSEDED",
       message: expect.any(String),
       requestId: expect.stringMatching(/^[0-9a-f-]{36}$/),
     },
   });
-  expect(result.content).toStrictEqual([
-    { type: "text", text: JSON.stringify(result.structuredContent) },
-  ]);
   const draft = await readThroughApi(worker, `/api/v1/drafts/${created.id}`);
   expect(draft).toMatchObject({ latestRevision: { revisionNumber: 2 } });
 });
@@ -331,10 +330,10 @@ test("submit_draft of a Rejected Revision is a tool error with REVISION_ALREADY_
   const result = await mcpClient.callTool({ name: "submit_draft", arguments: submission });
 
   expect(result.isError).toBe(true);
-  expect(result.structuredContent).toMatchObject({
+  expect(result.structuredContent).toBeUndefined();
+  expect(JSON.parse(readTextContent(result))).toMatchObject({
     error: { code: "REVISION_ALREADY_DECIDED", existingVerdict: "REJECTED" },
   });
-  expect(readTextContent(result)).toContain('"existingVerdict":"REJECTED"');
 });
 
 test("revise_draft without baseRevisionId is refused by its input schema", async ({

@@ -715,7 +715,7 @@ v1 has no event logging. Paths that already handle an error call a bare `console
   | `submit_draft` (requires `draftId`, `revisionId`)     | Submit        |                |
   | `get_revision`                                        | Get Revision  | `readOnlyHint` |
 
-- Input schemas reuse the contract's Zod schemas. Every tool declares an `outputSchema` and returns `structuredContent`. An API error becomes an `isError` result carrying its code and message (and extras such as `existingVerdict`).
+- Input schemas reuse the contract's Zod schemas. Every tool declares an `outputSchema` and returns `structuredContent` on success, with the same JSON as a text block. An API error becomes an `isError` result without `structuredContent` (the MCP spec requires structured content to conform to the `outputSchema`, which an error does not); its one text block holds the JSON `{ error: { code, message, requestId, ... } }`, with extras such as `existingVerdict`.
 - The server `instructions` describe the lifecycle (create → submit → show the Draft's `reviewUrl` to the user, the human who asked for the email, who reviews it or forwards it to the Reviewer → poll `get_draft` for review and sending status), state that Agents cannot approve or send, and link the OpenAPI document. The `submit_draft` description repeats the hand-over of `reviewUrl` in one sentence; `create_draft` and `revise_draft` return no `reviewUrl`, and their descriptions point to `submit_draft` for it. There is no revise-and-submit tool.
 
 ### CLI

@@ -38,6 +38,13 @@ export type ResendChallengeMcpServerOptions = {
 const READ_ONLY = { readOnlyHint: true } as const;
 
 /**
+ * For the write tools, which add Drafts, Revisions and Submissions but never overwrite or delete
+ * anything. Without it, hosts assume a destructive tool. They are not idempotent either (a retried
+ * create may create a second Draft, a retried submit fails), so `idempotentHint` stays unset.
+ */
+const NON_DESTRUCTIVE = { destructiveHint: false } as const;
+
+/**
  * The parameters of `list_drafts`. The list query of the API is shaped for a query string (a
  * repeated parameter arrives as a string or an array), so the two filters are plain arrays here.
  */
@@ -84,6 +91,7 @@ export function createResendChallengeMcpServer({
         "Creates a Draft whose first Revision holds the given recipients, subject and plain-text body, UNSUBMITTED. Creating never submits: call submit_draft with the returned `latestRevision.id` next; its result carries the `reviewUrl` for your user. Not idempotent: a retried call may create a second Draft.",
       inputSchema: draftDataRequestSchema,
       outputSchema: unsubmittedDraftSummarySchema,
+      annotations: NON_DESTRUCTIVE,
     },
     (draftData) => runAsToolResult(() => client.drafts.create(draftData)),
   );
@@ -93,7 +101,7 @@ export function createResendChallengeMcpServer({
     {
       title: "Get a Draft",
       description:
-        "Returns the Draft with its latest Revision, including the body. Poll it after submitting: `reviewStatus` (PENDING, APPROVED, REJECTED), `lastVerdict` (with the Rejection reason) and `sending.status` (NOT_SENT, QUEUED, SENT, FAILED) tell where the Draft stands.",
+        "Returns the Draft with its latest Revision, including the body. Poll it after submitting: `reviewStatus` (PENDING, APPROVED, REJECTED), `lastVerdict` (with the Rejection reason) and `sending.status` (NOT_SENT, QUEUED, SENT, FAILED) tell where the Draft stands. The verdict comes from a human and may take minutes or hours, so poll at intervals, not in a tight loop.",
       inputSchema: draftParamsSchema,
       outputSchema: draftSchema,
       annotations: READ_ONLY,
@@ -122,6 +130,7 @@ export function createResendChallengeMcpServer({
         "Creates the Draft's next Revision, UNSUBMITTED, from the given recipients, subject and body. `baseRevisionId` is the Draft's latest Revision as you last read it; if another revise came first, nothing is written and the result is the error REVISION_SUPERSEDED: read the Draft again and build on its latest Revision. Revising withdraws a pending Submission. It never submits: call submit_draft with the new `latestRevision.id`; its result carries the `reviewUrl` for your user. An approved Draft accepts no further Revisions (DRAFT_APPROVED).",
       inputSchema: reviseDraftInputSchema,
       outputSchema: unsubmittedDraftSummarySchema,
+      annotations: NON_DESTRUCTIVE,
     },
     ({ draftId, ...reviseRequest }) =>
       runAsToolResult(() => client.drafts.revise(draftId, reviseRequest)),
@@ -132,9 +141,10 @@ export function createResendChallengeMcpServer({
     {
       title: "Submit a Revision for review",
       description:
-        "Submits one specific Revision, the Draft's latest and UNSUBMITTED, for the human Reviewer's verdict; the Draft becomes PENDING. Then show the Draft's `reviewUrl` to your user, so they can review it there or forward it to the Reviewer, and poll get_draft for the verdict. Errors: DRAFT_APPROVED, REVISION_SUPERSEDED (submit the latest Revision instead), REVISION_ALREADY_DECIDED with `existingVerdict` (revise the Draft first), REVISION_ALREADY_SUBMITTED (an earlier attempt went through).",
+        "Submits one specific Revision, the Draft's latest and UNSUBMITTED, for the human Reviewer's verdict; the Draft becomes PENDING. Then show the Draft's `reviewUrl` to your user, so they can review it there or forward it to the Reviewer, and poll get_draft for the verdict. Errors: DRAFT_APPROVED, REVISION_SUPERSEDED (submit the latest Revision instead), REVISION_ALREADY_DECIDED with `existingVerdict` (revise the Draft first), REVISION_ALREADY_SUBMITTED (an earlier attempt went through: treat it as success, read the `reviewUrl` from get_draft, show it to your user and poll).",
       inputSchema: revisionParamsSchema,
       outputSchema: draftSummarySchema,
+      annotations: NON_DESTRUCTIVE,
     },
     ({ draftId, revisionId }) =>
       runAsToolResult(() => client.revisions.submit(draftId, revisionId)),

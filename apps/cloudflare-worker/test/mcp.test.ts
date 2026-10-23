@@ -36,7 +36,7 @@ test.for([
   { mode: "legacy", era: "legacy" },
   { mode: "auto", era: "modern" },
 ] as const)(
-  "tools/list ($era protocol era) returns exactly the six Agent tools, with readOnlyHint on the reads",
+  "tools/list ($era protocol era) returns exactly the six Agent tools, with readOnlyHint on the reads and destructiveHint false on the writes",
   async ({ mode, era }, { expect, onTestFinished }) => {
     const worker = await useWorker({ onTestFinished });
     const mcpClient = await connectMcpClient(
@@ -50,11 +50,11 @@ test.for([
     expect(mcpClient.getProtocolEra()).toBe(era);
     expect(tools.map((tool) => ({ name: tool.name, annotations: tool.annotations }))).toStrictEqual(
       [
-        { name: "create_draft", annotations: undefined },
+        { name: "create_draft", annotations: { destructiveHint: false } },
         { name: "get_draft", annotations: { readOnlyHint: true } },
         { name: "list_drafts", annotations: { readOnlyHint: true } },
-        { name: "revise_draft", annotations: undefined },
-        { name: "submit_draft", annotations: undefined },
+        { name: "revise_draft", annotations: { destructiveHint: false } },
+        { name: "submit_draft", annotations: { destructiveHint: false } },
         { name: "get_revision", annotations: { readOnlyHint: true } },
       ],
     );
@@ -100,6 +100,28 @@ test("the submit_draft description tells the Agent to hand the reviewUrl to its 
   const submitDraftTool = tools.find((tool) => tool.name === "submit_draft");
 
   expect(submitDraftTool?.description).toContain("show the Draft's `reviewUrl` to your user");
+});
+
+test("the submit_draft and get_draft descriptions cover a retried Submission and the polling cadence", async ({
+  expect,
+  onTestFinished,
+}) => {
+  const worker = await useWorker({ onTestFinished });
+  const mcpClient = await connectMcpClient(
+    worker,
+    { token: LOCAL_AGENT_TOKEN },
+    { onTestFinished },
+  );
+
+  const { tools } = await mcpClient.listTools();
+  const descriptionOf = (toolName: string): string | undefined =>
+    tools.find((tool) => tool.name === toolName)?.description;
+
+  expect(descriptionOf("submit_draft")).toContain(
+    "REVISION_ALREADY_SUBMITTED (an earlier attempt went through: treat it as success, read the `reviewUrl` from get_draft",
+  );
+  expect(descriptionOf("get_draft")).toContain("not in a tight loop");
+  expect(mcpClient.getInstructions()).toContain("not in a tight loop");
 });
 
 test("create_draft creates a Draft and returns its summary as structured content and as text", async ({

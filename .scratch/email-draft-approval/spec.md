@@ -572,7 +572,8 @@ Header `X-Read-Bookmark` on requests and responses, documented on every operatio
 ### Browser hardening
 
 - Nothing authenticates through cookies and the API sets none, so CSRF does not apply.
-- The Review UI and the API share one origin. The API sends no CORS headers.
+- The Review UI and the API share one origin. `/api/*` and `/app` send no CORS headers.
+- `/mcp` accepts browser-based MCP clients from any origin, without checking `Origin`: `OPTIONS /mcp` answers 204 before authentication, and every other `/mcp` response, errors included, carries `Access-Control-Allow-Origin: *` and exposes `Mcp-Session-Id`, `Mcp-Protocol-Version`, `WWW-Authenticate` and `X-Request-Id`. It never sends `Access-Control-Allow-Credentials` or `Access-Control-Allow-Private-Network`, so browsers that restrict local network access keep public sites from a developer's local `/mcp`.
 - Every `/app` response carries:
   - `Content-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'` (`frame-ancestors 'none'` keeps any page from framing the Approve button);
   - `Referrer-Policy: no-referrer`;
@@ -727,6 +728,7 @@ v1 has no event logging. Paths that already handle an error call a bare `console
 ### MCP server
 
 - Mounted at `/mcp` in the same Worker: stateless `createMcpHandler` from `agents/mcp/server` with the MCP TypeScript SDK v2 over Streamable HTTP, no Durable Object, no OAuth.
+- An `OPTIONS /mcp` route answers the preflight, and a Hono middleware in front of authentication adds the CORS headers to every other `/mcp` response ([section 7](#browser-hardening)); the handler's own CORS headers and `Origin` check are off (`corsOptions: false`, `allowedOriginHostnames: "*"`).
 - Six tools, hand-written on the typed client (no verdict tool):
 
   | Tool                                                  | API operation | Annotations              |

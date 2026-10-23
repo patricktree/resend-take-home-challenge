@@ -13,6 +13,51 @@ import { jsonError } from "./http-errors.ts";
 export const MCP_PATH = "/mcp";
 
 /**
+ * The CORS headers of a preflight of `/mcp`, which lets MCP clients in a web page call it (spec
+ * section 7, "Browser hardening"). The origin is a wildcard and credentials are never allowed: only
+ * the bearer token authenticates, and a page has to hold it already.
+ */
+const MCP_PREFLIGHT_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  // The methods of the Streamable HTTP transport.
+  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+  // The request headers the MCP SDK client sends; it sends `Mcp-Param-*` only for tools that
+  // declare `x-mcp-header`, which none of ours does.
+  "Access-Control-Allow-Headers":
+    "Authorization, Content-Type, Accept, Mcp-Protocol-Version, Mcp-Session-Id, Mcp-Method, Mcp-Name, Last-Event-ID",
+  // Short, so that a change of these headers reaches browsers within minutes.
+  "Access-Control-Max-Age": "600",
+};
+
+/** The CORS headers of every other response of `/mcp`. */
+const MCP_RESPONSE_CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Expose-Headers":
+    "Mcp-Session-Id, Mcp-Protocol-Version, WWW-Authenticate, X-Request-Id",
+};
+
+/**
+ * Answers the CORS preflight (`OPTIONS`) of {@link MCP_PATH} with 204. It is mounted before
+ * authentication, since a browser sends no credentials on a preflight. It never answers a Private
+ * Network Access preflight with `Access-Control-Allow-Private-Network`, so browsers that enforce it
+ * keep public sites from reaching a developer's local `/mcp`.
+ */
+export function answerMcpPreflight(context: Context<HttpAppHonoEnvironment>): Response {
+  return context.body(null, 204, MCP_PREFLIGHT_HEADERS);
+}
+
+/**
+ * Adds the CORS headers to every non-preflight response of {@link MCP_PATH}, errors included, so a
+ * browser client can read them. Runs before authentication, so it also covers its 401 and 403.
+ */
+export const addMcpCorsHeaders = createMiddleware<HttpAppHonoEnvironment>(async (context, next) => {
+  await next();
+  for (const [name, value] of Object.entries(MCP_RESPONSE_CORS_HEADERS)) {
+    context.header(name, value);
+  }
+});
+
+/**
  * Lets only the Agent role through to the MCP server: the Reviewer token gets 403, so it is useless
  * when configured into an Agent host. Runs after `authenticate`, which has set the role.
  */
@@ -55,8 +100,17 @@ export function createMcpEndpoint(
     });
     const handleMcpRequest = createMcpHandler(
       () => createResendChallengeMcpServer({ client, publicBaseUrl: context.env.PUBLIC_BASE_URL }),
-      // The Worker sends no CORS headers anywhere (spec section 7, "Browser hardening").
-      { route: MCP_PATH, corsOptions: false },
+      {
+        route: MCP_PATH,
+        // `answerMcpPreflight` and `addMcpCorsHeaders` set the CORS headers; `false` keeps the
+        // handler from adding its own.
+        corsOptions: false,
+        // Web pages on any site may call `/mcp` (`addMcpCorsHeaders`), so their `Origin` is not
+        // checked either. The handler's default allows only localhost-class origins, against DNS rebinding;
+        // here the bearer token guards `/mcp`, and `/api/v1` offers the Agent the same operations
+        // with no `Origin` check.
+        allowedOriginHostnames: "*",
+      },
     );
 
     // The handler's `fetch` face: the Worker-shaped call would only read OAuth props from the

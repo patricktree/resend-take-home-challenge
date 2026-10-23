@@ -729,17 +729,19 @@ v1 has no event logging. Paths that already handle an error call a bare `console
 - Mounted at `/mcp` in the same Worker: stateless `createMcpHandler` from `agents/mcp/server` with the MCP TypeScript SDK v2 over Streamable HTTP, no Durable Object, no OAuth.
 - Six tools, hand-written on the typed client (no verdict tool):
 
-  | Tool                                                  | API operation | Annotations    |
-  | ----------------------------------------------------- | ------------- | -------------- |
-  | `create_draft`                                        | Create        |                |
-  | `get_draft`                                           | Get           | `readOnlyHint` |
-  | `list_drafts`                                         | List          | `readOnlyHint` |
-  | `revise_draft` (requires `draftId`, `baseRevisionId`) | Revise        |                |
-  | `submit_draft` (requires `draftId`, `revisionId`)     | Submit        |                |
-  | `get_revision`                                        | Get Revision  | `readOnlyHint` |
+  | Tool                                                  | API operation | Annotations              |
+  | ----------------------------------------------------- | ------------- | ------------------------ |
+  | `create_draft`                                        | Create        | `destructiveHint: false` |
+  | `get_draft`                                           | Get           | `readOnlyHint`           |
+  | `list_drafts`                                         | List          | `readOnlyHint`           |
+  | `revise_draft` (requires `draftId`, `baseRevisionId`) | Revise        | `destructiveHint: false` |
+  | `submit_draft` (requires `draftId`, `revisionId`)     | Submit        | `destructiveHint: false` |
+  | `get_revision`                                        | Get Revision  | `readOnlyHint`           |
+
+  The write tools add Drafts, Revisions and Submissions and never delete anything (a revise only withdraws a pending Submission), so they set `destructiveHint: false`; none is idempotent, so none sets `idempotentHint`.
 
 - Input schemas reuse the contract's Zod schemas. Every tool declares an `outputSchema` and returns `structuredContent`. An API error becomes an `isError` result carrying its code and message (and extras such as `existingVerdict`).
-- The server `instructions` describe the lifecycle (create → submit → show the Draft's `reviewUrl` to the user, the human who asked for the email, who reviews it or forwards it to the Reviewer → poll `get_draft` for review and sending status), state that Agents cannot approve or send, and link the OpenAPI document. The `submit_draft` description repeats the hand-over of `reviewUrl` in one sentence; `create_draft` and `revise_draft` return no `reviewUrl`, and their descriptions point to `submit_draft` for it. There is no revise-and-submit tool.
+- The server `instructions` describe the lifecycle (create → submit → show the Draft's `reviewUrl` to the user, the human who asked for the email, who reviews it or forwards it to the Reviewer → poll `get_draft` for review and sending status, at intervals rather than in a tight loop, since the verdict comes from the human Reviewer), state that Agents cannot approve or send, and link the OpenAPI document. The `submit_draft` description repeats the hand-over of `reviewUrl` in one sentence and tells the Agent to treat `REVISION_ALREADY_SUBMITTED` as success; `create_draft` and `revise_draft` return no `reviewUrl`, and their descriptions point to `submit_draft` for it. There is no revise-and-submit tool.
 
 ### CLI
 

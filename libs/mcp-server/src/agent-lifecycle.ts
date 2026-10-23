@@ -46,7 +46,7 @@ const LIFECYCLE_STEPS: LifecycleStep[] = [
   {
     ...OPERATION.GET,
     describe: (call) =>
-      `Poll ${call} for \`reviewStatus\`, \`lastVerdict\` (with the Rejection reason) and \`sending\` (NOT_SENT, QUEUED, SENT or FAILED). The verdict comes from a human and may take minutes or hours, so poll at intervals, not in a tight loop.`,
+      `Poll ${call} for \`reviewStatus\`, \`lastVerdict\` (with the Rejection reason) and \`sending\` (NOT_SENT, QUEUED, SENT or FAILED). The verdict comes from the human Reviewer and may take minutes or hours, so poll at intervals, not in a tight loop.`,
   },
 ];
 

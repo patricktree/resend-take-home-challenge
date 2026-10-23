@@ -38,9 +38,10 @@ export type ResendChallengeMcpServerOptions = {
 const READ_ONLY = { readOnlyHint: true } as const;
 
 /**
- * For the write tools, which add Drafts, Revisions and Submissions but never overwrite or delete
- * anything. Without it, hosts assume a destructive tool. They are not idempotent either (a retried
- * create may create a second Draft, a retried submit fails), so `idempotentHint` stays unset.
+ * For the write tools: they add Drafts, Revisions and Submissions and never delete anything (a
+ * revise only withdraws a pending Submission). Without it, hosts assume a destructive tool. They
+ * are not idempotent either (a retried create may create a second Draft, a retried submit fails),
+ * so `idempotentHint` stays unset.
  */
 const NON_DESTRUCTIVE = { destructiveHint: false } as const;
 
@@ -101,7 +102,7 @@ export function createResendChallengeMcpServer({
     {
       title: "Get a Draft",
       description:
-        "Returns the Draft with its latest Revision, including the body. Poll it after submitting: `reviewStatus` (PENDING, APPROVED, REJECTED), `lastVerdict` (with the Rejection reason) and `sending.status` (NOT_SENT, QUEUED, SENT, FAILED) tell where the Draft stands. The verdict comes from a human and may take minutes or hours, so poll at intervals, not in a tight loop.",
+        "Returns the Draft with its latest Revision, including the body. Poll it after submitting: `reviewStatus` (PENDING, APPROVED, REJECTED), `lastVerdict` (with the Rejection reason) and `sending.status` (NOT_SENT, QUEUED, SENT, FAILED) tell where the Draft stands. The verdict comes from the human Reviewer and may take minutes or hours, so poll at intervals, not in a tight loop.",
       inputSchema: draftParamsSchema,
       outputSchema: draftSchema,
       annotations: READ_ONLY,

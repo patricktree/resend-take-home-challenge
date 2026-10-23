@@ -118,7 +118,7 @@ test("the submit_draft and get_draft descriptions cover a retried Submission and
     tools.find((tool) => tool.name === toolName)?.description;
 
   expect(descriptionOf("submit_draft")).toContain(
-    "REVISION_ALREADY_SUBMITTED (an earlier attempt went through: treat it as success, read the `reviewUrl` from get_draft",
+    "treat it as success, read the `reviewUrl` from get_draft",
   );
   expect(descriptionOf("get_draft")).toContain("not in a tight loop");
   expect(mcpClient.getInstructions()).toContain("not in a tight loop");

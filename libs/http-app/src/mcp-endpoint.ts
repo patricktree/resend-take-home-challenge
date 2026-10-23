@@ -50,14 +50,12 @@ export function answerMcpPreflight(context: Context<HttpAppHonoEnvironment>): Re
  * Adds the CORS headers to every non-preflight response of {@link MCP_PATH}, errors included, so a
  * browser client can read them. Runs before authentication, so it also covers its 401 and 403.
  */
-export const addMcpCorsHeaders = createMiddleware<HttpAppHonoEnvironment>(
-  async (context, next) => {
-    await next();
-    for (const [name, value] of Object.entries(MCP_RESPONSE_CORS_HEADERS)) {
-      context.header(name, value);
-    }
-  },
-);
+export const addMcpCorsHeaders = createMiddleware<HttpAppHonoEnvironment>(async (context, next) => {
+  await next();
+  for (const [name, value] of Object.entries(MCP_RESPONSE_CORS_HEADERS)) {
+    context.header(name, value);
+  }
+});
 
 /**
  * Lets only the Agent role through to the MCP server: the Reviewer token gets 403, so it is useless

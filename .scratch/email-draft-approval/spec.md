@@ -191,26 +191,49 @@ Review status and sending status are independent fields. Sending status is not `
 
 ```mermaid
 flowchart LR
-  agentHost[Agent via MCP host] -->|/mcp, Agent token| worker
-  cli[resend-challenge CLI] -->|/api/v1, Agent token| worker
-  agentHttp[Agent via HTTP] -->|/api/v1, Agent token| worker
-  browser[Reviewer's browser] -->|/app and /api/v1, Reviewer token| worker
-  subgraph cloudflare[Cloudflare]
-    worker[Worker: fetch, queue, scheduled]
-    d1[(D1: Drafts, Revisions, outbox)]
-    r2[(R2: Revision bodies)]
-    queue[[Send Queue]]
-    dlq[[Send DLQ]]
-    cron((cron, every minute))
-    worker --> d1
-    worker --> r2
-    worker -->|Approval hand-off, reconciler| queue
-    queue -->|consumer| worker
-    queue -->|retries exhausted| dlq
-    dlq -->|DLQ consumer| worker
-    cron -->|Send reconciler| worker
+  subgraph clients[Clients]
+    agentHost[Agent via MCP host]
+    cli[resend-challenge CLI]
+    agentHttp[Agent via HTTP]
+    browser[Reviewer's browser]
   end
-  worker -->|POST /emails, Idempotency-Key| resend[Resend API]
+  %% Invisible link: keeps the clients in their own column left of the cron.
+  browser ~~~ cron
+  agentHost -->|/mcp, Agent token| fetch
+  cli -->|/api/v1, Agent token| fetch
+  agentHttp -->|/api/v1, Agent token| fetch
+  browser -->|/app and /api/v1, Reviewer token| fetch
+  subgraph cloudflare[Cloudflare]
+    cron((cron, every minute))
+    subgraph entry[Worker: fetch and scheduled handlers]
+      fetch[fetch: Hono app]
+      reconciler[scheduled: Send reconciler]
+    end
+    subgraph state[Storage and queues]
+      d1[(D1: Drafts, Revisions, outbox)]
+      r2[(R2: Revision bodies)]
+      queue[[Send Queue]]
+      dlq[[Send DLQ]]
+    end
+    subgraph consumers[Worker: queue handler]
+      sendConsumer[Send consumer]
+      dlqConsumer[DLQ consumer]
+    end
+    cron --> reconciler
+    fetch --> d1
+    fetch --> r2
+    fetch -->|Approval hand-off| queue
+    reconciler -->|outbox| d1
+    reconciler -->|re-enqueue lost hand-offs| queue
+    queue -->|retries exhausted| dlq
+    queue -->|batch| sendConsumer
+    dlq -->|batch| dlqConsumer
+    %% Undirected links keep the consumers in the column after D1.
+    d1 --- sendConsumer
+    r2 -->|Revision body| sendConsumer
+    d1 ---|record failure| dlqConsumer
+  end
+  sendConsumer -->|POST /emails, Idempotency-Key| resend[Resend API]
 ```
 
 ### One Worker
